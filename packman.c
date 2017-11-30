@@ -18,6 +18,7 @@
 #include "sflman.h"
 #include "sessman.h"
 #include "conman.h"
+#include "my_chechsum.h"
 
 struct mptcp_option mptopt[10];
 struct tcp_option topt[20];
@@ -206,7 +207,7 @@ int create_MPcap(unsigned char *mpbuf, uint32_t *key_loc, uint32_t *key_rem) {
 	*(mpbuf) = MPTCP_KIND;
 	*(mpbuf+1) = tpcap_len;
 	*(mpbuf+2) = ( ((unsigned char) MPTCP_CAP)<<4) & 0xf0;
-	*(mpbuf+3) = 1;//no checksum
+	*(mpbuf+3) = 0x81;//no checksum
 	*((uint32_t*) (mpbuf+4)) = key_loc[0];
 	*((uint32_t*) (mpbuf+8)) = key_loc[1];
 	if(key_rem != NULL) {
@@ -329,7 +330,7 @@ void create_dan_MPdss(unsigned char *mpbuf, uint16_t *mplen) {
 //	len provides the present length of options already contained
 //	We currently disregard checksum
 //++++++++++++++++++++++++++++++++++++++++++++++++
-void create_complete_MPdss(unsigned char *mpbuf) {
+void create_complete_MPdss(unsigned char *mpbuf) {//, unsigned char *payload,uint16_t len_payload
 	unsigned char tpdss_len = (dssopt_out.Aflag)? 8:4;//4 bytes min, 8bytes if dan present
 	tpdss_len += (dssopt_out.Mflag)? 10:0;//add 8bytes more for dsn and ssn
 
@@ -1130,6 +1131,15 @@ uint16_t pad_options_buffer(unsigned char *buf, uint16_t len) {
 	return (((len+3)>>2)<<2);
 }
 
+
+uint16_t mpdsm_checksum(unsigned char *p_dsm, uint32_t idsn_high, unsigned char *payload,uint16_t len_payload){
+
+	__wsum csum = 0;
+	csum = csum_partial(payload,len_payload,csum);
+	csum = csum_partial(p_dsm,12,csum);
+	return csum_fold(csum_partial(&idsn_high, 4, csum));
+
+}
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++

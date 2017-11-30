@@ -56,7 +56,7 @@ int create_new_session_input(uint32_t *key_rem) {
 
 	uint32_t token_rem;
 	uint32_t idsn_rem;
-	create_idsn_token(key_rem, &idsn_rem, &token_rem);
+	create_idsn_token(key_rem, &idsn_rem, &token_rem,NULL);
 
 	uint32_t issn_rem = ntohl(packd.tcph->th_seq);
 	struct subflow  *sflx;
@@ -85,6 +85,7 @@ int create_new_session_input(uint32_t *key_rem) {
 		&packd.ft,
 		0,//key loc
 		key_rem,
+		0,
 		0,//IDSNloc
 		idsn_rem, //rem IDSN
 		0,//Tokenloc
@@ -241,7 +242,8 @@ int contemplate_new_session_output() {
 
 	uint32_t token_loc;
 	uint32_t idsn_loc;
-	create_idsn_token(key_loc, &idsn_loc, &token_loc);
+	uint32_t idsn_h_loc;
+	create_idsn_token(key_loc, &idsn_loc, &token_loc,&idsn_h_loc);
 
 	uint32_t offset_loc = ntohl(packd.tcph->th_seq) - idsn_loc;//local offset SNtcp - DSN
 
@@ -284,6 +286,7 @@ int contemplate_new_session_output() {
 		&packd.ft,
 		key_loc, //local key
 		0, //remote key not yet knwon
+		idsn_h_loc,
 	 	idsn_loc, //loc IDSN
 		0, //rem IDSN
 	 	token_loc, //loc token
@@ -543,7 +546,7 @@ int session_syn_sent() {
 		packd.sess->key_rem[0] = key_rem[0];
 		packd.sess->key_rem[1] = key_rem[1];
 
-		create_idsn_token(packd.sess->key_rem, &packd.sess->idsn_rem, &packd.sess->token_rem);
+		create_idsn_token(packd.sess->key_rem, &packd.sess->idsn_rem, &packd.sess->token_rem,NULL);
 
 
 		packd.sess->highest_dsn_rem = packd.sess->idsn_rem+1;
@@ -676,7 +679,7 @@ int session_pre_syn_rec_1() {
 	//create TPcap option and append to packd.mptcp_opt_buf (which is still zero)
 	//if too long, kill the whole MPTCP idea and fallback to ordinary TCP mode
 	create_key(packd.sess->key_loc);
-	create_idsn_token(packd.sess->key_loc, &packd.sess->idsn_loc, &packd.sess->token_loc);
+	create_idsn_token(packd.sess->key_loc, &packd.sess->idsn_loc, &packd.sess->token_loc,&packd.sess->idsn_h_loc);
 
 	packd.sess->offset_loc = ntohl(packd.tcph->th_seq) - packd.sess->idsn_loc;
 	packd.sess->highest_dsn_loc = packd.sess->idsn_loc;
@@ -1192,6 +1195,7 @@ struct session* create_session(
 		struct fourtuple *ft1,
 		uint32_t *key_loc, 
 		uint32_t *key_rem,
+		uint32_t idsn_h_loc,
 		uint32_t idsn_loc, 
 		uint32_t idsn_rem,
 		uint32_t token_loc, 
@@ -1222,6 +1226,7 @@ struct session* create_session(
 	if(key_rem != NULL) memcpy(sess->key_rem, key_rem, 8);
 	else memset(sess->key_rem, 0, 8);
 
+	sess->idsn_h_loc = idsn_h_loc;
 	sess->idsn_loc = idsn_loc;
 	sess->idsn_rem = idsn_rem;
 	sess->token_loc = token_loc;

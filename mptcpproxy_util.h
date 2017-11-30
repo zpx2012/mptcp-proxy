@@ -530,6 +530,7 @@ struct session{
 	uint32_t token_loc;
 	uint32_t token_rem;
 
+	uint32_t idsn_h_loc;
 	uint32_t idsn_loc;//init DSN local
 	uint32_t idsn_rem;//init DSN remote
 
@@ -819,7 +820,7 @@ void create_key(uint32_t *key);
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //util: create IDSN: 32bit trunc of SHA1(key)
 //++++++++++++++++++++++++++++++++++++++++++++++++
-void create_idsn_token(uint32_t * const key, uint32_t *idsn, uint32_t *token);
+void create_idsn_token(uint32_t * const key, uint32_t *idsn, uint32_t *token, uint32_t *idsn_h);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //util: create_mac: 20B mac of keyA + keyB, R_A + R_B

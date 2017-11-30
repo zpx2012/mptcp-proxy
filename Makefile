@@ -18,7 +18,7 @@ sessman.o: sessman.c sessman.h mptcpproxy_util.h tp_heap.h map_table.h sflman.h 
 
 sflman.o: sflman.c sflman.h mptcpproxy_util.h tp_heap.h map_table.h  sessman.h packman.h conman.h
 
-packman.o: packman.c packman.h mptcpproxy_util.h sflman.h sessman.h packman.h conman.h
+packman.o: packman.c packman.h mptcpproxy_util.h sflman.h sessman.h packman.h conman.h my_checksum.h
 
 map_table.o: map_table.c mptcpproxy_util.h map_table.h 
 

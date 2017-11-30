@@ -504,11 +504,13 @@ void create_key(uint32_t *key) {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //util: create IDSN: 32bit trunc of SHA1(key)
 //++++++++++++++++++++++++++++++++++++++++++++++++
-void create_idsn_token(uint32_t * const key, uint32_t *idsn, uint32_t *token) {
+void create_idsn_token(uint32_t * const key, uint32_t *idsn, uint32_t *token, uint32_t *idsn_h) {
 	uint32_t resblock[5];
 	sha1_buffer ( (const char *) key, 8, (unsigned char *) resblock);
 	*token = (resblock[0]);
 	*idsn = ntohl( *( resblock+4) );
+	if(idsn_h)
+		*idsn_h = ntohl( *( resblock+3) );
 }
 
 

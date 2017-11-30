@@ -154,6 +154,7 @@ struct session* create_session(
 		struct fourtuple *ft1,
 		uint32_t *key_loc, 
 		uint32_t *key_rem,
+		uint32_t idsn_h_loc,
 		uint32_t idsn_loc, 
 		uint32_t idsn_rem,
 		uint32_t token_loc, 

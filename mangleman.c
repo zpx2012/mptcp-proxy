@@ -578,6 +578,8 @@ void set_dss_and_prio() {
 		}
 
 		create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len);
+		if (dssopt_out.Mflag)
+			mpdsm_checksum(packd.mptcp_opt_buf + packd.mptcp_opt_len + 18, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
 		packd.mptcp_opt_appended = 1;
 	}
 
