@@ -18,7 +18,7 @@
 #include "sflman.h"
 #include "sessman.h"
 #include "conman.h"
-#include "my_chechsum.h"
+#include "my_checksum.h"
 
 struct mptcp_option mptopt[10];
 struct tcp_option topt[20];
@@ -332,7 +332,7 @@ void create_dan_MPdss(unsigned char *mpbuf, uint16_t *mplen) {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void create_complete_MPdss(unsigned char *mpbuf) {//, unsigned char *payload,uint16_t len_payload
 	unsigned char tpdss_len = (dssopt_out.Aflag)? 8:4;//4 bytes min, 8bytes if dan present
-	tpdss_len += (dssopt_out.Mflag)? 10:0;//add 8bytes more for dsn and ssn
+	tpdss_len += (dssopt_out.Mflag)? 12:0;//add 8bytes more for dsn and ssn
 
 	packd.mptcp_opt_len += tpdss_len;
 	*(mpbuf) = MPTCP_KIND;
