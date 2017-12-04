@@ -330,7 +330,7 @@ void create_dan_MPdss(unsigned char *mpbuf, uint16_t *mplen) {
 //	len provides the present length of options already contained
 //	We currently disregard checksum
 //++++++++++++++++++++++++++++++++++++++++++++++++
-void create_complete_MPdss(unsigned char *mpbuf) {//, unsigned char *payload,uint16_t len_payload
+void create_complete_MPdss(unsigned char *mpbuf, uint32_t idsn_high, unsigned char *payload, uint16_t len_payload) {//, unsigned char *payload,uint16_t len_payload
 	unsigned char tpdss_len = (dssopt_out.Aflag)? 8:4;//4 bytes min, 8bytes if dan present
 	tpdss_len += (dssopt_out.Mflag)? 12:0;//add 8bytes more for dsn and ssn
 
@@ -355,6 +355,7 @@ void create_complete_MPdss(unsigned char *mpbuf) {//, unsigned char *payload,uin
 		*((uint32_t*) (mpbuf+4+it)) = htonl(dssopt_out.dsn);
 		*((uint32_t*) (mpbuf+8+it)) = htonl(dssopt_out.ssn);
 		*((uint16_t*) (mpbuf+12+it)) = htons(dssopt_out.range);
+		*((uint16_t*) (mpbuf+14+it)) = mpdsm_checksum(mpbuf+4+it,idsn_high,payload,len_payload);
 	}
 }
 
@@ -1129,16 +1130,6 @@ uint16_t copy_options_to_buffer(unsigned char *buf, size_t nb_opt, struct tcp_op
 uint16_t pad_options_buffer(unsigned char *buf, uint16_t len) {
 	memset(buf+len,1,(((len+3)>>2)<<2)-len);
 	return (((len+3)>>2)<<2);
-}
-
-
-uint16_t mpdsm_checksum(unsigned char *p_dsm, uint32_t idsn_high, unsigned char *payload,uint16_t len_payload){
-
-	__wsum csum = 0;
-	csum = csum_partial(payload,len_payload,csum);
-	csum = csum_partial(p_dsm,12,csum);
-	return csum_fold(csum_partial(&idsn_high, 4, csum));
-
 }
 
 

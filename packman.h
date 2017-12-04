@@ -126,7 +126,7 @@ void create_dan_MPdss(unsigned char *mpbuf, uint16_t *mplen);
 //	len provides the present length of options already contained
 //	We currently disregard data  checksum
 //++++++++++++++++++++++++++++++++++++++++++++++++
-void create_complete_MPdss(unsigned char *mpbuf);
+void create_complete_MPdss(unsigned char *mpbuf, uint32_t idsn_high, unsigned char *payload, uint16_t len_payload);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //create TPprio option: 
@@ -381,7 +381,7 @@ extern uint16_t copy_options_to_buffer(unsigned char *buf, size_t nb_opt, struct
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern uint16_t pad_options_buffer(unsigned char *buf, uint16_t len);
 
-
+uint16_t mpdsm_checksum(unsigned char *p_dsm, uint32_t idsn_high, unsigned char *payload,uint16_t len_payload);
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //PACKMAN: New IPv4 header checksum calculation
 //++++++++++++++++++++++++++++++++++++++++++++++++

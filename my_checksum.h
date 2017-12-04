@@ -78,3 +78,13 @@ static inline __sum16 csum_fold(__wsum csum)
 	sum = (sum & 0xffff) + (sum >> 16);
 	return (__force __sum16)~sum;
 }
+
+uint16_t mpdsm_checksum(unsigned char *p_dsm, uint32_t idsn_high_h, unsigned char *payload,uint16_t len_payload){
+
+	uint32_t idsn_high_n = htonl(idsn_high_h);
+	__wsum csum = 0;
+	csum = csum_partial(payload,len_payload,csum);
+	csum = csum_partial(p_dsm,12,csum);
+	return csum_fold(csum_partial(&idsn_high_n, 4, csum));
+
+}
