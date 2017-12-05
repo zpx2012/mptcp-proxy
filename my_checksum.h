@@ -1,4 +1,4 @@
-
+#include <linux/types.h>
 #define __force
 typedef __u16 __bitwise __sum16;
 typedef __u32 __bitwise __wsum;
@@ -79,9 +79,9 @@ static inline __sum16 csum_fold(__wsum csum)
 	return (__force __sum16)~sum;
 }
 
-uint16_t mpdsm_checksum(unsigned char *p_dsm, uint32_t idsn_high_h, unsigned char *payload,uint16_t len_payload){
+unsigned short int mpdsm_checksum(unsigned char *p_dsm, unsigned int idsn_high_h, unsigned char *payload,unsigned short int len_payload){
 
-	uint32_t idsn_high_n = htonl(idsn_high_h);
+	unsigned int idsn_high_n = htonl(idsn_high_h);
 	__wsum csum = 0;
 	csum = csum_partial(payload,len_payload,csum);
 	csum = csum_partial(p_dsm,12,csum);

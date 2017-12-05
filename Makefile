@@ -4,9 +4,13 @@ LDLIBS=-lnetfilter_queue -lnfnetlink
 
 all: mpproxy mptcp_proxy
 
+test: test.o packman.o mptcpproxy_util.o 
+
 mpproxy: mpproxy.o
 
 mptcp_proxy: mptcp_proxy.o mangleman.o conman.o sessman.o sflman.o packman.o mptcpproxy_util.o map_table.o tp_heap.o hmac_sha1.o sha1.o
+
+test.o:test.c packman.h mptcpproxy_util.h my_checksum.h
 
 mptcp_proxy.o: mptcp_proxy.c mptcpproxy_util.h mptcp_proxy.h sflman.h sessman.h packman.h conman.h mangleman.h
 

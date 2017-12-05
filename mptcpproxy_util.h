@@ -77,7 +77,7 @@
 #define PRINT_TABLE 0
 #define MAX_PRINT_LINES 36000
 #define MAX_MSG_LINES 500
-#define MAX_MSG_LENGTH 150
+#define MAX_MSG_LENGTH 850
 #define FILE_NAME_1 "/tmp/packet_data_1.txt"
 #define FILE_NAME_3 "/tmp/packet_data_3.txt"
 #define FILE_NAME_10 "/tmp/table_data_1.txt"

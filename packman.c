@@ -355,6 +355,7 @@ void create_complete_MPdss(unsigned char *mpbuf, uint32_t idsn_high, unsigned ch
 		*((uint32_t*) (mpbuf+4+it)) = htonl(dssopt_out.dsn);
 		*((uint32_t*) (mpbuf+8+it)) = htonl(dssopt_out.ssn);
 		*((uint16_t*) (mpbuf+12+it)) = htons(dssopt_out.range);
+		*((uint16_t*) (mpbuf+14+it)) = 0;
 		*((uint16_t*) (mpbuf+14+it)) = mpdsm_checksum(mpbuf+4+it,idsn_high,payload,len_payload);
 	}
 }
