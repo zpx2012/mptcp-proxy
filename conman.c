@@ -361,6 +361,31 @@ int do_fifo_cmd() {
 	}
 }
 
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//CONMAN: do_add(struct session *sess)
+//++++++++++++++++++++++++++++++++++++++++++++++++
+int add_sfl_mine(struct session *sess) {
+
+	struct fourtuple ft;
+	if(!determine_fourtuple_mine(sess, &ft)){ 
+		sprintf(msg_buf,"add_sfl_fifo: new subflow cannot be created - FIFO CMD ABORTED");
+		add_msg(msg_buf);
+		return 0;
+	}
+
+	if(UPDATE_DEFAULT_ROUTE) update_default_route(ft.ip_loc);
+
+	unsigned char backup = 1;
+	if(ALLOW_PEER_MULTIPATH) backup = 0;
+	if(initiate_cand_subflow(sess, &ft, backup) == 0){
+		sprintf(msg_buf,"add_sfl_fifo: initiate_cand_subflow() creates error - FIFO CMD ABORTED");
+		add_msg(msg_buf);
+		return 0;
+	}
+	sprintf(msg_buf,"add_sfl_fifo: new subflow initiated");
+	add_msg(msg_buf);
+	return 1;
+}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //CONMAN: do_add(struct session *sess)
@@ -815,6 +840,32 @@ void delete_remove_addr_event(struct tp_event *evt) {
 	free( rmadd );
 	free( evt );
 }
+
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//determine fourtuple: We assume that act_subflow != NULL
+//++++++++++++++++++++++++++++++++++++++++++++++++
+int determine_fourtuple_mine(struct session *sess, struct fourtuple *ft) {
+	ft->ip_loc = sess->act_subflow->ft.ip_loc;
+	ft->ip_rem = sess->act_subflow->ft.ip_rem;
+	ft->prt_rem = sess->act_subflow->ft.prt_rem;
+
+
+	struct subflow *sflx;
+	do{ 
+		ft->prt_loc = toss_port_number();
+		HASH_FIND(hh, sfl_hash, ft, sizeof(struct fourtuple), sflx);
+		
+	}while(ft->prt_loc == sess->act_subflow->ft.prt_loc || sflx);
+	
+	char buf_ft[100];
+	sprintFourtuple(buf_ft, ft);
+	sprintf(msg_buf, "determine_fourtuple: 4tuple for new sfl is %s", buf_ft);
+	add_msg(msg_buf);
+
+	return 1;
+}
+
+
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++

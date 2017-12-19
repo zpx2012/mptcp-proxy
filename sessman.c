@@ -771,6 +771,30 @@ int session_pre_est() {
 		set_verdict(1,0,0);
 		return 0;
 	}
+/*
+	//find other local ip
+	uint32_t other_ip_loc; 	
+	struct session* sess = packd.sess;
+	other_ip_loc = find_other_ipaddr(&if_tab1, sess->act_subflow->ft.ip_loc);
+	//find local addrid. If not there, create it
+	unsigned i = 0;
+	unsigned char addr_id_loc;
+	while(i < sess->pA_addrid_loc.number && ((struct addrid*) get_pnt_pA(&sess->pA_addrid_loc, i))->addr != other_ip_loc) i++;
+
+	if( i == sess->pA_addrid_loc.number || ((struct addrid*) get_pnt_pA(&sess->pA_addrid_loc, i))->addr != other_ip_loc) {
+
+		struct addrid *addrid_loc = malloc(sizeof(struct addrid));
+		addrid_loc->addr = other_ip_loc;
+		sess->largest_addr_id_loc++;
+		addrid_loc->id = sess->largest_addr_id_loc;
+		add_pnt_pA(&sess->pA_addrid_loc, addrid_loc);
+		addr_id_loc = addrid_loc->id;
+	} else {
+		addr_id_loc = ((struct addrid*) get_pnt_pA(&sess->pA_addrid_loc, i))->id;
+	}
+
+	create_MPadd_addr(packd.mptcp_opt_buf, &packd.mptcp_opt_len, addr_id_loc, htonl(other_ip_loc));
+*/
 
 	packd.sess->highest_dsn_loc += 1;
 	packd.sess->last_dan_loc = packd.sess->highest_dsn_loc;
@@ -915,6 +939,10 @@ int session_established(){
 			}
 		}
 	}
+
+//	cmcmd.cmd = 'A';
+//	add_sfl_fifo(packd.sess);
+//	initiate_cand_subflow(packd.sess,&packd.ft,0);
 
 	return 0;
 }
@@ -1260,9 +1288,9 @@ struct session* create_session(
 	init_pA(&sess->pA_addrid_loc);//initalize pntArray of subflows
 	struct addrid *addrid_loc = malloc(sizeof(struct addrid));
 	addrid_loc->addr = ft1->ip_loc;
-	addrid_loc->id = 0;
+	addrid_loc->id = 1;
 	add_pnt_pA(&sess->pA_addrid_loc, addrid_loc);
-	sess->largest_addr_id_loc = 0;
+	sess->largest_addr_id_loc = 1;
 
 	init_pA(&sess->pA_addrid_rem);//initalize pntArray of subflows
 	struct addrid *addrid_rem = malloc(sizeof(struct addrid));

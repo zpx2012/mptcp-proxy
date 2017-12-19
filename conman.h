@@ -25,6 +25,7 @@
 //CONMAN: init fifos
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern void init_fifos();
+extern uint16_t toss_port_number();
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //CONMAN: parse_fifo_command

@@ -305,6 +305,22 @@ int create_MPjoin_ack(unsigned char *top, uint16_t *len, uint32_t *mac) {
 	return 1;
 }
 
+int create_MPadd_addr(unsigned char *top, uint16_t *len, unsigned char addr_id_loc, uint32_t ip_loc_n) {
+
+	uint16_t new_len = 8;
+	
+	if((*len) + new_len > 40) return 0;
+
+	unsigned char *p_start = top + (*len);
+	
+	*(p_start) = 30;
+	*(p_start+1) = new_len;
+	*(p_start+2) = 0x34u;
+	*(p_start+3) = addr_id_loc;
+	*((uint32_t*) (p_start+4)) = ip_loc_n;
+	(*len) += new_len;
+	return 1;
+}
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++

@@ -38,5 +38,11 @@ install: mpproxy mptcp_proxy
 	cp mpproxy /usr/bin
 	cp mptcp_proxy /usr/bin
 
+start:
+	mpproxy stop
+	make clean
+	make install
+	mpproxy start
+
 clean:
 	rm -f *.o mpproxy mptcp_proxy

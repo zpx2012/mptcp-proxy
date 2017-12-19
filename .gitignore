@@ -2,3 +2,11 @@
 .*
 mpproxy
 mptcp_proxy
+Backups/
+CachedData/
+Cookies
+Cookies-journal
+Preferences
+machineid
+mptcp-proxy.si4project/
+storage.json

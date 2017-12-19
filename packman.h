@@ -112,6 +112,8 @@ int create_MPjoin_synack(unsigned char *top, uint16_t *len, uint32_t *mac, uint3
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int create_MPjoin_ack(unsigned char *top, uint16_t *len, uint32_t *mac);
 
+int create_MPadd_addr(unsigned char *top, uint16_t *len, unsigned char addr_id_loc, uint32_t ip_loc_n);
+
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //create DSS option with DAN only: uses dssopt_out as input

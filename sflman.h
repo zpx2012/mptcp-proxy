@@ -25,12 +25,14 @@ int subflow_completed(struct subflow *sfl);
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned char backup);
 
+extern int initiate_cand_subflow_sameip(struct session *sess, struct fourtuple *ft_src, unsigned char backup);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //SUFLOW: initiate_cand_subflow()
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned char backup);
 
+int send_add_addr(struct session *sess, struct fourtuple *ft, unsigned char addr_id_loc, uint32_t ip_loc_n);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //SFLMAN: int create_new_subflow_input()

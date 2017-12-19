@@ -39,7 +39,7 @@
 //Operations
 #define UPDATE_DEFAULT_ROUTE 0 //derives new /24 default route in case of mpproxy -B and mpproxy -A
 #define USE_PORT_FOR_NEW_SUBFLOWS 0 //after break, use a different port number to establish a new subflow. THis is for testing purpose.
-#define ALLOW_PEER_MULTIPATH 0//if 0, backup flag on new subflows is set to 1
+#define ALLOW_PEER_MULTIPATH 1//if 0, backup flag on new subflows is set to 1
 #define DO_SACK 1 // 
 #define MAX_SACK_PACKET_ENTRIES 4//all higher ones are erased
 #define MAX_SACK_BUF_ENTRIES 20//all higher ones are erased

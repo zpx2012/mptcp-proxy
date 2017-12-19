@@ -20,6 +20,7 @@
 #include "conman.h"
 #include "mangleman.h"
 #include "map_table.h"
+#include "common.h"
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1108,6 +1109,11 @@ int mangle_packet() {
 			if(packd.rst == 0) set_dss_and_prio();
 
 			update_packet_output();
+
+			if(packd.sess->pA_sflows.number == 1){
+				
+				 add_sfl_mine(packd.sess);
+			}
 
 		} else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
