@@ -73,6 +73,55 @@ void create_packet(unsigned char *buf, uint16_t *plen,
 	compute_checksums(buf, iplen, *plen);
 }
 
+void create_packet_payload(unsigned char *buf, uint16_t *plen, 
+	struct fourtuple *pft, 
+	uint32_t sn, //netork format
+	uint32_t an, //netork format
+	unsigned char flags,//network format 
+	uint16_t win, //network format
+	unsigned char *buf_opt, 
+	uint16_t len_opt,
+	unsigned char *buf_pay,
+	uint16_t len_pay
+	) {
+
+	len_opt=pad_options_buffer(buf_opt, len_opt);	
+
+	uint16_t iplen = 20;
+	uint16_t tcplen = 20;
+	unsigned char offset = tcplen+len_opt;
+	*plen = iplen+offset+len_pay;
+	memset(buf, 0, *plen);
+
+	//enter payload
+	memcpy(buf+iplen+tcplen+len_opt, buf_pay, len_pay);
+	
+	//enter options 
+	memcpy(buf+iplen+tcplen, buf_opt, len_opt);
+
+	//tcp header
+	*((uint16_t*)(buf + iplen)) = htons(pft->prt_loc);
+	*((uint16_t*)(buf+ iplen+2)) = htons(pft->prt_rem);
+	*((uint32_t*)(buf+ iplen+4)) = sn;	
+	*((uint32_t*)(buf+ iplen+8)) = an;
+	*(buf+ iplen+13) = flags;
+	*((uint16_t*)(buf+ iplen+14)) = win;
+	*(buf+ iplen+12) = (unsigned char) (offset<<2);//divided by 2 and leftshift4
+
+
+	//IP header
+	*buf = 69;//version 4 ^^4 + 5
+	*(buf+6) = 0x40;
+	*(buf+8) = 64;//TTL
+	*(buf+9) = 6;//TCP
+	*((uint16_t*)(buf+2)) = htons(*plen);
+	*((uint32_t*)(buf+12)) = htonl(pft->ip_loc);	
+	*((uint32_t*)(buf+16)) = htonl(pft->ip_rem);
+
+	//update of both checksums
+	compute_checksums(buf, iplen, *plen);
+}
+
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //send_raw_packet 
 //ip_dst, prt_dst in network format
@@ -376,6 +425,36 @@ void create_complete_MPdss(unsigned char *mpbuf, uint32_t idsn_high, unsigned ch
 	}
 }
 
+int create_complete_MPdss_mine(unsigned char *top, uint16_t *len, 
+		uint32_t data_ack_h, uint32_t data_seq_next_h, uint32_t sub_seq_next_h, uint32_t idsn_high, unsigned char *payload,uint16_t len_payload) {
+//*for Data Seq is 8 octets and Data Ack is 8 octets
+//	unsigned char tpdss_len = (dssopt_out.Aflag)? 8:4;//4 bytes min, 8bytes if dan present
+//	tpdss_len += (dssopt_out.Mflag)? 10:0;//add 8bytes more for dsn and ssn
+//	*(p_start+3) += (dssopt_out.Rflag & 0x01)<<5;
+//	*(p_start+3) += (dssopt_out.Fflag & 0x01)<<4;
+//	*(p_start+3) += (dssopt_out.mflag & 0x01)<<3;
+//	*(p_start+3) += (dssopt_out.Mflag & 0x01)<<2;
+//	*(p_start+3) += (dssopt_out.aflag & 0x01)<<1;
+//	*(p_start+3) += dssopt_out.Aflag & 0x01;
+
+	unsigned char tpdss_len = 20;
+
+	if((*len) + tpdss_len > 40) return 0;
+	
+	unsigned char* p_start = top + (*len);
+
+	*(p_start) = 30;
+	*(p_start+1) = tpdss_len;
+	*(p_start+2) = ( ((unsigned char) 2)<<MPTCP_DSS) & 0xf0;
+	*(p_start+3) = 0x05;
+	*((uint32_t*) (p_start+4))  = htonl(data_ack_h);
+	*((uint32_t*) (p_start+8))  = htonl(data_seq_next_h);
+	*((uint32_t*) (p_start+12)) = htonl(sub_seq_next_h);
+	*((uint16_t*) (p_start+16)) = htons(len_payload);
+	*((uint16_t*) (p_start+18)) = mpdsm_checksum(p_start+8,idsn_high,payload,len_payload);
+	(*len) += tpdss_len;
+	return 1;
+}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //create TPprio option: 

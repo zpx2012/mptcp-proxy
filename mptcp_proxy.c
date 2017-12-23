@@ -989,7 +989,8 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
 		mangle_packet(id);
 
 		if(packd.data_update_flag == 1){
-			if(packd.size_update_flag == 1 ) fix_checksums(packd.new_buf, packd.ip4len, packd.totlen);
+			if(packd.size_update_flag == 1 ) //fix_checksums(packd.new_buf, packd.ip4len, packd.totlen);
+				compute_checksums(packd.new_buf, packd.ip4len, packd.totlen);
 			else fix_checksums(packd.buf, packd.ip4len, packd.totlen);
 		}
 

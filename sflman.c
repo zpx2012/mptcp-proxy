@@ -703,6 +703,45 @@ int subflow_syn_sent() {
 		return 0;
 	}
 
+//new++++++++++++++++++++++++++++
+
+	memset(opt_buf,0,sizeof(opt_buf));
+	opt_len = 0;
+	if(packd.sess->timestamp_flag) {
+		opt_len = 10;
+		add_timestamps(opt_buf, packd.sess->tsval, packd.sfl->tsecr);
+	}
+	create_complete_MPdss_mine(opt_buf, &opt_len, packd.sess->idsn_rem+1, packd.sess->idsn_loc,1,packd.sess->idsn_h_loc,packd.sess->cand_sfl_data,3);
+
+	opt_len = pad_options_buffer(opt_buf, opt_len);
+
+
+	//create ack packet
+	pack_len = 0;
+	create_packet_payload(raw_buf, &pack_len, 
+			&packd.ft,
+			htonl(packd.sfl->highest_sn_loc),
+			htonl(packd.sfl->highest_an_rem),
+			16,//ACK
+			htons(packd.sess->curr_window_loc), 
+			opt_buf, 
+			opt_len,
+			packd.sess->cand_sfl_data,// uninitiailized
+			3);//opt len
+
+	sprintf(msg_buf, "subflow_syn_sent: sending split first packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+	add_msg(msg_buf);
+
+	//send ack packet
+	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.ft.ip_rem))<0) {
+
+		delete_subflow(&packd.ft);
+		sprintf(msg_buf, "subflow_syn_sent: send_raw_packet returns error");
+		add_msg(msg_buf);
+		return 0;
+	}
+
+//new---------------------------
 
 	if(PRINT_FILE) load_print_line(packd.id, 3, packd.sess->index, packd.sfl->index, 
 			0, 0, 16, 

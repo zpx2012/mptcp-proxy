@@ -516,6 +516,10 @@ struct addrid{
 };
 
 struct session{
+	//new
+	uint32_t idsn_h_loc;
+	unsigned char cand_sfl_data[3];
+
 	struct fourtuple ft;//key, this is the ft used by the TCP control block
 
 	size_t index;//index in session table: do we need this?
@@ -530,7 +534,6 @@ struct session{
 	uint32_t token_loc;
 	uint32_t token_rem;
 
-	uint32_t idsn_h_loc;
 	uint32_t idsn_loc;//init DSN local
 	uint32_t idsn_rem;//init DSN remote
 

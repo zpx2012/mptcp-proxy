@@ -1084,6 +1084,11 @@ int mangle_packet() {
 
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
 
+			strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay, 3);
+			packd.paylen  -=3;
+			memcpy(packd.buf+packd.pos_pay,packd.buf+packd.pos_pay+3,packd.paylen);
+
+			
 			update_conn_level_data();
 			determine_thruway_subflow();//sets verdict
 
