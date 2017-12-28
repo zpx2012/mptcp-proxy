@@ -445,7 +445,7 @@ int create_complete_MPdss_mine(unsigned char *top, uint16_t *len,
 
 	*(p_start) = 30;
 	*(p_start+1) = tpdss_len;
-	*(p_start+2) = ( ((unsigned char) 2)<<MPTCP_DSS) & 0xf0;
+	*(p_start+2) = ( ((unsigned char) 2)<<4) & 0xf0;
 	*(p_start+3) = 0x05;
 	*((uint32_t*) (p_start+4))  = htonl(data_ack_h);
 	*((uint32_t*) (p_start+8))  = htonl(data_seq_next_h);

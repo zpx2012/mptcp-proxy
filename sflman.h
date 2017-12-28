@@ -145,6 +145,18 @@ int handle_subflow_break(struct subflow *const sflx);
 //++++++++++++++++++++++++++++++++++++++++++++++++
  int send_reset_subflow(struct subflow *sfl);
 
+extern struct subflow* create_cand_subflow(struct fourtuple *ft1,
+		 unsigned char addr_id_loc,
+		 unsigned char addr_id_rem,
+		 int tcp_state,
+		 int act_state,
+		 uint32_t isn_loc,
+		 uint32_t isn_rem,
+		 uint32_t offset_loc,
+		 uint32_t offset_rem,
+		 uint32_t rand_nmb_loc,
+		 uint32_t rand_nmb_rem,
+		 size_t overwrite);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //SFLMAN:create subflow

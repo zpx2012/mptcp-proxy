@@ -165,6 +165,8 @@ void init_msg_data() {
 //Adds msg to msg array
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void add_msg(char *msg){
+
+	printf("%s\n",msg);
 	prt_msg_array.prt_msgs[prt_msg_array.curr_msg_index]->index = prt_msg_array.nmb_msg;
 	gettimeofday(&prt_msg_array.prt_msgs[prt_msg_array.curr_msg_index]->now, NULL);
 	 
@@ -348,11 +350,11 @@ void add_print_data() {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void terminate_print_data() {
 
-	sprintf(msg_buf, "terminate_print_data: number of lines=%u", prt_data.nmb_lines);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "terminate_print_data: number of lines=%u", prt_data.nmb_lines);
 	add_msg(msg_buf);
 	prt_data.file1 = fopen(FILE_NAME_1, "w");
 	prt_data.file3 = fopen(FILE_NAME_3, "w");
-	sprintf(msg_buf, "terminate_print_data: file1 pnt=%lu", (long unsigned int) prt_data.file1);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "terminate_print_data: file1 pnt=%lu", (long unsigned int) prt_data.file1);
 	add_msg(msg_buf);
 
 	fprintf(prt_data.file1,"id \thook \ttime \tsess \tsfl");
@@ -422,7 +424,7 @@ void terminate_print_data() {
 
 	if(PRINT_TABLE) {
 
-		sprintf(msg_buf, "terminate_print_data: number of tables =%u", prt_data.nmb_tables);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "terminate_print_data: number of tables =%u", prt_data.nmb_tables);
 		add_msg(msg_buf);		
 		prt_data.file10 = fopen(FILE_NAME_10, "w");
 		prt_data.file30 = fopen(FILE_NAME_30, "w");

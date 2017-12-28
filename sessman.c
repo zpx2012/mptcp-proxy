@@ -37,7 +37,7 @@ struct session_parms *sess_parms_hash = NULL;
 int create_new_session_input(uint32_t *key_rem) {
 	char buf_key[32];
 	sprint_buffer((unsigned char*) key_rem, buf_key, 8, 1);
-	sprintf(msg_buf,"contemplate new sess_input: key_rem=%s,input tcp_seq=%lu, tcp_an=%lu",
+	snprintf(msg_buf,MAX_MSG_LENGTH,"contemplate new sess_input: key_rem=%s,input tcp_seq=%lu, tcp_an=%lu",
 		buf_key,
 		(long unsigned) ntohl(packd.tcph->th_seq),
 		(long unsigned) ntohl(packd.tcph->th_ack));
@@ -75,7 +75,7 @@ int create_new_session_input(uint32_t *key_rem) {
 		 1);
 
 	if(sflx == NULL) {
-		sprintf(msg_buf, "create_new_session_input: returns NULL when creating subflow");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "create_new_session_input: returns NULL when creating subflow");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -98,7 +98,7 @@ int create_new_session_input(uint32_t *key_rem) {
 
 
 	if(sess == NULL) {
-		sprintf(msg_buf, "create_new_session_input: returns NULL when creating session");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "create_new_session_input: returns NULL when creating session");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -162,7 +162,7 @@ int create_new_session_input(uint32_t *key_rem) {
 			set_verdict(1,0,0);
 
 			execute_sess_teardown(sess);
-			sprintf(msg_buf, "contemplate_new_session_output: output_data_mptcp fails");
+			snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: output_data_mptcp fails");
 			add_msg(msg_buf);
 			return 0;
 		}
@@ -171,10 +171,10 @@ int create_new_session_input(uint32_t *key_rem) {
 	else set_verdict(1,1,0);
 
 
-	sprintf(msg_buf, "contemplate_new_session: new session created - sess_state = PRE_SYN_REC_1");
+	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session: new session created - sess_state = PRE_SYN_REC_1");
 	add_msg(msg_buf);
 
-	sprintf(msg_buf, "contemplate new sess_input: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
+	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate new sess_input: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
 		(long unsigned) packd.sfl->isn_loc, (long unsigned) packd.sfl->isn_rem, 
 		(long unsigned) packd.sess->idsn_loc, (long unsigned) packd.sess->idsn_rem,
 		(long unsigned) ntohl(packd.tcph->th_seq),
@@ -202,7 +202,7 @@ int contemplate_new_session() {
 	//INPUT: Already checked SYN, !ACK.
 	if(packd.hook == 1 && packd.nb_mptcp_options > 0) return contemplate_new_session_input();
 
-	sprintf(msg_buf, "contemplate_new_session: nb_mptcp_options=%zu, hook=%zu, fwd_type=%zu, no action taken", packd.nb_mptcp_options, packd.hook, packd.fwd_type);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session: nb_mptcp_options=%zu, hook=%zu, fwd_type=%zu, no action taken", packd.nb_mptcp_options, packd.hook, packd.fwd_type);
 	add_msg(msg_buf);
 	set_verdict(1,0,0);	
 	return 0;
@@ -221,7 +221,7 @@ int contemplate_new_session_output() {
 	packd.ft.prt_loc = ntohs(packd.tcph->th_sport);
 	packd.ft.prt_rem = ntohs(packd.tcph->th_dport);
 
-	sprintf(msg_buf, "contemplate_new_session_output: input tcp_seq=%lu, tcp_an=%lu",
+	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: input tcp_seq=%lu, tcp_an=%lu",
 			(long unsigned) ntohl(packd.tcph->th_seq),
 			(long unsigned) ntohl(packd.tcph->th_ack));
 	add_msg(msg_buf);
@@ -249,7 +249,7 @@ int contemplate_new_session_output() {
 
 	if(!create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, key_loc, NULL) ) {
 
-		sprintf(msg_buf, "contemplate_new_session_output: total option len too long, len=%u", packd.mptcp_opt_len);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: total option len too long, len=%u", packd.mptcp_opt_len);
 		add_msg(msg_buf);	
 		return 0;
 	}
@@ -275,7 +275,7 @@ int contemplate_new_session_output() {
 		 0,//random number rem
 		 1);
 	if(sflx == NULL) {
-		sprintf(msg_buf, "contemplate_new_session_output returns NULL when creating subflow");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output returns NULL when creating subflow");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -297,7 +297,7 @@ int contemplate_new_session_output() {
 		sflx,
 		1);
 	if(sess == NULL) {
-		sprintf(msg_buf, "contemplate_new_session_output returns NULL when creating session");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output returns NULL when creating session");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -305,7 +305,7 @@ int contemplate_new_session_output() {
 	struct session_parms *sess_parm;
 	sess_parm = create_session_parm(sess->token_loc, &packd.ft, 1);
 	if(sess_parm == NULL) {
-		sprintf(msg_buf, "contemplate_new_session_output returns NULL when creating session_parm");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output returns NULL when creating session_parm");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -362,7 +362,7 @@ int contemplate_new_session_output() {
 	if(!output_data_mptcp()) {
 		set_verdict(1,0,0);
 		execute_sess_teardown(sess);
-		sprintf(msg_buf, "contemplate_new_session_output: output_data_mptcp fails");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: output_data_mptcp fails");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -370,7 +370,7 @@ int contemplate_new_session_output() {
 	//buffer packet in case retransmission occurs
 	cache_packet_header();
 
-	sprintf(msg_buf, "contemplate_new_session_output: new session created, sess_id=%zu, sess_state=SYN_SENT", packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: new session created, sess_id=%zu, sess_state=SYN_SENT", packd.sess->index);
 	add_msg(msg_buf);
 	set_verdict(1,1,1);
 
@@ -378,7 +378,7 @@ int contemplate_new_session_output() {
 	//there is room for opimization: the first subflow does not have to be in IP tables
 	//	after SYN/ACK handshake
 
-	sprintf(msg_buf, "contemplate_new_sess_output: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, sfl_seq=%lu, sfl_an=%lu",
+	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_sess_output: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, sfl_seq=%lu, sfl_an=%lu",
 		(long unsigned) packd.sfl->isn_loc, (long unsigned) packd.sfl->isn_rem,
 		(long unsigned) packd.sess->idsn_loc, (long unsigned) packd.sess->idsn_rem,
 		(long unsigned) ntohl(packd.tcph->th_seq),
@@ -431,7 +431,7 @@ int contemplate_new_session_input(){
 
 		char str_tok[16];
 		sprint_buffer((unsigned char*) &token, str_tok, 4, 1);
-		sprintf(msg_buf, "contemplate_new_session_input: session parameter=%s not found", str_tok);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_input: session parameter=%s not found", str_tok);
 		add_msg(msg_buf);
 
 		set_verdict(1,0,0);
@@ -440,14 +440,14 @@ int contemplate_new_session_input(){
 
 	HASH_FIND(hh, sess_hash, &sess_parms->ft, sizeof(struct fourtuple), sess);
 	if(sess == NULL) {
-		sprintf(msg_buf, "contemplate_new_session_input: session not found");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_input: session not found");
 		add_msg(msg_buf);
 
 		set_verdict(1,0,0);
 		return 0;
 	}
 
-	sprintf(msg_buf, "contemplate_new_session_input: MPjoin received for sess_id=%zu", sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_input: MPjoin received for sess_id=%zu", sess->index);
 	add_msg(msg_buf);
 
 	packd.sess = sess;
@@ -475,7 +475,7 @@ int session_syn_sent() {
 	if(packd.hook < 3 && packd.fwd_type == M_TO_T && packd.syn && packd.ack) {
 		//drop session if remote host does not speak MPTCP
 		if(packd.nb_mptcp_options == 0) {
-			sprintf(msg_buf,"session_syn_sent: no MPTCP options attached. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+			snprintf(msg_buf,MAX_MSG_LENGTH,"session_syn_sent: no MPTCP options attached. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
 			add_msg(msg_buf);
 			delete_subflow(&packd.ft);
 			delete_session_parm(packd.sess->token_loc);
@@ -488,7 +488,7 @@ int session_syn_sent() {
 		uint32_t key_rem[2];
 		uint32_t key_loc[2];
 		if(!analyze_MPcap(mptopt, packd.nb_mptcp_options, key_loc, key_rem)) {
-			sprintf(msg_buf, "session_syn_sent: analyze_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: analyze_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
 			add_msg(msg_buf);
 			delete_subflow(&packd.ft);
 			delete_session_parm(packd.sess->token_loc);
@@ -574,7 +574,7 @@ int session_syn_sent() {
 			if(!output_data_mptcp()) {
 				set_verdict(1,0,0);
 				execute_sess_teardown(packd.sess);
-				sprintf(msg_buf, "session_syn_sent: output_data_mptcp fails for sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+				snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: output_data_mptcp fails for sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 				add_msg(msg_buf);
 
 				return 0;
@@ -585,7 +585,7 @@ int session_syn_sent() {
 
 
 
-		sprintf(msg_buf, "syn_sent: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
+		snprintf(msg_buf,MAX_MSG_LENGTH, "syn_sent: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
 			(long unsigned) packd.sfl->isn_loc, (long unsigned) packd.sfl->isn_rem, 
 			(long unsigned) packd.sess->idsn_loc, (long unsigned) packd.sess->idsn_rem,
 			(long unsigned) ntohl(packd.tcph->th_seq),
@@ -688,12 +688,12 @@ int session_pre_syn_rec_1() {
 	struct session_parms *sess_parm;
 	sess_parm = create_session_parm(packd.sess->token_loc, &packd.ft, 1);
 	if(sess_parm == NULL){
-		sprintf(msg_buf,"session_pre_syn_rec_1 returns NULL when creating session_parm, sess_id=%zu", packd.sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH,"session_pre_syn_rec_1 returns NULL when creating session_parm, sess_id=%zu", packd.sess->index);
 		add_msg(msg_buf);
 	}
 
 	if(!create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, NULL)) {
-		sprintf(msg_buf, "session_pre_syn_rec_1: cannot create MPcap since option too long, len=%d, sess_id=%zu", packd.mptcp_opt_len, packd.sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_rec_1: cannot create MPcap since option too long, len=%d, sess_id=%zu", packd.mptcp_opt_len, packd.sess->index);
 		add_msg(msg_buf);	
 		execute_sess_teardown(packd.sess);
 		set_verdict(1,0,0);
@@ -720,7 +720,7 @@ int session_pre_syn_rec_1() {
 
 	if(!output_data_mptcp()) {
 		set_verdict(1,0,0);
-		sprintf(msg_buf, "session_pre_syn_rec_1: output_data_mptcp fails, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_rec_1: output_data_mptcp fails, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -729,12 +729,12 @@ int session_pre_syn_rec_1() {
 	cache_packet_header();
 	
 	packd.sess->sess_state = SYN_REC;
-	sprintf(msg_buf, "session_pre_syn_rec_1: PRE_SYN_REC_1 -> SYN_REC for sess_id=%zu", packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_rec_1: PRE_SYN_REC_1 -> SYN_REC for sess_id=%zu", packd.sess->index);
 	add_msg(msg_buf);	
 	set_verdict(1,1,1);
 
 
-	sprintf(msg_buf, "pre_syn_rec: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, sfl_seq=%lu, sfl_an=%lu",
+	snprintf(msg_buf,MAX_MSG_LENGTH, "pre_syn_rec: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, sfl_seq=%lu, sfl_an=%lu",
 		(long unsigned) packd.sfl->isn_loc, (long unsigned) packd.sfl->isn_rem, 
 		(long unsigned) packd.sess->idsn_loc, (long unsigned) packd.sess->idsn_rem,
 		(long unsigned) ntohl(packd.tcph->th_seq),
@@ -763,7 +763,7 @@ int session_pre_est() {
 	//if too long, kill the whole MPTCP idea and fallback to ordinary TCP mode
 	if( !create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, packd.sess->key_rem) ){
 
-		sprintf(msg_buf, "session_pre_est: analyze_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: analyze_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
 		add_msg(msg_buf);
 		delete_subflow(&packd.ft);
 		delete_session_parm(packd.sess->token_loc);
@@ -815,7 +815,7 @@ int session_pre_est() {
 
 	if(!output_data_mptcp()){
 		set_verdict(1,0,0);
-		sprintf(msg_buf, "session_pre_est: output_data_mptcp fails, sess_id=%zu", packd.sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: output_data_mptcp fails, sess_id=%zu", packd.sess->index);
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -823,12 +823,12 @@ int session_pre_est() {
 	//buffer packet in case retransmission occurs
 	cache_packet_header();
 
-	sprintf(msg_buf, "session_pre_est: PRE_EST->ESTABLISHED - sess->sack=%d, sfl->sack=%d, sess_id=%zu, sfl_id=%zu",
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: PRE_EST->ESTABLISHED - sess->sack=%d, sfl->sack=%d, sess_id=%zu, sfl_id=%zu",
 		packd.sess->sack_flag, packd.sfl->sack_flag, packd.sess->index, packd.sfl->index);
 	add_msg(msg_buf);
 	set_verdict(1,1,1);
 
-	sprintf(msg_buf, "session_pre_est: isn_loc=%u, isn_rem=%u, idsn_loc=%u, idsn_rem=%u, sfl_seq=%u, sfl_an=%u",
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: isn_loc=%u, isn_rem=%u, idsn_loc=%u, idsn_rem=%u, sfl_seq=%u, sfl_an=%u",
 		packd.sfl->isn_loc, packd.sfl->isn_rem, 
 		packd.sess->idsn_loc, packd.sess->idsn_rem,
 		ntohl(packd.tcph->th_seq),
@@ -850,7 +850,7 @@ int session_syn_rec(){
 		uint32_t key_rem[2];
 		uint32_t key_loc[2];
 		if( !analyze_MPcap(mptopt, packd.nb_mptcp_options, key_loc, key_rem) ){
-			sprintf(msg_buf, "session_syn_rec: analyze_MPcap fails. Killing sfl_id=%zu and sess_id=%zu!", packd.sfl->index, packd.sess->index);
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_rec: analyze_MPcap fails. Killing sfl_id=%zu and sess_id=%zu!", packd.sfl->index, packd.sess->index);
 			add_msg(msg_buf);
 			execute_sess_teardown(packd.sess);
 			set_verdict(1,0,0);
@@ -858,7 +858,7 @@ int session_syn_rec(){
 		}
 
 		if(memcmp(key_loc, packd.sess->key_loc, 8) != 0 || memcmp(key_rem, packd.sess->key_rem, 8) != 0) {
-			sprintf(msg_buf, "session_syn_rec: key mismatch! - tearing down sess_id=%zu", packd.sess->index);
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_rec: key mismatch! - tearing down sess_id=%zu", packd.sess->index);
 			add_msg(msg_buf);
 
 			execute_sess_teardown(packd.sess);
@@ -874,7 +874,7 @@ int session_syn_rec(){
 
 		packd.tcph->th_seq = htonl( packd.sfl->highest_sn_rem + packd.sess->offset_rem + packd.sfl->offset_rem );
 		packd.tcph->th_ack = htonl( packd.sfl->highest_an_loc + packd.sess->offset_loc + packd.sfl->offset_loc );
-		sprintf(msg_buf, "syn_rec: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
+		snprintf(msg_buf,MAX_MSG_LENGTH, "syn_rec: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
 			(long unsigned) packd.sfl->isn_loc, (long unsigned) packd.sfl->isn_rem, 
 			(long unsigned) packd.sess->idsn_loc, (long unsigned) packd.sess->idsn_rem,
 			(long unsigned) ntohl(packd.tcph->th_seq),
@@ -882,7 +882,7 @@ int session_syn_rec(){
 		add_msg(msg_buf);
 		packd.sfl->tcp_state = ESTABLISHED;
 		packd.sess->sess_state = ESTABLISHED;
-		sprintf(msg_buf, "syn_rec: SYN_REC->ESTABLISHED, sess->sack=%d, sfl->sack=%d, sess_id=%zu, sfl_id=%zu", 
+		snprintf(msg_buf,MAX_MSG_LENGTH, "syn_rec: SYN_REC->ESTABLISHED, sess->sack=%d, sfl->sack=%d, sess_id=%zu, sfl_id=%zu", 
 			packd.sess->sack_flag, packd.sfl->sack_flag, packd.sess->index, packd.sfl->index);
 		add_msg(msg_buf);
 		set_verdict(1,1,0);
@@ -921,7 +921,7 @@ int session_established(){
 		if(dssopt_out.Fflag) {
 			packd.sess->fin_dsn_loc = packd.sess->highest_dsn_loc - 1;	
 			packd.sess->sess_state = FIN_WAIT_1;
-			sprintf(msg_buf, "session_established: ESTABLISHED->FIN_WAIT_1, sess_id=%zu", packd.sess->index );
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_established: ESTABLISHED->FIN_WAIT_1, sess_id=%zu", packd.sess->index );
 			add_msg(msg_buf);
 			return 1;
 		}
@@ -933,7 +933,7 @@ int session_established(){
 			if(dssopt_in.Fflag) {
 				packd.sess->fin_dsn_rem = packd.sess->highest_dsn_rem - 1;
 				packd.sess->sess_state = PRE_CLOSE_WAIT;
-				sprintf(msg_buf, "session_established: ESTABLISHED->PRE_CLOSE_WAIT, sess_id=%zu", packd.sess->index );
+				snprintf(msg_buf,MAX_MSG_LENGTH, "session_established: ESTABLISHED->PRE_CLOSE_WAIT, sess_id=%zu", packd.sess->index );
 				add_msg(msg_buf);
 				return 1;
 			}
@@ -962,18 +962,18 @@ int session_fin_wait_1() {
 				if(dssopt_in.Fflag) {
 					packd.sess->fin_dsn_rem = packd.sess->highest_dsn_rem - 1;
 					packd.sess->sess_state = PRE_TIME_WAIT;
-					sprintf(msg_buf, "session_fin_wait_1: FIN_WAIT_1->PRE_TIME_WAIT, sess_id=%zu", packd.sess->index );
+					snprintf(msg_buf,MAX_MSG_LENGTH, "session_fin_wait_1: FIN_WAIT_1->PRE_TIME_WAIT, sess_id=%zu", packd.sess->index );
 					add_msg(msg_buf);
 				} else {
 					packd.sess->sess_state = FIN_WAIT_2;
-					sprintf(msg_buf, "session_fin_wait_1: FIN_WAIT_1->FIN_WAIT_2, sess_id=%zu", packd.sess->index );
+					snprintf(msg_buf,MAX_MSG_LENGTH, "session_fin_wait_1: FIN_WAIT_1->FIN_WAIT_2, sess_id=%zu", packd.sess->index );
 					add_msg(msg_buf);
 				}
 			} else {
 				if(dssopt_in.Fflag) {
 					packd.sess->fin_dsn_rem = packd.sess->highest_dsn_rem - 1;
 					packd.sess->sess_state = PRE_CLOSING;
-					sprintf(msg_buf, "session_fin_wait_1: FIN_WAIT_1->PRE_CLOSING, sess_id=%zu", packd.sess->index );
+					snprintf(msg_buf,MAX_MSG_LENGTH, "session_fin_wait_1: FIN_WAIT_1->PRE_CLOSING, sess_id=%zu", packd.sess->index );
 					add_msg(msg_buf);
 				}
 			}
@@ -997,7 +997,7 @@ int session_fin_wait_2() {
 			if(dssopt_in.Fflag) {
 				packd.sess->fin_dsn_rem = packd.sess->highest_dsn_rem - 1;
 				packd.sess->sess_state = PRE_TIME_WAIT;
-				sprintf(msg_buf, "session_fin_wait_2: FIN_WAIT_2->PRE_TIME_WAIT, sess_id=%zu", packd.sess->index );
+				snprintf(msg_buf,MAX_MSG_LENGTH, "session_fin_wait_2: FIN_WAIT_2->PRE_TIME_WAIT, sess_id=%zu", packd.sess->index );
 				add_msg(msg_buf);
 				return 1;
 			}
@@ -1018,11 +1018,11 @@ int session_pre_close_wait() {
 			if(packd.fin==1) {
 				packd.sess->fin_dsn_loc = packd.sess->highest_dsn_loc - 1;
 				packd.sess->sess_state = LAST_ACK;
-				sprintf(msg_buf, "session_pre_close_wait: PRE_CLOSE_WAIT->LAST_ACK, sess_id=%zu", packd.sess->index );
+				snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_close_wait: PRE_CLOSE_WAIT->LAST_ACK, sess_id=%zu", packd.sess->index );
 				add_msg(msg_buf);
 			} else {
 				packd.sess->sess_state = CLOSE_WAIT;
-				sprintf(msg_buf, "session_pre_close_wait: PRE_CLOSE_WAIT->CLOSE_WAIT, sess_id=%zu", packd.sess->index );
+				snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_close_wait: PRE_CLOSE_WAIT->CLOSE_WAIT, sess_id=%zu", packd.sess->index );
 				add_msg(msg_buf);
 			}
 	
@@ -1031,7 +1031,7 @@ int session_pre_close_wait() {
 			if(packd.fin==1) {
 				packd.sess->fin_dsn_rem = packd.sess->highest_dsn_rem - 1;
 				packd.sess->sess_state = PRE_CLOSING;				
-				sprintf(msg_buf, "session_pre_close_wait: PRE_CLOSE_WAIT->PRE_CLOSING, sess_id=%zu", packd.sess->index );
+				snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_close_wait: PRE_CLOSE_WAIT->PRE_CLOSING, sess_id=%zu", packd.sess->index );
 				add_msg(msg_buf);	
 
 				return 1;			
@@ -1057,7 +1057,7 @@ int session_pre_time_wait(){
 	create_sess_close_event(&packd.sess->ft);
 	start_sess_teardown_timer(packd.sess);
 	packd.sess->sess_state = TIME_WAIT;
-	sprintf(msg_buf, "session_pre_time_wait: sess id=%zu entering sess_state TIME_WAIT", packd.sess->index );
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_time_wait: sess id=%zu entering sess_state TIME_WAIT", packd.sess->index );
 	add_msg(msg_buf);	
 	return 1;
 }
@@ -1072,7 +1072,7 @@ int session_pre_closing(){
 		int data_ack = (packd.ack && sn_smaller(packd.sess->fin_dsn_rem, packd.dan_curr_rem));
 		if(data_ack) {
 			packd.sess->sess_state = CLOSING;
-			sprintf(msg_buf, "session_pre_closing: sess id=%zu entering PRE_CLOSING->CLOSING", packd.sess->index );
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_closing: sess id=%zu entering PRE_CLOSING->CLOSING", packd.sess->index );
 			add_msg(msg_buf);	
 			return 1;
 		}
@@ -1081,7 +1081,7 @@ int session_pre_closing(){
 		if(data_ack) {
 			terminate_all_subflows(packd.sess);
 			packd.sess->sess_state = PRE_TIME_WAIT;
-			sprintf(msg_buf, "session_closing: sess id=%zu entering sess_state PRE_TIME_WAIT", packd.sess->index );
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_closing: sess id=%zu entering sess_state PRE_TIME_WAIT", packd.sess->index );
 			add_msg(msg_buf);
 			return 1;
 		}
@@ -1109,7 +1109,7 @@ int session_closing() {
 	create_sess_close_event(&packd.sess->ft);
 	start_sess_teardown_timer(packd.sess);
 	packd.sess->sess_state = TIME_WAIT;
-	sprintf(msg_buf, "session_closing: sess id=%zu entering sess_state TIME_WAIT", packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_closing: sess id=%zu entering sess_state TIME_WAIT", packd.sess->index);
 	add_msg(msg_buf);
 	return 1;
 }
@@ -1124,7 +1124,7 @@ int session_close_wait() {
 
 	packd.sess->sess_state = LAST_ACK;
 
-	sprintf(msg_buf, "session_close_wait: CLOSE_WAIT->LAST_ACK, sess_id=%zu", packd.sess->index );
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_close_wait: CLOSE_WAIT->LAST_ACK, sess_id=%zu", packd.sess->index );
 	add_msg(msg_buf);
 	return 1;
 }
@@ -1148,7 +1148,7 @@ int session_last_ack() {
 		return 0;
 
 	terminate_all_subflows(packd.sess);
-	sprintf(msg_buf, "session_last_ack: LAST_ACK->TIME_WAIT, sess_id=%zu", packd.sess->index );
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_last_ack: LAST_ACK->TIME_WAIT, sess_id=%zu", packd.sess->index );
 	add_msg(msg_buf);
 	packd.sess->sess_state = TIME_WAIT;
 	create_sess_close_event(&packd.sess->ft);
@@ -1171,7 +1171,7 @@ int session_time_wait() {
 //terminate all subflows
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void terminate_all_subflows(struct session *sess) {
-	sprintf(msg_buf, "terminate_all_subflows: terminating for sess_id=%zu", sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "terminate_all_subflows: terminating for sess_id=%zu", sess->index);
 	add_msg(msg_buf);
 	struct subflow *sfl;
 	for(unsigned i=0; i< sess->pA_sflows.number; i++) {
@@ -1453,10 +1453,10 @@ struct subflow* find_subflow_in_session(struct session *sess,
 	}
 
 	if(sflx==NULL){
-		sprintf(msg_buf,"find_cand_subflow: sfl_id=%d is no candidate or not in sess_id=%zu", cmcmd.sfl, sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH,"find_cand_subflow: sfl_id=%d is no candidate or not in sess_id=%zu", cmcmd.sfl, sess->index);
 		add_msg(msg_buf);
 		if(sfly==NULL){
-			sprintf(msg_buf, "find_subflow_in_session: no sfl found in sess_id=%zu", sess->index);
+			snprintf(msg_buf,MAX_MSG_LENGTH, "find_subflow_in_session: no sfl found in sess_id=%zu", sess->index);
 			add_msg(msg_buf);
 			return NULL;
 		}
@@ -1468,7 +1468,7 @@ struct subflow* find_subflow_in_session(struct session *sess,
 	if( find_interface(&if_tab1, iface, sflx->ft.ip_loc) ){
 		return sflx;
 	} else {
-		sprintf(msg_buf, "find_subflow_in_session: found sfl_id=%zu in sess_id =%zu - but interface \"%s\" not active!", sflx->index, sess->index, iface);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "find_subflow_in_session: found sfl_id=%zu in sess_id =%zu - but interface \"%s\" not active!", sflx->index, sess->index, iface);
 		add_msg(msg_buf);
 		return NULL;
 	}
@@ -1498,7 +1498,7 @@ int switch_active_sfl(struct session *sess, struct subflow *new_sfl){
 	//we already know that new_sfl != NULL and belongs to sess
 
 	if(sess->conman_state != '0'){
-		sprintf(msg_buf, "switch_active_sfl: cannot switch since sess id=%zu is not in \"0\" mode", sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "switch_active_sfl: cannot switch since sess id=%zu is not in \"0\" mode", sess->index);
 		add_msg(msg_buf);		
 		return 0;
 	}
@@ -1518,12 +1518,12 @@ int switch_active_sfl(struct session *sess, struct subflow *new_sfl){
 		sess->conman_state = 'S';
 		sess->ack_inf_flag = 0;
 
-		sprintf(msg_buf, "switch_active_sfl: sess id=%zu switched from subflow %zu to subflow %zu", 
+		snprintf(msg_buf,MAX_MSG_LENGTH, "switch_active_sfl: sess id=%zu switched from subflow %zu to subflow %zu", 
 				sess->index, sess->last_subflow->index, sess->act_subflow->index);
 		add_msg(msg_buf);
 	}
 	else {
-		sprintf(msg_buf, "switch_active_sfl: sess id=%zu, subflow %zu is already active",
+		snprintf(msg_buf,MAX_MSG_LENGTH, "switch_active_sfl: sess id=%zu, subflow %zu is already active",
 			 sess->index, sess->act_subflow->index);
 		add_msg(msg_buf);
 	}
@@ -1552,7 +1552,7 @@ void break_active_sfl(struct session *sess, struct subflow *new_sfl) {
 
 	sess->act_subflow->offset_loc = sess->highest_dsn_loc - sess->act_subflow->highest_sn_loc;
 
-	sprintf(msg_buf, "break_active_sfl: sess id=%lu switched from subflow %zu to subflow %zu", 
+	snprintf(msg_buf,MAX_MSG_LENGTH, "break_active_sfl: sess id=%lu switched from subflow %zu to subflow %zu", 
 			sess->index,
 			sess->last_subflow->index, sess->act_subflow->index);
 	add_msg(msg_buf);
@@ -1718,7 +1718,7 @@ int check_sess_teardown_timer(struct session *sess) {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void execute_sess_teardown(struct session *sess) {
 	if(sess == NULL) return;
-	sprintf(msg_buf, "execute_sess_teardown: sess_id=%zu is terminated", sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "execute_sess_teardown: sess_id=%zu is terminated", sess->index);
 	add_msg(msg_buf);
 	delete_session_parm(sess->token_loc);
 	delete_session(&sess->ft, 1);

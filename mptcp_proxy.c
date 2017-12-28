@@ -165,7 +165,7 @@ void handle_interface_changes() {
 			if(new_ip != 0){
 
 				sprintIPaddr(buf_ip_new, new_ip);
-				sprintf(msg_buf, "handle_interface_changes: new interface=%s found with ipaddr=%s", if_tab2.ifname[i], buf_ip_new);
+				snprintf(msg_buf,MAX_MSG_LENGTH, "handle_interface_changes: new interface=%s found with ipaddr=%s", if_tab2.ifname[i], buf_ip_new);
 				add_msg(msg_buf);
 
 				update_iftable(&if_tab1, if_tab2.ifname[i], new_ip, &old_ip, 0, 0);
@@ -188,7 +188,7 @@ void handle_interface_changes() {
 
 					sprintIPaddr(buf_ip_new, new_ip);
 					sprintIPaddr(buf_ip_old, old_ip);
-					sprintf(msg_buf, "handle_interface_changes: interface=%s is up again with IP %s", if_tab2.ifname[i], buf_ip_new);
+					snprintf(msg_buf,MAX_MSG_LENGTH, "handle_interface_changes: interface=%s is up again with IP %s", if_tab2.ifname[i], buf_ip_new);
 					add_msg(msg_buf);
 
 					if(new_ip != 0) {
@@ -204,7 +204,7 @@ void handle_interface_changes() {
 
 						sprintIPaddr(buf_ip_new, new_ip);
 						sprintIPaddr(buf_ip_old, old_ip);
-						sprintf(msg_buf, "handle_interface_changes: interface=%s changed IP from %s to %s", if_tab2.ifname[i], buf_ip_old, buf_ip_new);
+						snprintf(msg_buf,MAX_MSG_LENGTH, "handle_interface_changes: interface=%s changed IP from %s to %s", if_tab2.ifname[i], buf_ip_old, buf_ip_new);
 						add_msg(msg_buf);
 
 
@@ -236,7 +236,7 @@ void handle_interface_changes() {
 			old_ip = find_ipaddr(&if_tab1, if_tab1.ifname[i]);
 			if(old_ip != 0) {
 				sprintIPaddr(buf_ip_old, old_ip);
-				sprintf(msg_buf, "handle_interface_changes: interface=%s with ipaddr=%s is down", if_tab1.ifname[i], buf_ip_old);
+				snprintf(msg_buf,MAX_MSG_LENGTH, "handle_interface_changes: interface=%s with ipaddr=%s is down", if_tab1.ifname[i], buf_ip_old);
 				add_msg(msg_buf);
 
 				update_iftable(&if_tab1, if_tab1.ifname[i], 0, &old_ip, 0, 0);
@@ -273,7 +273,7 @@ void check_for_session_break(struct if_table *iftab, size_t index, const uint32_
 		if(curr_sess == NULL || curr_sess->ft.ip_loc != old_ipaddr)
 			continue;
 
-		sprintf(msg_buf,"check_for_session_break: ip address=%s found in sess_id=%zu", buf_ip, curr_sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH,"check_for_session_break: ip address=%s found in sess_id=%zu", buf_ip, curr_sess->index);
 		add_msg(msg_buf);
 
 		//check if ipaddr is already in alias list. If not or if IF is down add old IP address to alias
@@ -293,7 +293,7 @@ void check_for_session_break(struct if_table *iftab, size_t index, const uint32_
 			}
 
 		} else {
-			sprintf(msg_buf,"check_for_session_break: ip address=%s found in sess_id=%zu, alias exists for IF=%s, id=%zu", 
+			snprintf(msg_buf,MAX_MSG_LENGTH,"check_for_session_break: ip address=%s found in sess_id=%zu, alias exists for IF=%s, id=%zu", 
 				buf_ip, curr_sess->index, if_tab1.ifname[tab_index], alias_index);
 			add_msg(msg_buf);
 
@@ -313,7 +313,7 @@ void reinstate_old_alias(struct if_table *iftab1, size_t index, struct if_table 
 		char buf_ip[16];
 
 		uint32_t* p_ip = (uint32_t*) get_pnt_pA(&iftab1->pAalias[index], i);
-		sprintf(msg_buf,"reinstate_old_alias: reinstating ifname=%s:%u", 
+		snprintf(msg_buf,MAX_MSG_LENGTH,"reinstate_old_alias: reinstating ifname=%s:%u", 
 					iftab1->ifname[index], i);
 
 		int found = 0;
@@ -323,7 +323,7 @@ void reinstate_old_alias(struct if_table *iftab1, size_t index, struct if_table 
 		if(!found) {
 
 			sprintIPaddr(buf_ip, *p_ip);
-			sprintf(msg_buf,"reinstate_old_alias: reinstating ifname=%s:%u, ipaddr=%s", 
+			snprintf(msg_buf,MAX_MSG_LENGTH,"reinstate_old_alias: reinstating ifname=%s:%u, ipaddr=%s", 
 					iftab1->ifname[index], i, buf_ip);
 			add_msg(msg_buf);			
 			create_alias(iftab1->ifname[index], i, *p_ip);
@@ -378,7 +378,7 @@ void fix_alias_arrays(struct if_table *iftab, size_t target_index) {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void copy_alias_arrays(struct if_table *iftab, size_t source_index, size_t target_index) {
 
-	sprintf(msg_buf, "copy_alias_arrays: copying alias arrays");
+	snprintf(msg_buf,MAX_MSG_LENGTH, "copy_alias_arrays: copying alias arrays");
 	add_msg(msg_buf);
 
 	size_t i;
@@ -423,7 +423,7 @@ void create_alias(char* ifname, size_t index, uint32_t ipaddr) {
 	sprintIPaddr(nmb_str, ipaddr);
 	strcat(cmd, nmb_str);
 	
-	sprintf(msg_buf, "create_alias: cmd=%s", cmd);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "create_alias: cmd=%s", cmd);
 	add_msg(msg_buf);
 	system(cmd);
 }
@@ -450,7 +450,7 @@ void delete_alias_entry(struct if_table *iftab, size_t tab_index, size_t alias_i
 	sprintIPaddr(nmb_str, *p_ip);
 	strcat(cmd, nmb_str);
 	
-	sprintf(msg_buf, "delete_alias_entry: cmd=%s", cmd);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "delete_alias_entry: cmd=%s", cmd);
 	add_msg(msg_buf);
 	system(cmd);
 }
@@ -460,7 +460,7 @@ void delete_alias_entry(struct if_table *iftab, size_t tab_index, size_t alias_i
 //	cleans alias arrays
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void clean_aliases(struct if_table *iftab) {
-	sprintf(msg_buf, "clean_alias: cleaning aliases");
+	snprintf(msg_buf,MAX_MSG_LENGTH, "clean_alias: cleaning aliases");
 	add_msg(msg_buf);
 
 	size_t i,j;
@@ -509,7 +509,7 @@ int update_iftable(struct if_table *iftab, char * const ifname, const uint32_t n
 	if(strncmp(ifname, "dummy", 5) == 0) return 0;
 
 	if(strlen(ifname) > MAX_LENGTH_IFACE_NAME){
-		sprintf(msg_buf, "update_iftable: ifname = \"%s\" is too long!", ifname);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "update_iftable: ifname = \"%s\" is too long!", ifname);
 		add_msg(msg_buf);
 		auxil_toggle('Q');
 	}
@@ -522,7 +522,7 @@ int update_iftable(struct if_table *iftab, char * const ifname, const uint32_t n
 			strcpy(cmd, "ifconfig ");
 			strcat(cmd, ifname);
 			strcat(cmd," down");
-			sprintf(msg_buf, "update_iftable: cmd=%s", cmd);
+			snprintf(msg_buf,MAX_MSG_LENGTH, "update_iftable: cmd=%s", cmd);
 			add_msg(msg_buf);
 
 			strcat(cmd,"\n");
@@ -571,7 +571,7 @@ int update_iftable(struct if_table *iftab, char * const ifname, const uint32_t n
 
 		found = iftab->nb_if;
 		if(found == MAX_INTERFACES && iftab == iftab1) {
-			sprintf(msg_buf, "update_iftable: table is full!");
+			snprintf(msg_buf,MAX_MSG_LENGTH, "update_iftable: table is full!");
 			add_msg(msg_buf);
 			return 0;
 		}
@@ -614,14 +614,14 @@ uint32_t find_other_ipaddr(struct if_table *iftab, uint32_t ipaddr) {
 	}	
 	//if not found, append	
 	if(found==-1) {
-		sprintf(msg_buf, "find_other_ipaddr: no other ipaddr found");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "find_other_ipaddr: no other ipaddr found");
 		add_msg(msg_buf);
 		return 0;
 	} else {
 		char buf_ip[34];
 		sprintIPaddr(buf_ip, iftab->ipaddr[found]);
 
-		sprintf(msg_buf, "find_other_ipaddr: finds ipaddr=%s", buf_ip);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "find_other_ipaddr: finds ipaddr=%s", buf_ip);
 		add_msg(msg_buf);
 
 
@@ -674,7 +674,7 @@ void print_iptable(struct if_table *iftab) {
 	for(unsigned i=0;i<iftab->nb_if;i++) {
 		char buf_ip[16];
 		sprintIPaddr(buf_ip, iftab->ipaddr[i]);
-		sprintf(msg_buf, "print_iptable: finding ifname=%s, ipaddr=%s", iftab->ifname[i], buf_ip);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "print_iptable: finding ifname=%s, ipaddr=%s", iftab->ifname[i], buf_ip);
 		add_msg(msg_buf);
 
 		for(unsigned j=0; j<iftab->pAalias[i].number; j++) {
@@ -682,7 +682,7 @@ void print_iptable(struct if_table *iftab) {
 			uint32_t* p_ip = (uint32_t*) get_pnt_pA(&iftab->pAalias[i], j);
 
 			sprintIPaddr(buf_ip, *p_ip);
-			sprintf(msg_buf, "print_iptable: alias %s:%u, ipaddr=%s", iftab->ifname[i], j, buf_ip);
+			snprintf(msg_buf,MAX_MSG_LENGTH, "print_iptable: alias %s:%u, ipaddr=%s", iftab->ifname[i], j, buf_ip);
 			add_msg(msg_buf);
 		}
 	}
@@ -784,6 +784,7 @@ int update_interfaces(struct if_table *iftab, char **ifname, uint32_t *old_addr,
 void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 	(void) len;
 
+	memset(&packd,0,sizeof(struct packet_data));
 	//hook
 	packd.id = id;
 	packd.hook = hook;
@@ -1004,7 +1005,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
 	else res = nfq_set_verdict(qh, id, packd.verdict, 0, NULL);
 
 	if(res == -1) {
-		sprintf(msg_buf, "nfq_set_verdict: id=%u creates erros", id);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "nfq_set_verdict: id=%u creates erros", id);
 		add_msg(msg_buf);
 	}
 	return res;
@@ -1022,7 +1023,7 @@ void run_loop() {
 	 fds_test = fds_input;
 	 terminate_loop = 0;
 
-	 sprintf(msg_buf,"run_loop: loading host table");
+	 snprintf(msg_buf,MAX_MSG_LENGTH,"run_loop: loading host table");
 	 add_msg(msg_buf);
 	 load_host_info(&if_tab1, 1, 0);//clears aliases
 	 int i;
@@ -1192,7 +1193,7 @@ int main() {
 	 system("iptables -F");
 
 	//destroying all alias interfaces
-	 sprintf(msg_buf,"deleting all alias interfaces\n");
+	 snprintf(msg_buf,MAX_MSG_LENGTH,"deleting all alias interfaces\n");
 	 add_msg(msg_buf);
 	 load_host_info(&if_tab1, 1, 0);
 	 clean_aliases(&if_tab1);
