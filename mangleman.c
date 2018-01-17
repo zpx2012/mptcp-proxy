@@ -292,7 +292,7 @@ void determine_thruway_subflow(){
 
 	//*****DETERMINE SUBFLOW******
 
-	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc;
+	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc + 3;
 	packd.retransmit_flag = 0;
 	packd.verdict = (packd.paylen || (packd.sess->sess_state > ESTABLISHED && packd.sess->sess_state < TIME_WAIT))? 1:0;
 	if(packd.fin) packd.sess->fin_dsn_loc = packd.dsn_curr_loc + packd.paylen;
@@ -383,7 +383,7 @@ void determine_thruway_subflow(){
 
 	if(update_highest) {
 
-		packd.ssn_curr_loc = packd.sfl->highest_sn_loc + gap;
+		packd.ssn_curr_loc = packd.sfl->highest_sn_loc + gap - 3;
 
 		uint32_t dsn = packd.sess->highest_dsn_loc;
 		if(packd.retransmit_flag) dsn = packd.dsn_curr_loc;
@@ -499,6 +499,10 @@ void update_thruway_subflow() {
 	//create a thruway in case there is no FIN and no payload; if not possible drop packet
 	
 	if(packd.sess->pA_sflows_data.number == 0) {
+//############new
+		if(!packd.sess->act_subflow)
+			return;
+//------------new
 		packd.sfl = packd.sess->act_subflow;
 		packd.sfl->ack_state = 0;
 
@@ -1088,6 +1092,11 @@ int mangle_packet() {
 				strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay, 3);
 				packd.paylen  -=3;
 				memcpy(packd.buf+packd.pos_pay,packd.buf+packd.pos_pay+3,packd.paylen);
+//				packd.sess->offset_loc -=3;
+			}
+			if(packd.sess->pA_sflows.number == 1){
+				
+				 add_sfl_mine(packd.sess);
 			}
 			
 			update_conn_level_data();
@@ -1113,11 +1122,6 @@ int mangle_packet() {
 
 			//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
 			if(packd.rst == 0) set_dss_and_prio();
-
-			if(packd.sess->pA_sflows.number == 1){
-				
-				 add_sfl_mine(packd.sess);
-			}
 			
 			update_packet_output();
 
