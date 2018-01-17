@@ -518,7 +518,8 @@ struct addrid{
 struct session{
 	//new
 	uint32_t idsn_h_loc;
-	unsigned char cand_sfl_data[3];
+	unsigned char cand_sfl_data[4096]; //why not in sfl? 2 sfls, 1 sess. more memory waste
+	uint16_t cand_sfl_data_len;
 
 	struct fourtuple ft;//key, this is the ft used by the TCP control block
 
@@ -576,6 +577,7 @@ struct session{
 
 	struct subflow *act_subflow;
 	struct subflow *last_subflow;
+	struct subflow *slav_subflow;
 	
 	unsigned char init_top_data[40];//tcp options of SYN packet of first subflow
 	uint16_t init_top_len;//length of options

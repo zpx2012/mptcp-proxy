@@ -222,9 +222,12 @@ int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned c
 
 	//check subflow sack support based on copied header
 	sfl1->sack_flag = find_tcp_option(opt_buf, opt_len, 4);
-	
 
-	add_subflow_to_session(sfl1, sess);
+	if(sess->slav_subflow){
+		printf("more than 1 sfl in initiate_cand_subflow");
+	}
+	add_slave_subflow_to_session(sfl1,sess);//The command to add subflow must be removed
+//	add_subflow_to_session(sfl1, sess);
 
 	uint16_t pack_len = 0;
 	memset(raw_buf, 0, sizeof(raw_buf));
@@ -511,46 +514,10 @@ int subflow_syn_sent() {
 		return 0;
 	}
 
-//new++++++++++++++++++++++++++++
-
-	memset(opt_buf,0,60);
-	opt_len = 0;
-	if(packd.sess->timestamp_flag) {
-		opt_len = 10;
-		add_timestamps(opt_buf, packd.sess->tsval, packd.sfl->tsecr);
-	}
-	create_complete_MPdss_mine(opt_buf, &opt_len, packd.sess->idsn_rem+1, packd.sess->idsn_loc+1,1,packd.sess->idsn_h_loc,packd.sess->cand_sfl_data,3);
-
-	opt_len = pad_options_buffer(opt_buf, opt_len);
-
-
-	//create ack packet
-	pack_len = 0;
-	create_packet_payload(raw_buf, &pack_len, 
-			&packd.ft,
-			htonl(packd.sfl->highest_sn_loc),
-			htonl(packd.sfl->highest_an_rem),
-			16,//ACK
-			htons(packd.sess->curr_window_loc), 
-			opt_buf, 
-			opt_len,
-			packd.sess->cand_sfl_data,// uninitiailized
-			3);//opt len
-
-	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: sending split first packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
-	add_msg(msg_buf);
-
-	//send ack packet
-	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.ft.ip_rem))<0) {
-
-		delete_subflow(&packd.ft);
-		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: send_raw_packet returns error");
-		add_msg(msg_buf);
-		return 0;
-	}
-
-//new---------------------------
-
+	//send cand_data
+	//dsn is initialized in master subflow
+	send_data_slave_subflow();
+	
 	if(PRINT_FILE) load_print_line(packd.id, 3, packd.sess->index, packd.sfl->index, 
 			0, 0, 16, 
 			1, 1, 
@@ -579,6 +546,59 @@ int subflow_syn_sent() {
 	}
 	return 1;
 }
+
+//new++++++++++++++++++++++++++++
+int send_data_slave_subflow(){
+		//create new TPTCP option header: TPdss
+	unsigned char opt_buf[60];
+	uint16_t opt_len = 0;
+	
+	memset(opt_buf,0,60);
+	opt_len = 0;
+	if(packd.sess->timestamp_flag) {
+		opt_len = 10;
+		add_timestamps(opt_buf, packd.sess->tsval, packd.sess->slav_subflow->tsecr);
+	}
+	//rex? dsn would not be highest
+	create_complete_MPdss_mine(opt_buf, &opt_len, packd.sess->highest_dsn_loc, packd.sess->highest_dan_rem,1,packd.sess->idsn_h_loc,packd.sess->cand_sfl_data,packd.sess->cand_sfl_data_len);
+	
+	opt_len = pad_options_buffer(opt_buf, opt_len);
+	
+	
+	//create ack packet
+	uint16_t pack_len = 0;
+	create_packet_payload(raw_buf, &pack_len, 
+			&packd.sess->slav_subflow->ft,
+			htonl(packd.sess->slav_subflow->highest_sn_loc),
+			htonl(packd.sess->slav_subflow->highest_an_rem),
+			16,//ACK
+			htons(packd.sess->curr_window_loc), 
+			opt_buf, 
+			opt_len,
+			packd.sess->cand_sfl_data,// uninitiailized
+			packd.sess->cand_sfl_data_len);//opt len
+
+	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: sending split first packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+	add_msg(msg_buf);
+	
+	//send ack packet
+	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.sess->slav_subflow->ft.ip_rem))<0) {
+		
+	//		delete_subflow(&packd.ft);
+		printf("subflow_syn_sent: send_raw_packet returns error\n");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: send_raw_packet returns error");
+		add_msg(msg_buf);
+		return 0;
+	}
+
+	//update dsn,ssn
+	packd.sess->highest_dsn_loc += packd.sess->cand_sfl_data_len;
+	packd.sess->slav_subflow->highest_sn_loc += packd.sess->cand_sfl_data_len;
+	return 1;
+
+}
+//new---------------------------
+
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //subflow SYN_RECEIVED

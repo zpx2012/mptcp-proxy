@@ -940,10 +940,6 @@ int session_established(){
 		}
 	}
 
-//	cmcmd.cmd = 'A';
-//	add_sfl_fifo(packd.sess);
-//	initiate_cand_subflow(packd.sess,&packd.ft,0);
-
 	return 0;
 }
 
@@ -1485,6 +1481,12 @@ inline void add_subflow_to_session(struct subflow *sfl, struct session * sess) {
 	return;
 }
 
+inline void add_slave_subflow_to_session(struct subflow *sfl, struct session * sess) {
+	sfl->sess = sess;
+	add_pnt_pA(&sess->pA_sflows, sfl);
+	sess->slav_subflow = sfl;
+	return;
+}
 
 
 

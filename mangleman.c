@@ -1030,6 +1030,37 @@ int update_session_control_plane() {
 	return ret;
 }
 
+
+void split_conn_level_data(){
+
+	if(packd.sess->slav_subflow == NULL){ //first packet			
+		add_sfl_mine(packd.sess);
+
+		strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay+3, packd.paylen-3);
+		packd.paylen = 3;
+	}
+	else {                                //following packets
+		if(packd.paylen <= 3)
+			return;
+
+		
+		strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay, 3);
+		packd.sess->cand_sfl_data_len = 3;
+		packd.paylen  -=3;
+		memcpy(packd.buf+packd.pos_pay,packd.buf+packd.pos_pay+3,packd.paylen);
+
+		//send first 3-bytes on slav_subflow
+		//update dsn, ssn
+		send_data_slave_subflow();
+	}
+
+
+}
+
+
+
+
+
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //int mangle_packet()
 // Initiates all packet processing and mangling
@@ -1088,16 +1119,7 @@ int mangle_packet() {
 
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
 
-			if(packd.paylen > 3){
-				strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay, 3);
-				packd.paylen  -=3;
-				memcpy(packd.buf+packd.pos_pay,packd.buf+packd.pos_pay+3,packd.paylen);
-//				packd.sess->offset_loc -=3;
-			}
-			if(packd.sess->pA_sflows.number == 1){
-				
-				 add_sfl_mine(packd.sess);
-			}
+			split_conn_level_data();
 			
 			update_conn_level_data();
 			determine_thruway_subflow();//sets verdict
