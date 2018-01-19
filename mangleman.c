@@ -291,20 +291,56 @@ void update_conn_level_data() {
 void determine_thruway_subflow(){
 
 	//*****DETERMINE SUBFLOW******
-
-	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc + 3;
-	packd.retransmit_flag = 0;
 	packd.verdict = (packd.paylen || (packd.sess->sess_state > ESTABLISHED && packd.sess->sess_state < TIME_WAIT))? 1:0;
-	if(packd.fin) packd.sess->fin_dsn_loc = packd.dsn_curr_loc + packd.paylen;
 	packd.data_update_flag = packd.verdict;
 
-
 	//determine subflow for thruway based on cdsn_loc (i.e. dsn_switch)
-	if(packd.verdict != 1)
-		return;
+	if(packd.verdict != 1)		return;
+
+	packd.sfl = packd.sess->act_subflow;//
+	packd.paylen_curr = packd.paylen;
 
 	//set retransmit flag;
-	if( sn_smaller( packd.dsn_curr_loc, packd.sess->highest_dsn_loc)) packd.retransmit_flag = 1;
+	uint32_t orgin_tcp_seq = ntohl(packd.tcph->th_seq);
+	packd.retransmit_flag = 0;
+	if( sn_smaller( orgin_tcp_seq, packd.sfl->highest_org_sn_loc)) packd.retransmit_flag = 1;
+
+	if(!packd.retransmit_flag){
+
+		//in order
+		packd.dsn_curr_loc = packd.sess->highest_dsn_loc;
+		packd.ssn_curr_loc = packd.sfl->highest_sn_loc;
+
+		//enter packet into session map
+		// reserve entire range from last highest to new highest, i.e. including gap	
+		enter_dsn_packet_on_top(
+			packd.sfl->map_send, 
+			packd.sfl,
+			orgin_tcp_seq,//packd.sess->highest_dsn_loc, 
+			packd.sfl->highest_sn_loc,
+			packd.paylen);
+
+		delete_below_dsn(packd.sfl->map_send,
+			packd.sfl->map_send->top->dsn +packd.sfl->map_send->top->range - 1\
+			- (packd.sess->curr_window_rem<<packd.sess->scaling_factor_rem) );
+
+		//update
+		packd.sess->highest_dsn_loc += packd.paylen_curr + packd.fin;//may not be the case for cross-sfl retransmissions	
+		packd.sfl->highest_sn_loc   += packd.paylen_curr;
+		packd.sfl->highest_org_sn_loc = orgin_tcp_seq;
+	}else {
+		//retrx here
+
+		
+	}
+	
+	if(packd.fin) packd.sess->fin_dsn_loc = packd.dsn_curr_loc + packd.paylen;
+
+
+/*
+	//if( sn_smaller( packd.dsn_curr_loc, packd.sess->highest_dsn_loc)) packd.retransmit_flag = 1;
+
+	//	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc + 3;
 
 	//determine gap between new packet and highest_dsn_loc
 	uint32_t gap = 0;
@@ -411,6 +447,7 @@ void determine_thruway_subflow(){
 
 
 	packd.sfl->offset_loc = packd.dsn_curr_loc - packd.ssn_curr_loc;
+*/
 }			
 			
 

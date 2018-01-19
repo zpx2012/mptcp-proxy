@@ -445,6 +445,10 @@ struct map_table{
 struct session;
 
 struct subflow{
+	//new+++++++++++++++
+	uint16_t highest_org_sn_loc;//used for retrx
+	//new---------------
+
 	struct fourtuple ft;//key
 	size_t index;//index in subflow table: do we need this?
 
