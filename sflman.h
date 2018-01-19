@@ -40,6 +40,7 @@ int send_add_addr(struct session *sess, struct fourtuple *ft, unsigned char addr
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, unsigned char backup, uint32_t rand_nmb);
 
+int send_data_slave_subflow();
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //subflow SYN_SENT

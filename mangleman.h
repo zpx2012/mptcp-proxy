@@ -109,6 +109,7 @@ int update_subflow_control_plane();
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int update_session_control_plane();
 
+void split_conn_level_data();
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++

@@ -1080,7 +1080,6 @@ void split_conn_level_data(){
 		if(packd.paylen <= 3)
 			return;
 
-		
 		strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay, 3);
 		packd.sess->cand_sfl_data_len = 3;
 		packd.paylen  -=3;
