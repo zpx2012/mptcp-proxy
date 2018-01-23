@@ -1074,6 +1074,7 @@ void split_conn_level_data(){
 		add_sfl_mine(packd.sess);
 
 		strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay+3, packd.paylen-3);
+		packd.sess->cand_sfl_data_len = packd.paylen -3;
 		packd.paylen = 3;
 	}
 	else {                                //following packets

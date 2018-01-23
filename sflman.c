@@ -578,8 +578,8 @@ int send_data_slave_subflow(){
 			packd.sess->cand_sfl_data,// uninitiailized
 			packd.sess->cand_sfl_data_len);//opt len
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: sending split first packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
-	add_msg(msg_buf);
+//	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: sending split first packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+//	add_msg(msg_buf);
 	
 	//send ack packet
 	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.sess->slav_subflow->ft.ip_rem))<0) {
