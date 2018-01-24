@@ -364,28 +364,7 @@ int do_fifo_cmd() {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //CONMAN: do_add(struct session *sess)
 //++++++++++++++++++++++++++++++++++++++++++++++++
-int add_sfl_mine(struct session *sess) {
 
-	struct fourtuple ft;
-	if(!determine_fourtuple_mine(sess, &ft)){ 
-		snprintf(msg_buf,MAX_MSG_LENGTH,"add_sfl_fifo: new subflow cannot be created - FIFO CMD ABORTED");
-		add_msg(msg_buf);
-		return 0;
-	}
-
-	if(UPDATE_DEFAULT_ROUTE) update_default_route(ft.ip_loc);
-
-	unsigned char backup = 1;
-	if(ALLOW_PEER_MULTIPATH) backup = 0;
-	if(initiate_cand_subflow(sess, &ft, backup) == 0){
-		snprintf(msg_buf,MAX_MSG_LENGTH,"add_sfl_fifo: initiate_cand_subflow() creates error - FIFO CMD ABORTED");
-		add_msg(msg_buf);
-		return 0;
-	}
-	snprintf(msg_buf,MAX_MSG_LENGTH,"add_sfl_fifo: new subflow initiated");
-	add_msg(msg_buf);
-	return 1;
-}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //CONMAN: do_add(struct session *sess)
