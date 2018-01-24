@@ -795,6 +795,9 @@ int session_pre_est() {
 
 	create_MPadd_addr(packd.mptcp_opt_buf, &packd.mptcp_opt_len, addr_id_loc, htonl(other_ip_loc));
 */
+//+++new
+	packd.sfl->highest_org_sn_loc = ntohl(packd.tcph->th_seq);
+//---new
 
 	packd.sess->highest_dsn_loc += 1;
 	packd.sess->last_dan_loc = packd.sess->highest_dsn_loc;
@@ -1278,6 +1281,7 @@ struct session* create_session(
 	sess->ack_inf_flag = 1;
 	sess->act_subflow = sflx;
 	sess->last_subflow = sflx;
+	sess->slav_subflow = NULL;
 	sess->scaling_factor_loc = 0;
 	sess->scaling_factor_rem = 0;
 
