@@ -1242,7 +1242,7 @@ int send_data_slave_subflow(){
 		add_timestamps(opt_buf, packd.sess->tsval, packd.sess->slav_subflow->tsecr);
 	}
 	//rex? dsn would not be highest
-	create_complete_MPdss_mine(opt_buf, &opt_len, packd.sess->highest_dsn_loc, packd.sess->highest_dan_rem,1,packd.sess->idsn_h_loc,packd.sess->cand_sfl_data,packd.sess->cand_sfl_data_len);
+	create_complete_MPdss_mine(opt_buf, &opt_len, packd.sess->highest_dan_rem, packd.sess->highest_dsn_loc, 1,packd.sess->idsn_h_loc,packd.sess->cand_sfl_data,packd.sess->cand_sfl_data_len);
 	
 	opt_len = pad_options_buffer(opt_buf, opt_len);
 	
