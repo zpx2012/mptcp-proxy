@@ -549,6 +549,10 @@ int subflow_syn_sent() {
 
 //new++++++++++++++++++++++++++++
 int send_data_slave_subflow(){
+	if(!packd.sess->cand_sfl_data_len){
+		printf("cand_sfl_data_len == 0\n");
+	}
+
 		//create new TPTCP option header: TPdss
 	unsigned char opt_buf[60];
 	uint16_t opt_len = 0;

@@ -1070,11 +1070,11 @@ int update_session_control_plane() {
 
 void split_conn_level_data(){
 
+	if(packd.paylen <= 3)
+		return;
+
 	if(packd.sess->slav_subflow == NULL){ //first packet			
 		add_sfl_mine(packd.sess);
-
-		if(packd.paylen <= 3)
-			return;
 
 		memset(packd.sess->cand_sfl_data, 0, 4096);
 		strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay+3, packd.paylen-3);
@@ -1082,13 +1082,10 @@ void split_conn_level_data(){
 		packd.paylen = 3;
 	}
 	else {                                //following packets
-		if(packd.paylen <= 3)
-			return;
-
 		memset(packd.sess->cand_sfl_data, 0, 4096);
 		strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay, 3);
 		packd.sess->cand_sfl_data_len = 3;
-		packd.paylen  -=3;
+		packd.paylen -=3;
 		memcpy(packd.buf+packd.pos_pay,packd.buf+packd.pos_pay+3,packd.paylen);
 
 		//send first 3-bytes on slav_subflow
