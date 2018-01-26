@@ -151,7 +151,7 @@ int fd_fifo_up;
 
 //socket descriptor for raw socket and buffer fo raw socket
 extern int raw_sd;
-extern unsigned char raw_buf[400] __attribute__ ((aligned));// = malloc( 60 * sizeof(unsigned char));
+extern unsigned char raw_buf[4096] __attribute__ ((aligned));// = malloc( 60 * sizeof(unsigned char));
 
 
 
