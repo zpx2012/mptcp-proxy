@@ -37,7 +37,7 @@ char nf_buf[4096] __attribute__ ((aligned));
 
 //socket descriptor for raw socket and buffer fo raw socket
 int raw_sd;
-unsigned char raw_buf[400] __attribute__ ((aligned));// = malloc( 60 * sizeof(unsigned char));
+unsigned char raw_buf[4096] __attribute__ ((aligned));// = malloc( 60 * sizeof(unsigned char));
 
 //buffer for new packet if needed
 unsigned char new_data[4096] __attribute__ ((aligned));
