@@ -207,6 +207,7 @@ struct subflow* find_subflow_in_session(struct session *sess, int sfl_index_prov
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern void add_subflow_to_session(struct subflow *sfl, struct session * sess);
 
+extern void add_slave_subflow_to_session(struct subflow *sfl, struct session * sess);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //SESSMAN: switch_active_sfl: switches subflow based on MP_PRIO message
