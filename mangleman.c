@@ -1045,6 +1045,7 @@ void split_conn_level_data(){
 		memset(packd.sess->cand_sfl_data, 0, 4096);
 		strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay+3, packd.paylen-3);
 		packd.sess->cand_sfl_data_len = packd.paylen -3;
+		packd.totlen -= packd.sess->cand_sfl_data_len;
 		packd.paylen = 3;
 	}
 	else {                                //following packets
@@ -1052,6 +1053,7 @@ void split_conn_level_data(){
 		strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay, 3);
 		packd.sess->cand_sfl_data_len = 3;
 		packd.paylen -=3;
+		packd.totlen -=3;
 		memcpy(packd.buf+packd.pos_pay,packd.buf+packd.pos_pay+3,packd.paylen);
 
 		//send first 3-bytes on slav_subflow
