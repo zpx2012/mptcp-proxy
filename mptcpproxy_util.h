@@ -426,6 +426,7 @@ struct map_entry{
 	uint32_t dsn;
 	uint32_t ssn;
 	uint32_t range;
+	uint32_t osn;	//original TCP sequence number
 
 	struct map_entry *prior;//sfl chain
 	struct map_entry *next;//sfl chain
@@ -440,6 +441,11 @@ struct map_table{
 	struct map_entry *pnt3;//as memory pointer
 };
 
+struct map_list{
+	int size;
+	struct map_entry *head;
+	struct map_entry *tail;
+};
 
 
 struct session;

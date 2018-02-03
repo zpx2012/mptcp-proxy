@@ -793,6 +793,82 @@ void delete_below_dsn(struct map_table *map, uint32_t max_dsn) {
 	}
 }
 
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//linked list of the map_entry
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+//++++++++++++++++++++++++++++++++++++++++++
+// create a new map_entry
+//++++++++++++++++++++++++++++++++++++++++++
+struct map_entry* create_new_map_entry(struct subflow *sfl, uint32_t dsn, uint32_t ssn, uint32_t range, uint32_t osn) {
 
+	struct map_entry *entry = malloc(sizeof(struct map_entry));
+	entry->sfl = sfl;
+	entry->dsn = dsn;
+	entry->ssn = ssn;
+	entry->osn = osn;
+	entry->range = range;
+	entry->next = NULL;
+	entry->prior = NULL;
+	return entry;
+}
+//++++++++++++++++++++++++++++++++++++++++++
+//search for the right entry and return
+//++++++++++++++++++++++++++++++++++++++++++
+struct map_entry* search_list_position(struct map_list *list, const uint32_t osn){
+	struct map_entry *entry;
+	for(entry = list->head; entry != NULL; entry=entry->next){
+		if(osn > entry->osn){
+			break;
+		}
+	}
+	return entry;
+}
+//++++++++++++++++++++++++++++++++++++++++++
+// insert a new map_entry
+//++++++++++++++++++++++++++++++++++++++++++
+void insert_map_entry(struct map_list *list, struct subflow * const sfl,
+		const uint32_t dsn, const uint32_t ssn, const uint32_t range, const uint32_t osn){
+			struct map_entry *entry = create_new_map_entry(sfl,dsn,ssn,range,osn);
+			if(list->size==0 || list->head == NULL){ //insert one new node
+				list->size = 1;
+				list->head = entry;
+				list->tail = entry;
+				entry->next = entry;
+				entry->prior = entry;
+			}
+			else if(list->head->osn < osn){ //insert the node in front of the list
+				entry->next = list->head;
+				entry->prior = entry;
+				list->head->prior = entry;
+				list->head = entry;
+				list->size = list->size + 1;
+			}
+			else if(list->tail->osn >= osn){ //insert the node at end of the list
+				list->tail->next = entry;
+				entry->prior = list->tail;
+				entry->next = entry;
+				list->tail = entry;
+				list->size = list->size + 1;
+			}
+			else{//inser the node in the middle of the list
+				struct map_entry *tmp_entry = search_list_position(list,osn);
+				entry->prior = tmp_entry->prior;
+				entry->next = tmp_entry;
+				tmp_entry->prior = entry;
+				tmp_entry = entry->prior;
+				tmp_entry->next = entry;
+			}
+		}
 
+//+++++++++++++++++++++++++++++++++++++++++++
+//search for an entry
+//+++++++++++++++++++++++++++++++++++++++++++
+void delete_map_entry
+//+++++++++++++++++++++++++++++++++++++++++++
+//delete an entry
+//+++++++++++++++++++++++++++++++++++++++++++
