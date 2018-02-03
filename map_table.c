@@ -816,18 +816,7 @@ struct map_entry* create_new_map_entry(struct subflow *sfl, uint32_t dsn, uint32
 	entry->prior = NULL;
 	return entry;
 }
-//++++++++++++++++++++++++++++++++++++++++++
-//search for the right entry and return
-//++++++++++++++++++++++++++++++++++++++++++
-struct map_entry* search_list_position(struct map_list *list, const uint32_t osn){
-	struct map_entry *entry;
-	for(entry = list->head; entry != NULL; entry=entry->next){
-		if(osn > entry->osn){
-			break;
-		}
-	}
-	return entry;
-}
+
 //++++++++++++++++++++++++++++++++++++++++++
 // insert a new map_entry
 //++++++++++++++++++++++++++++++++++++++++++
@@ -856,7 +845,13 @@ void insert_map_entry(struct map_list *list, struct subflow * const sfl,
 				list->size = list->size + 1;
 			}
 			else{//inser the node in the middle of the list
-				struct map_entry *tmp_entry = search_list_position(list,osn);
+				struct map_entry *tmp_entry = list->head;
+				while(tmp_entry!=NULL){
+					if(tmp_entry->osn < osn){
+						break;
+					}
+					tmp_entry = tmp_entry->next;
+				}
 				entry->prior = tmp_entry->prior;
 				entry->next = tmp_entry;
 				tmp_entry->prior = entry;
@@ -867,8 +862,57 @@ void insert_map_entry(struct map_list *list, struct subflow * const sfl,
 
 //+++++++++++++++++++++++++++++++++++++++++++
 //search for an entry
+//if return entry!=NULL------>success
 //+++++++++++++++++++++++++++++++++++++++++++
-void delete_map_entry
+struct map_entry* search_map_entry(struct map_list *list, struct subflow * const sfl,
+		const uint32_t dsn, const uint32_t ssn, const uint32_t range, const uint32_t osn){
+			struct map_entry *entry;
+			entry = list->head;
+			int find_match = 0;
+			while(entry != NULL){
+				if(entry->osn == osn && entry->ssn == entry->ssn && entry->sfl == sfl && entry->dsn == dsn){
+					find_match = 1;
+					break;
+				}
+			}
+			if(find_match == 1 && entry != NULL){
+				return entry;
+			}
+			else{
+				entry = NULL;
+				return entry;
+			}
+		}
+
+
 //+++++++++++++++++++++++++++++++++++++++++++
 //delete an entry
 //+++++++++++++++++++++++++++++++++++++++++++
+void delete_map_entry(struct map_list *list, struct subflow * const sfl,
+		const uint32_t dsn, const uint32_t ssn, const uint32_t range, const uint32_t osn){
+			struct map_entry *entry;
+			entry = search_map_entry(list,sfl,dsn,ssn,range,osn);
+			if(entry != NULL){                                   //if the entry exists
+				if(list->size ==1){                              //if there is only one node
+					list->head = NULL;
+					list->tail = NULL;
+				}
+				else if(entry == list->head && list->size > 1){  //if it's the head node
+					list->head = list->head->next;
+					list->head->prior = list->head;
+				}
+				else if(entry == list->tail && list->size > 1){  //if it's the tail node
+					list->tail = list->tail->prior;
+					list->tail->next = list->tail;
+				}
+				else {
+					entry->next->prior = entry->prior;
+					entry->prior->next = entry->next;
+				}
+				list->size = list->size -1;
+				free(entry);
+			}
+			else{                                               //if the entry doesn't exist then alert
+				fprintf(stderr, "error during delete_map_entry()\n");
+			}
+		}

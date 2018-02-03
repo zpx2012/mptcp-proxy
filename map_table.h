@@ -240,4 +240,24 @@ void delete_below_dsn(struct map_table *map, uint32_t max_dsn);
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+//++++++++++++++++++++++++++++++++++++++++++
+// create a new map_entry
+//++++++++++++++++++++++++++++++++++++++++++
 struct map_entry* create_new_map_entry(struct subflow *sfl, uint32_t dsn, uint32_t ssn, uint32_t range, uint32_t osn);
+
+//++++++++++++++++++++++++++++++++++++++++++
+// insert a new map_entry
+//++++++++++++++++++++++++++++++++++++++++++
+void insert_map_entry(struct map_list *list, struct subflow * const sfl,const uint32_t dsn, const uint32_t ssn, const uint32_t range, const uint32_t osn);
+
+//+++++++++++++++++++++++++++++++++++++++++++
+//search for an entry
+//if return entry!=NULL------>success
+//+++++++++++++++++++++++++++++++++++++++++++
+struct map_entry* search_map_entry(struct map_list *list, struct subflow * const sfl,const uint32_t dsn, const uint32_t ssn, const uint32_t range, const uint32_t osn);
+
+//+++++++++++++++++++++++++++++++++++++++++++
+//delete an entry
+//+++++++++++++++++++++++++++++++++++++++++++
+void delete_map_entry(struct map_list *list, struct subflow * const sfl,const uint32_t dsn, const uint32_t ssn, const uint32_t range, const uint32_t osn);
