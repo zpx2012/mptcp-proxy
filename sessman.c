@@ -91,7 +91,7 @@ int create_new_session_input(uint32_t *key_rem) {
 		0,//Tokenloc
 		token_rem, //rem Token
 		0,//offset loc
-		issn_rem + OFFSET_TCP_SN - idsn_rem,//ensure that tcp_rem = issn_rem
+		0,//+++++new: ensure tcp sink seq = data seq
 		PRE_SYN_REC_1,
 		sflx,
 		1);
@@ -111,7 +111,7 @@ int create_new_session_input(uint32_t *key_rem) {
 	//packd update
 	packd.sfl = sflx;
 	packd.sess = sess;
-	packd.tcph->th_seq = htonl( packd.sfl->isn_rem + packd.sess->offset_rem + packd.sfl->offset_rem );
+	packd.tcph->th_seq = htonl( packd.sess->idsn_rem + packd.sess->offset_rem );
 
 	sess->init_window_rem = ntohs(packd.tcph->th_win);
 	sess->scaling_factor_rem = scaling_factor;
@@ -701,7 +701,7 @@ int session_pre_syn_rec_1() {
 	}
 
 	packd.sfl->isn_loc = ntohl(packd.tcph->th_seq) - OFFSET_TCP_SN;//same as tcp sn
-	packd.sfl->offset_loc = packd.sess->idsn_loc - packd.sfl->isn_loc;
+	packd.sfl->offset_loc = packd.sess->idsn_loc - packd.sfl->isn_loc;//可删
 	packd.sfl->tcp_state = SYN_REC;
 
 	packd.sess->init_top_len = init_len;//these are buffered inital options
@@ -709,10 +709,14 @@ int session_pre_syn_rec_1() {
 
 	packd.sess->sess_state = SYN_REC;		
 
-	packd.sfl->highest_sn_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc - packd.sfl->offset_loc;
+	packd.sfl->highest_sn_loc = ntohl(packd.tcph->th_seq);//+++new
 	packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;
-	packd.sfl->highest_an_rem = ntohl(packd.tcph->th_ack) - packd.sess->offset_rem - packd.sfl->offset_rem; 
+	packd.sfl->highest_an_rem = ntohl(packd.tcph->th_ack);//自动加1 
 	packd.sfl->highest_sn_rem = packd.sfl->highest_an_rem; 
+	//++++new
+	packd.sess->highest_dsn_rem += 1;
+	packd.sess->highest_dan_rem = packd.sess->highest_dsn_rem;
+	//----new
 
 	packd.tcph->th_seq = htonl(packd.sfl->highest_sn_loc);
 	packd.tcph->th_ack = htonl(packd.sfl->highest_an_rem);
@@ -796,7 +800,7 @@ int session_pre_est() {
 	create_MPadd_addr(packd.mptcp_opt_buf, &packd.mptcp_opt_len, addr_id_loc, htonl(other_ip_loc));
 */
 //+++new
-	packd.sfl->highest_org_sn_loc = ntohl(packd.tcph->th_seq);
+	packd.sfl->highest_tsn_loc = ntohl(packd.tcph->th_seq);
 //---new
 
 	packd.sess->highest_dsn_loc += 1;
@@ -875,8 +879,8 @@ int session_syn_rec(){
 		packd.sess->highest_dan_loc = packd.sess->highest_dsn_loc;
 		enter_dsn_packet(packd.sfl->map_recv, packd.sfl, packd.sess->idsn_rem, packd.sfl->isn_rem, 1);
 
-		packd.tcph->th_seq = htonl( packd.sfl->highest_sn_rem + packd.sess->offset_rem + packd.sfl->offset_rem );
-		packd.tcph->th_ack = htonl( packd.sfl->highest_an_loc + packd.sess->offset_loc + packd.sfl->offset_loc );
+		packd.tcph->th_seq = htonl( packd.sess->highest_dsn_rem + packd.sess->offset_rem);
+		packd.tcph->th_ack = htonl( packd.sess->highest_dan_loc + packd.sess->offset_loc);
 		snprintf(msg_buf,MAX_MSG_LENGTH, "syn_rec: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
 			(long unsigned) packd.sfl->isn_loc, (long unsigned) packd.sfl->isn_rem, 
 			(long unsigned) packd.sess->idsn_loc, (long unsigned) packd.sess->idsn_rem,
