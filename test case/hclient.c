@@ -5,6 +5,7 @@
 #include<string.h>    //strlen
 #include<sys/socket.h>    //socket
 #include<arpa/inet.h> //inet_addr
+
  
 int main(int argc , char *argv[])
 {
@@ -52,7 +53,7 @@ int main(int argc , char *argv[])
             puts("recv failed");
             break;
         }
-		printf(readsize);
+		printf("%d\n",readsize);
         server_reply[readsize] = 0; 
         puts("Server reply :");
         puts(server_reply);
