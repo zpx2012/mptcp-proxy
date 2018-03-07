@@ -810,7 +810,7 @@ void update_packet_input() {
 			memcpy(packd.sess->candsfl_rev_buf,packd.buf+packd.pos_pay,packd.sess->candsfl_rev_len);
 			set_verdict(0,0,0);
 			return;
-		}else{
+		}else if(packd.sess->candsfl_rev_len){
 			create_new_packet_assemble();
 			set_verdict(1,1,1);
 		}
