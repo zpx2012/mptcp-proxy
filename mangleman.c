@@ -250,7 +250,7 @@ void update_conn_level_data() {
 	packd.sfl = NULL;
 
 	//dan update
-	packd.dan_curr_rem = ntohl(packd.tcph->th_ack) - packd.sess->offset_rem;
+	packd.dan_curr_rem = ntohl(packd.sess->highest_dsn_rem);
 
 	dssopt_out.Aflag = packd.ack;
 	dssopt_out.Fflag = packd.fin;
