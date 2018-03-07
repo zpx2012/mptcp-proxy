@@ -52,6 +52,7 @@ int main(int argc , char *argv[])
             puts("recv failed");
             break;
         }
+		printf(readsize);
         server_reply[readsize] = 0; 
         puts("Server reply :");
         puts(server_reply);
