@@ -1296,8 +1296,8 @@ int send_data_slave_subflow(){
 			htons(packd.sess->curr_window_loc), 
 			opt_buf, 
 			opt_len,
-			packd.sess->cand_sfl_data,// uninitiailized
-			packd.sess->cand_sfl_data_len);//opt len
+			packd.sess->candsfl_snd_buf,// uninitiailized
+			packd.sess->candsfl_snd_len);//opt len
 
 //	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: sending split first packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 //	add_msg(msg_buf);
@@ -1313,8 +1313,8 @@ int send_data_slave_subflow(){
 	}
 
 	//update dsn,ssn
-	packd.sess->highest_dsn_loc += packd.sess->cand_sfl_data_len;
-	packd.sess->slav_subflow->highest_sn_loc += packd.sess->cand_sfl_data_len;
+	packd.sess->highest_dsn_loc += packd.sess->candsfl_snd_len;
+	packd.sess->slav_subflow->highest_sn_loc += packd.sess->candsfl_snd_len;
 	return 1;
 
 }
@@ -1349,7 +1349,7 @@ int add_sfl_mine(struct session *sess) {
 	return 1;
 }
 
-
+/*
 int add_rex_entry(struct session* sess, const uint32_t osn, struct subflow *sfl, uint32_t dsn, uint32_t ssn){
 	return 0;
 }
@@ -1371,7 +1371,7 @@ void find_rex_entry(struct pntArray* pA_rex_entry, const uint32_t osn, struct su
 	*ssn = 0;
 	return;
 }
-
+*/
 void create_new_packet_assemble(){
 	//add ipv4 header, core tcp header
 	memmove(packd.new_buf, packd.buf, packd.ip4len + packd.tcplen);
