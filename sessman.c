@@ -359,6 +359,12 @@ int contemplate_new_session_output() {
 	packd.sess = sess;
 	packd.tcph->th_seq = htonl( packd.sfl->isn_loc );
 
+	//+++new
+	packd.sess->highest_dsn_loc += 1;
+	packd.sess->last_dan_loc = packd.sess->highest_dsn_loc;
+	packd.sess->highest_dan_loc = packd.sess->highest_dsn_loc;
+	//---new
+
 	if(!output_data_mptcp()) {
 		set_verdict(1,0,0);
 		execute_sess_teardown(sess);
@@ -803,9 +809,7 @@ int session_pre_est() {
 	create_MPadd_addr(packd.mptcp_opt_buf, &packd.mptcp_opt_len, addr_id_loc, htonl(other_ip_loc));
 */
 
-	packd.sess->highest_dsn_loc += 1;
-	packd.sess->last_dan_loc = packd.sess->highest_dsn_loc;
-	packd.sess->highest_dan_loc = packd.sess->highest_dsn_loc;
+
 
 //	packd.sfl->highest_sn_loc = ntohl(packd.tcph->th_seq);
 //	packd.sfl->highest_an_rem = ntohl(packd.tcph->th_ack);
