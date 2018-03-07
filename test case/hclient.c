@@ -38,7 +38,7 @@ int main(int argc , char *argv[])
     while(1)
     {
 		bzero( message, 100);
-		bzero( server_reply, 100);
+		bzero( server_reply, 100);//must bzero, or will have dirty char printed out
 
         printf("Enter message : ");
         scanf("%s" , message);
@@ -46,7 +46,7 @@ int main(int argc , char *argv[])
 		
 		write(sock,message,strlen(message)+1);
 		read(sock,server_reply,100);
-		printf("%s",server_reply);
+		printf("%s\n",server_reply);
 
     }
      
