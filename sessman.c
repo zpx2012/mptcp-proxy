@@ -556,15 +556,18 @@ int session_syn_sent() {
 		packd.sess->offset_rem = packd.sfl->isn_rem + OFFSET_TCP_SN - packd.sess->idsn_rem;
 		packd.sfl->offset_rem = packd.sess->idsn_rem - packd.sfl->isn_rem;
 
-
-
 //		enter_dsn_packet(packd.sfl->map_recv, packd.sfl, packd.sess->idsn_rem, packd.sfl->isn_rem, 1);
 		packd.sfl->highest_sn_loc += 1;
 		packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;
 
 		//update SN/AN -> DSN/DAN
-		packd.tcph->th_seq = htonl( packd.sfl->isn_rem + packd.sess->offset_rem + packd.sfl->offset_rem );
-		packd.tcph->th_ack = htonl( packd.sfl->highest_an_loc + packd.sess->offset_loc + packd.sfl->offset_loc );
+		packd.tcph->th_seq = htonl( packd.sess->idsn_rem + packd.sess->offset_rem);
+		packd.tcph->th_ack = htonl( packd.sess->highest_dan_loc + packd.sess->offset_loc);
+		
+		//+++new
+		packd.sess->highest_dan_rem = packd.sess->highest_dsn_rem = packd.sess->idsn_rem + 1;
+		packd.sfl->highest_an_rem = packd.sfl->highest_sn_rem = packd.sfl->isn_rem + 1;
+		//---new
 
 		packd.sfl->tcp_state = PRE_EST;
 		packd.sess->sess_state = PRE_EST;
@@ -799,18 +802,15 @@ int session_pre_est() {
 
 	create_MPadd_addr(packd.mptcp_opt_buf, &packd.mptcp_opt_len, addr_id_loc, htonl(other_ip_loc));
 */
-//+++new
-	packd.sfl->highest_tsn_loc = ntohl(packd.tcph->th_seq);
-//---new
 
 	packd.sess->highest_dsn_loc += 1;
 	packd.sess->last_dan_loc = packd.sess->highest_dsn_loc;
 	packd.sess->highest_dan_loc = packd.sess->highest_dsn_loc;
 
-	packd.sfl->highest_sn_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc - packd.sfl->offset_loc;
-	packd.sfl->highest_an_rem = ntohl(packd.tcph->th_ack) - packd.sess->offset_rem - packd.sfl->offset_rem ;
-	packd.sfl->highest_sn_rem = packd.sfl->highest_an_rem;
-	packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;
+//	packd.sfl->highest_sn_loc = ntohl(packd.tcph->th_seq);
+//	packd.sfl->highest_an_rem = ntohl(packd.tcph->th_ack);
+//	packd.sfl->highest_sn_rem = packd.sfl->highest_an_rem;
+//	packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;
 
 
 	packd.tcph->th_seq = htonl(packd.sfl->highest_sn_loc);

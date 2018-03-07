@@ -1117,7 +1117,7 @@ void determine_thruway_subflow(){
 	//set retransmit flag;
 	uint32_t orgin_tcp_seq = ntohl(packd.tcph->th_seq);
 	packd.retransmit_flag = 0;
-	if( sn_smaller( orgin_tcp_seq, packd.sfl->highest_tsn_loc)) packd.retransmit_flag = 1;
+	if( sn_smaller( orgin_tcp_seq, packd.sess->highest_dsn_loc + packd.sess->offset_loc)) packd.retransmit_flag = 1;
 
 	if(!packd.retransmit_flag){
 
@@ -1141,7 +1141,6 @@ void determine_thruway_subflow(){
 		//update
 		packd.sess->highest_dsn_loc += packd.paylen_curr + packd.fin;//may not be the case for cross-sfl retransmissions	
 		packd.sfl->highest_sn_loc   += packd.paylen_curr;
-		packd.sfl->highest_tsn_loc = orgin_tcp_seq;
 	}else {
 		//retrx here
 
