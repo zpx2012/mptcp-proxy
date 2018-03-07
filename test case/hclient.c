@@ -37,26 +37,17 @@ int main(int argc , char *argv[])
     //keep communicating with server
     while(1)
     {
+		bzero( message, 100);
+		bzero( server_reply, 100);
+
         printf("Enter message : ");
         scanf("%s" , message);
          
-        //Send some data
-        if( send(sock , message , strlen(message) , 0) < 0)
-        {
-            puts("Send failed");
-            return 1;
-        }
-         
-        //Receive a reply from the server
-        if( readsize = recv(sock , server_reply , 2000 , 0) < 0)
-        {
-            puts("recv failed");
-            break;
-        }
-		printf("%d\n",readsize);
-        server_reply[readsize] = 0; 
-        puts("Server reply :");
-        puts(server_reply);
+		
+		write(sock,message,strlen(message)+1);
+		read(sock,server_reply,100);
+		printf("%s",server_reply);
+
     }
      
     close(sock);
