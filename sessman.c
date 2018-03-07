@@ -1313,6 +1313,11 @@ struct session* create_session(
 
 	sess->teardown_flag = 0;
 
+	memset(sess->candsfl_rev_buf,0,3);
+	memset(sess->candsfl_snd_buf,0,4096);
+	sess->candsfl_rev_len = 0;
+	sess->candsfl_snd_len = 0;
+
 	return sess;
 }
 
