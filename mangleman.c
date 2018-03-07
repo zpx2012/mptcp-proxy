@@ -478,7 +478,7 @@ void update_packet_output() {
 	//Always send ACK
 	//Reduce curr_an_rem by 1 if this is an old DAN held on the packet
 	packd.san_curr_rem = packd.sfl->curr_an_rem;
-	packd.tcph->th_ack = htonl( packd.san_curr_rem );
+	packd.tcph->th_ack = htonl( packd.sfl->highest_sn_rem );
 
 	//Ensure that SFL ACK flag is always set
 	if(!packd.ack) packd.tcph->th_flags += 16;
