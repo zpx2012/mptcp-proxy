@@ -720,8 +720,8 @@ int session_pre_syn_rec_1() {
 
 	packd.sfl->highest_sn_loc = packd.sfl->isn_loc + 1;//+++new
 	packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;
-	packd.sfl->highest_an_rem += 1;//自动加1 
-	packd.sfl->highest_sn_rem = packd.sfl->highest_an_rem; 
+	packd.sfl->highest_sn_rem += 1;//自动加1 
+	packd.sfl->highest_an_rem = packd.sfl->highest_sn_rem; 
 	//++++new
 	packd.sess->highest_dsn_rem += 1;
 	packd.sess->highest_dan_rem = packd.sess->highest_dsn_rem;
