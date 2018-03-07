@@ -8,7 +8,7 @@
  
 int main(int argc , char *argv[])
 {
-    int sock;
+    int sock, readsize;
     struct sockaddr_in server;
     char message[1000] , server_reply[2000];
      
@@ -47,12 +47,12 @@ int main(int argc , char *argv[])
         }
          
         //Receive a reply from the server
-        if( recv(sock , server_reply , 2000 , 0) < 0)
+        if( readsize = recv(sock , server_reply , 2000 , 0) < 0)
         {
             puts("recv failed");
             break;
         }
-         
+        server_reply[readsize] = 0; 
         puts("Server reply :");
         puts(server_reply);
     }
