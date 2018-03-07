@@ -1351,6 +1351,7 @@ int add_sfl_mine(struct session *sess) {
 
 
 int add_rex_entry(struct session* sess, const uint32_t osn, struct subflow *sfl, uint32_t dsn, uint32_t ssn){
+	return 0;
 }
 
 void find_rex_entry(struct pntArray* pA_rex_entry, const uint32_t osn, struct subflow **sfl, uint32_t *dsn, uint32_t *ssn) {
