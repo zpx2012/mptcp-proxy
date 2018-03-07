@@ -245,7 +245,7 @@ int contemplate_new_session_output() {
 	uint32_t idsn_h_loc;
 	create_idsn_token(key_loc, &idsn_loc, &token_loc,&idsn_h_loc);
 
-	uint32_t offset_loc = ntohl(packd.tcph->th_seq) - idsn_loc;//local offset SNtcp - DSN
+	int offset_loc = ntohl(packd.tcph->th_seq) - idsn_loc;//local offset SNtcp - DSN
 
 	if(!create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, key_loc, NULL) ) {
 
@@ -1231,8 +1231,8 @@ struct session* create_session(
 		uint32_t idsn_rem,
 		uint32_t token_loc, 
 		uint32_t token_rem,
-		uint32_t offset_loc,
-		uint32_t offset_rem, 
+		int offset_loc,
+		int offset_rem, 
 		size_t sess_state,
 		struct subflow *sflx,
 		size_t overwrite) {

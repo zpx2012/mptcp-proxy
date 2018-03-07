@@ -454,9 +454,6 @@ struct map_table{
 struct session;
 
 struct subflow{
-	//new+++++++++++++++
-	uint32_t highest_tsn_loc;//used for retrx, origin tcp seq num
-	//new---------------
 
 	struct fourtuple ft;//key
 	size_t index;//index in subflow table: do we need this?
@@ -553,8 +550,8 @@ struct session{
 	uint32_t idsn_loc;//init DSN local
 	uint32_t idsn_rem;//init DSN remote
 
-	uint32_t offset_loc;//SN_tcp - DSN
-	uint32_t offset_rem;//SN_tcp - DSN
+	int offset_loc;//SN_tcp - DSN
+	int offset_rem;//SN_tcp - DSN
 
 	uint32_t cdsn_loc;//cutoff DSN local
 	uint32_t cdsn_rem;//cutoff DSN remote (this is the highest DSN_rem received at cutoff)
