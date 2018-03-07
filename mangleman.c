@@ -762,7 +762,7 @@ void update_packet_input() {
 	set_verdict(1,1,0);
 	unsigned char start_index;
 	if(packd.ack == 1) {
-
+	/*	
 		if(packd.sess->ack_inf_flag) {
 
 
@@ -801,8 +801,9 @@ void update_packet_input() {
 			}
 		} else {
 			packd.tcph->th_ack = htonl( packd.dan_curr_loc + packd.sess->offset_loc); //要改
-		}	
-
+	   }	
+	*/
+		packd.tcph->th_ack = htonl( packd.dan_curr_loc + packd.sess->offset_loc); //要改
 		//+++++new
 		if (packd.sfl != packd.sess->act_subflow)
 		{
