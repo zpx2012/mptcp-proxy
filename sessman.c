@@ -718,8 +718,8 @@ int session_pre_syn_rec_1() {
 
 	packd.sess->sess_state = SYN_REC;		
 
-//	packd.sfl->highest_sn_loc = packd.sfl->isn_loc + 1;//+++new
-//	packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;
+	packd.sfl->highest_sn_loc = packd.sfl->isn_loc;//+++new
+	packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;
 	packd.sfl->highest_sn_rem += 1;//自动加1 
 	packd.sfl->highest_an_rem = packd.sfl->highest_sn_rem; 
 	//++++new
