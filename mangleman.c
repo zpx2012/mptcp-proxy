@@ -1079,16 +1079,16 @@ void split_conn_level_data(){
 	if(packd.sess->slav_subflow == NULL){ //first packet			
 		add_sfl_mine(packd.sess);
 
-		memset(packd.sess->cand_sfl_data, 0, 4096);
-		strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay+3, packd.paylen-3);
-		packd.sess->cand_sfl_data_len = packd.paylen -3;
-		packd.totlen -= packd.sess->cand_sfl_data_len;
+		memset(packd.sess->candsfl_snd_buf, 0, 4096);
+		strncpy(packd.sess->candsfl_snd_buf, packd.buf+packd.pos_pay+3, packd.paylen-3);
+		packd.sess->candsfl_snd_len = packd.paylen -3;
+		packd.totlen -= packd.sess->candsfl_snd_len;
 		packd.paylen = 3;
 	}
 	else {                                //following packets
-		memset(packd.sess->cand_sfl_data, 0, 4096);
-		strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay, 3);
-		packd.sess->cand_sfl_data_len = 3;
+		memset(packd.sess->candsfl_snd_buf, 0, 4096);
+		strncpy(packd.sess->candsfl_snd_buf, packd.buf+packd.pos_pay, 3);
+		packd.sess->candsfl_snd_len = 3;
 		packd.paylen -=3;
 		packd.totlen -=3;
 		memcpy(packd.buf+packd.pos_pay,packd.buf+packd.pos_pay+3,packd.paylen);
@@ -1266,8 +1266,8 @@ void determine_thruway_subflow(){
 
 
 int send_data_slave_subflow(){
-	if(!packd.sess->cand_sfl_data_len){
-		printf("cand_sfl_data_len == 0\n");
+	if(!packd.sess->candsfl_snd_len){
+		printf("candsfl_snd_len == 0\n");
 	}
 
 		//create new TPTCP option header: TPdss
@@ -1281,7 +1281,7 @@ int send_data_slave_subflow(){
 		add_timestamps(opt_buf, packd.sess->tsval, packd.sess->slav_subflow->tsecr);
 	}
 	//rex? dsn would not be highest
-	create_complete_MPdss_mine(opt_buf, &opt_len, packd.sess->highest_dan_rem, packd.sess->highest_dsn_loc, 1,packd.sess->idsn_h_loc,packd.sess->cand_sfl_data,packd.sess->cand_sfl_data_len);
+	create_complete_MPdss_mine(opt_buf, &opt_len, packd.sess->highest_dan_rem, packd.sess->highest_dsn_loc, 1,packd.sess->idsn_h_loc,packd.sess->candsfl_snd_buf,packd.sess->candsfl_snd_len);
 	
 	opt_len = pad_options_buffer(opt_buf, opt_len);
 	
