@@ -802,7 +802,7 @@ void update_packet_input() {
 		}	
 
 		//+++++new
-		if (packd.sfl != packd.sess->act_subflow)
+		if (packd.sfl != packd.sess->act_subflow && packd.paylen == 3)
 		{
 			if(packd.sess->candsfl_rev_len != 0)
 				printf("candsfl_rev_len not 0!");
