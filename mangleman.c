@@ -604,6 +604,8 @@ void process_dss() {
 				return;
 			//------new
 
+			packd.dsn_curr_rem = dssopt_in.dsn;
+
 			//enter packet into sfl ssn table
 			//Note: FIN byte does not go into table
 			enter_dsn_packet(packd.sfl->map_recv, packd.sfl,
@@ -802,14 +804,20 @@ void update_packet_input() {
 		}	
 
 		//+++++new
-		if (packd.sfl != packd.sess->act_subflow && packd.paylen == 3)
+		if (packd.sfl != packd.sess->act_subflow)
 		{
-			if(packd.sess->candsfl_rev_len != 0)
-				printf("candsfl_rev_len not 0!");
-			packd.sess->candsfl_rev_len = 3;
-			memcpy(packd.sess->candsfl_rev_buf,packd.buf+packd.pos_pay,packd.sess->candsfl_rev_len);
-			set_verdict(0,0,0);
-			return;
+			if(packd.paylen == 3) {
+				if(packd.sess->candsfl_rev_len != 0)
+					printf("candsfl_rev_len not 0!");
+				packd.sess->candsfl_rev_len = 3;
+				memcpy(packd.sess->candsfl_rev_buf,packd.buf+packd.pos_pay,packd.sess->candsfl_rev_len);
+				set_verdict(0,0,0);
+				return;
+			}
+			else {
+				//copy to ,but ack on active subflow is useless
+			}
+			
 		}else if(packd.sess->candsfl_rev_len){
 			create_new_packet_assemble();
 			set_verdict(1,1,1);
