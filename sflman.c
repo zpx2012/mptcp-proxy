@@ -377,8 +377,14 @@ int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, un
 		return 0;
 	}
 
-	add_subflow_to_session(sfl1, sess);
+//+++++++new
+	if(sess->slav_subflow){
+		printf("more than 1 sfl in initiate_cand_subflow");
+	}
+	add_slave_subflow_to_session(sfl1,sess);
+//	add_subflow_to_session(sfl1, sess);
 	if(sess->timestamp_flag) sfl1->tsecr = tsecr;
+//-------new
 
 	//create syn/ack packet
 	uint16_t pack_len;
@@ -1311,7 +1317,7 @@ struct subflow* create_subflow(struct fourtuple *ft1,
 	sflx->csn_rem = isn_rem;
 	sflx->highest_sn_loc = isn_loc;
 	sflx->highest_sn_rem = isn_rem;
-
+	
 	sflx->offset_loc = offset_loc;
 	sflx->offset_rem = offset_rem;
 

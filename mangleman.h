@@ -117,3 +117,6 @@ void split_conn_level_data();
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern int mangle_packet();
 
+void create_new_packet_assemble();
+
+

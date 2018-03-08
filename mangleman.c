@@ -478,7 +478,7 @@ void update_packet_output() {
 	//Always send ACK
 	//Reduce curr_an_rem by 1 if this is an old DAN held on the packet
 	packd.san_curr_rem = packd.sfl->curr_an_rem;
-	packd.tcph->th_ack = htonl( packd.san_curr_rem );
+	packd.tcph->th_ack = htonl( packd.sfl->highest_sn_rem );
 
 	//Ensure that SFL ACK flag is always set
 	if(!packd.ack) packd.tcph->th_flags += 16;
@@ -539,6 +539,10 @@ void update_packet_output() {
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //update_subflow_level_data()
+// ssn_curr_rem, san_curr_rem
+// update: sfl->highest_sn_rem
+// strip mptcp options
+// extract sack
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void update_subflow_level_data() {
 
@@ -548,8 +552,14 @@ void update_subflow_level_data() {
 
 	//update highest_an_loc (do we need that?)
 	packd.ssn_curr_rem = ntohl(packd.tcph->th_seq);
+
+	
+	//+++++here
+	if(packd.ssn_curr_rem != packd.sfl->highest_sn_rem)
+		return;
+	
 	if( packd.paylen+packd.fin > 0 && sn_smaller( packd.sfl->highest_sn_rem, packd.ssn_curr_rem+packd.paylen+packd.fin ) ) 
-			packd.sfl->highest_sn_rem = packd.ssn_curr_rem+packd.paylen+packd.fin; 
+			packd.sfl->highest_sn_rem = packd.ssn_curr_rem+packd.paylen+packd.fin;
 
 	parse_compact_copy_TCP_options(packd.buf+packd.pos_thead+20, packd.tcplen-20);
 
@@ -573,6 +583,8 @@ void update_subflow_level_data() {
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //process_dss() 
+// dan_curr_loc
+// update:sess->highest_dsn_rem
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void process_dss() {
 
@@ -586,6 +598,13 @@ void process_dss() {
 			if(dssopt_in.Fflag) {
 				packd.sess->ack_inf_flag = 0;
 			}
+
+			//++++++new
+			if(dssopt_in.dsn != packd.sess->highest_dsn_rem)
+				return;
+			//------new
+
+			packd.dsn_curr_rem = dssopt_in.dsn;
 
 			//enter packet into sfl ssn table
 			//Note: FIN byte does not go into table
@@ -632,6 +651,7 @@ void process_dss() {
 		}
 	}//end analyzze Tpdss
 
+	//????
 	//inc nb_packets for subflow if this is a new transmission on this subflow
 	uint16_t load = packd.paylen + (dssopt_in.present && dssopt_in.Fflag) + packd.fin;
 	if( load > 0 &&  sn_smaller_equal(packd.ssn_curr_rem + load, packd.sfl->highest_an_rem) ) {
@@ -686,12 +706,15 @@ void process_prio(){
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //update_packet_input()
+// dsn_curr_rem, dan_curr_loc
+// tcp->seq, tcp->ack
+// assemble payload
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void update_packet_input() {
 
 	//Define DSNrem
 	if(packd.paylen > 0) {
-
+/*
 		//find DSN based on SSN on packet
 		if( find_DSN(&packd.dsn_curr_rem, packd.sfl->map_recv, packd.ssn_curr_rem ) == 0 ) {
 
@@ -710,7 +733,7 @@ void update_packet_input() {
 				}
 			}
 		}
-
+*/
 		packd.verdict = 1;
 
 	}
@@ -739,7 +762,7 @@ void update_packet_input() {
 	set_verdict(1,1,0);
 	unsigned char start_index;
 	if(packd.ack == 1) {
-
+	/*	
 		if(packd.sess->ack_inf_flag) {
 
 
@@ -777,8 +800,30 @@ void update_packet_input() {
 				create_new_packet(packd.tcp_opt_buf, packd.tcp_opt_len);
 			}
 		} else {
-			packd.tcph->th_ack = htonl( packd.dan_curr_loc + packd.sess->offset_loc);
-		}	
+			packd.tcph->th_ack = htonl( packd.dan_curr_loc + packd.sess->offset_loc); //要改
+	   }	
+	*/
+		packd.tcph->th_ack = htonl( packd.dan_curr_loc + packd.sess->offset_loc); //要改
+		//+++++new
+		if (packd.sfl != packd.sess->act_subflow)
+		{
+			if(packd.paylen == 3) {
+				if(packd.sess->candsfl_rev_len != 0)
+					printf("candsfl_rev_len not 0!");
+				packd.sess->candsfl_rev_len = 3;
+				memcpy(packd.sess->candsfl_rev_buf,packd.buf+packd.pos_pay,packd.sess->candsfl_rev_len);
+				set_verdict(0,0,0);
+				return;
+			}
+			else {
+				//copy to ,but ack on active subflow is useless
+			}
+			
+		}else if(packd.sess->candsfl_rev_len){
+			create_new_packet_assemble();
+			set_verdict(1,1,1);
+		}
+		//-----new
 	}
 
 	//update IPs and Prts on packet to TCP IPs and Prts
@@ -786,6 +831,7 @@ void update_packet_input() {
 	packd.ip4h->ip_dst = htonl( packd.sess->ft.ip_loc );
 	packd.tcph->th_sport = htons( packd.sess->ft.prt_rem );
 	packd.tcph->th_dport = htons( packd.sess->ft.prt_loc );
+
 
 
 	if(PRINT_FILE) {
@@ -1042,16 +1088,18 @@ void split_conn_level_data(){
 	if(packd.sess->slav_subflow == NULL){ //first packet			
 		add_sfl_mine(packd.sess);
 
-		memset(packd.sess->cand_sfl_data, 0, 4096);
-		strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay+3, packd.paylen-3);
-		packd.sess->cand_sfl_data_len = packd.paylen -3;
+		memset(packd.sess->candsfl_snd_buf, 0, 4096);
+		strncpy(packd.sess->candsfl_snd_buf, packd.buf+packd.pos_pay+3, packd.paylen-3);
+		packd.sess->candsfl_snd_len = packd.paylen -3;
+		packd.totlen -= packd.sess->candsfl_snd_len;
 		packd.paylen = 3;
 	}
 	else {                                //following packets
-		memset(packd.sess->cand_sfl_data, 0, 4096);
-		strncpy(packd.sess->cand_sfl_data, packd.buf+packd.pos_pay, 3);
-		packd.sess->cand_sfl_data_len = 3;
+		memset(packd.sess->candsfl_snd_buf, 0, 4096);
+		strncpy(packd.sess->candsfl_snd_buf, packd.buf+packd.pos_pay, 3);
+		packd.sess->candsfl_snd_len = 3;
 		packd.paylen -=3;
+		packd.totlen -=3;
 		memcpy(packd.buf+packd.pos_pay,packd.buf+packd.pos_pay+3,packd.paylen);
 
 		//send first 3-bytes on slav_subflow
@@ -1078,7 +1126,7 @@ void determine_thruway_subflow(){
 	//set retransmit flag;
 	uint32_t orgin_tcp_seq = ntohl(packd.tcph->th_seq);
 	packd.retransmit_flag = 0;
-	if( sn_smaller( orgin_tcp_seq, packd.sfl->highest_org_sn_loc)) packd.retransmit_flag = 1;
+	if( sn_smaller( orgin_tcp_seq, packd.sess->highest_dsn_loc + packd.sess->offset_loc)) packd.retransmit_flag = 1;
 
 	if(!packd.retransmit_flag){
 
@@ -1102,7 +1150,6 @@ void determine_thruway_subflow(){
 		//update
 		packd.sess->highest_dsn_loc += packd.paylen_curr + packd.fin;//may not be the case for cross-sfl retransmissions	
 		packd.sfl->highest_sn_loc   += packd.paylen_curr;
-		packd.sfl->highest_org_sn_loc = orgin_tcp_seq;
 	}else {
 		//retrx here
 
@@ -1227,8 +1274,8 @@ void determine_thruway_subflow(){
 
 
 int send_data_slave_subflow(){
-	if(!packd.sess->cand_sfl_data_len){
-		printf("cand_sfl_data_len == 0\n");
+	if(!packd.sess->candsfl_snd_len){
+		printf("candsfl_snd_len == 0\n");
 	}
 
 		//create new TPTCP option header: TPdss
@@ -1242,7 +1289,7 @@ int send_data_slave_subflow(){
 		add_timestamps(opt_buf, packd.sess->tsval, packd.sess->slav_subflow->tsecr);
 	}
 	//rex? dsn would not be highest
-	create_complete_MPdss_mine(opt_buf, &opt_len, packd.sess->highest_dan_rem, packd.sess->highest_dsn_loc, 1,packd.sess->idsn_h_loc,packd.sess->cand_sfl_data,packd.sess->cand_sfl_data_len);
+	create_complete_MPdss_mine(opt_buf, &opt_len, packd.sess->highest_dan_rem, packd.sess->highest_dsn_loc, 1,packd.sess->idsn_h_loc,packd.sess->candsfl_snd_buf,packd.sess->candsfl_snd_len);
 	
 	opt_len = pad_options_buffer(opt_buf, opt_len);
 	
@@ -1257,8 +1304,8 @@ int send_data_slave_subflow(){
 			htons(packd.sess->curr_window_loc), 
 			opt_buf, 
 			opt_len,
-			packd.sess->cand_sfl_data,// uninitiailized
-			packd.sess->cand_sfl_data_len);//opt len
+			packd.sess->candsfl_snd_buf,// uninitiailized
+			packd.sess->candsfl_snd_len);//opt len
 
 //	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: sending split first packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 //	add_msg(msg_buf);
@@ -1274,8 +1321,8 @@ int send_data_slave_subflow(){
 	}
 
 	//update dsn,ssn
-	packd.sess->highest_dsn_loc += packd.sess->cand_sfl_data_len;
-	packd.sess->slav_subflow->highest_sn_loc += packd.sess->cand_sfl_data_len;
+	packd.sess->highest_dsn_loc += packd.sess->candsfl_snd_len;
+	packd.sess->slav_subflow->highest_sn_loc += packd.sess->candsfl_snd_len;
 	return 1;
 
 }
@@ -1308,6 +1355,49 @@ int add_sfl_mine(struct session *sess) {
 	snprintf(msg_buf,MAX_MSG_LENGTH,"add_sfl_fifo: new subflow initiated");
 	add_msg(msg_buf);
 	return 1;
+}
+
+/*
+int add_rex_entry(struct session* sess, const uint32_t osn, struct subflow *sfl, uint32_t dsn, uint32_t ssn){
+	return 0;
+}
+
+void find_rex_entry(struct pntArray* pA_rex_entry, const uint32_t osn, struct subflow **sfl, uint32_t *dsn, uint32_t *ssn) {
+	for (unsigned i = 0; i < pA_rex_entry->number; ++i)
+	{
+		struct rex_entry* rety = pA_rex_entry->pnts[i];
+		if(rety->osn == osn){
+			*sfl = rety->sfl;
+			*dsn = rety->dsn;
+			*ssn = rety->ssn;
+			return;
+		}
+	}
+	printf("find_rex_entry: not found!");
+	*sfl = null;
+	*dsn = 0;
+	*ssn = 0;
+	return;
+}
+*/
+void create_new_packet_assemble(){
+	//add ipv4 header, core tcp header
+	memmove(packd.new_buf, packd.buf, packd.ip4len + packd.tcplen);
+
+	//add 3 bytes
+	memmove(packd.new_buf + packd.ip4len + packd.tcplen, packd.sess->candsfl_rev_buf, packd.sess->candsfl_rev_len);
+
+	//add old payload
+	memmove(packd.new_buf + packd.ip4len + packd.tcplen + packd.sess->candsfl_rev_len, packd.buf + packd.pos_pay, packd.paylen);
+
+	//update packd
+	packd.pos_pay = packd.pos_thead + packd.tcplen + packd.sess->candsfl_rev_len;
+	packd.paylen += packd.sess->candsfl_rev_len;
+	packd.totlen = packd.ip4len + packd.tcplen + packd.paylen;
+	packd.ip4h = (struct ipheader*) (packd.new_buf+packd.pos_i4head);
+	packd.tcph = (struct tcpheader*) (packd.new_buf+packd.pos_i4head+packd.ip4len);
+
+	packd.sess->candsfl_rev_len = 0;
 }
 
 

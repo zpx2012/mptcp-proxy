@@ -419,6 +419,15 @@ struct packet_data{
 };
 extern struct packet_data packd;//defined in filter05
 
+//++++++++++new
+struct rex_entry{
+	struct subflow *sfl;//in case origin sfl is closed
+	uint32_t dsn;
+	uint32_t ssn;//new tcp packet seq num
+
+	uint32_t osn;//origin tcp packet seq num, index
+};
+
 
 //struct for mapping entries
 struct map_entry{
@@ -451,9 +460,6 @@ struct map_list{
 struct session;
 
 struct subflow{
-	//new+++++++++++++++
-	uint32_t highest_org_sn_loc;//used for retrx
-	//new---------------
 
 	struct fourtuple ft;//key
 	size_t index;//index in subflow table: do we need this?
@@ -526,10 +532,14 @@ struct addrid{
 };
 
 struct session{
-	//new
+	//++++new
 	uint32_t idsn_h_loc;
-	unsigned char cand_sfl_data[4096]; //why not in sfl? 2 sfls, 1 sess. more memory waste
-	uint16_t cand_sfl_data_len;
+	unsigned char candsfl_snd_buf[4096]; //why not in sfl? 2 sfls, 1 sess. more memory waste
+	uint16_t candsfl_snd_len;
+	struct pntArray pA_rex_entry;
+	unsigned char candsfl_rev_buf[3];
+	uint16_t candsfl_rev_len;
+	//----new
 
 	struct fourtuple ft;//key, this is the ft used by the TCP control block
 
@@ -540,16 +550,14 @@ struct session{
 	uint32_t key_loc[2];
 	uint32_t key_rem[2];
 
-
-
 	uint32_t token_loc;
 	uint32_t token_rem;
 
 	uint32_t idsn_loc;//init DSN local
 	uint32_t idsn_rem;//init DSN remote
 
-	uint32_t offset_loc;//SN_tcp - DSN
-	uint32_t offset_rem;//SN_tcp - DSN
+	int offset_loc;//SN_tcp - DSN
+	int offset_rem;//SN_tcp - DSN
 
 	uint32_t cdsn_loc;//cutoff DSN local
 	uint32_t cdsn_rem;//cutoff DSN remote (this is the highest DSN_rem received at cutoff)
