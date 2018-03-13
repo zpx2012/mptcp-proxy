@@ -473,7 +473,10 @@ void set_dss_and_prio() {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void update_packet_output() {
 
-	packd.tcph->th_seq = htonl( packd.ssn_curr_loc );	
+	packd.tcph->th_seq = htonl( packd.ssn_curr_loc );
+	if(!packd.tcph->th_seq){
+		printf("th_seq == 0 in determine_thruway_subflow");
+	}
 
 	//Always send ACK
 	//Reduce curr_an_rem by 1 if this is an old DAN held on the packet
@@ -1134,6 +1137,9 @@ void determine_thruway_subflow(){
 		packd.dsn_curr_loc = packd.sess->highest_dsn_loc;
 		packd.ssn_curr_loc = packd.sfl->highest_sn_loc;
 
+		if(!packd.ssn_curr_loc){
+			printf("ssn_curr_loc == 0 in determine_thruway_subflow");
+		}
 		//enter packet into session map
 		// reserve entire range from last highest to new highest, i.e. including gap	
 		enter_dsn_packet_on_top(
