@@ -1089,7 +1089,7 @@ void split_conn_level_data(){
 		add_sfl_mine(packd.sess);
 
 		memset(packd.sess->candsfl_snd_buf, 0, 4096);
-		strncpy(packd.sess->candsfl_snd_buf, packd.buf+packd.pos_pay+3, packd.paylen-3);
+		memcpy(packd.sess->candsfl_snd_buf, packd.buf+packd.pos_pay+3, packd.paylen-3);
 		packd.sess->candsfl_snd_len = packd.paylen -3;
 		packd.totlen -= packd.sess->candsfl_snd_len;
 		packd.paylen = 3;
