@@ -1293,7 +1293,7 @@ void determine_thruway_subflow(){
 	if(packd.fin) packd.sess->fin_dsn_loc = packd.dsn_curr_loc + packd.paylen;
 
 
-/*
+
 	//if( sn_smaller( packd.dsn_curr_loc, packd.sess->highest_dsn_loc)) packd.retransmit_flag = 1;
 
 	//	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc + 3;
@@ -1403,7 +1403,6 @@ void determine_thruway_subflow(){
 
 
 	packd.sfl->offset_loc = packd.dsn_curr_loc - packd.ssn_curr_loc;
-*/
 }			
 */
 
