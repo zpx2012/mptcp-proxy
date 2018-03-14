@@ -1014,10 +1014,11 @@ int mangle_packet() {
 
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
 			
+			split_conn_level_data();
+
 			update_conn_level_data();
 			determine_thruway_subflow();//sets verdict
 
-			split_conn_level_data();
 			//*****SIDE ACK MANAGEMENT******
 			//packet is sent on packd.sfl, which may be last or active
 			if(packd.ack == 1) {
@@ -1205,7 +1206,6 @@ void determine_thruway_subflow_mine(){
 			}
 
 			packd.paylen_curr = packd.paylen;
-			gap = 0;
 			update_highest = 1;
 		}
 	}//end if(!retransmitflag)
