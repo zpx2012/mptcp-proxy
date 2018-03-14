@@ -1017,7 +1017,7 @@ int mangle_packet() {
 			split_conn_level_data();
 
 			update_conn_level_data();
-			determine_thruway_subflow();//sets verdict
+			determine_thruway_subflow_mine();//sets verdict
 
 			//*****SIDE ACK MANAGEMENT******
 			//packet is sent on packd.sfl, which may be last or active
