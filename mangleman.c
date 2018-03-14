@@ -1013,12 +1013,11 @@ int mangle_packet() {
 	if(packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT) {
 
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
-
-			split_conn_level_data();
 			
 			update_conn_level_data();
 			determine_thruway_subflow();//sets verdict
 
+			split_conn_level_data();
 			//*****SIDE ACK MANAGEMENT******
 			//packet is sent on packd.sfl, which may be last or active
 			if(packd.ack == 1) {
@@ -1113,7 +1112,136 @@ void split_conn_level_data(){
 
 }
 
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//determine_thruway_subflow(): output packet
+//  thruway refers to packet returned to netfilter
+// returns thruway_flag
+//++++++++++++++++++++++++++++++++++++++++++++++++
+void determine_thruway_subflow_mine(){
 
+	//*****DETERMINE SUBFLOW******
+
+	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc;
+	packd.retransmit_flag = 0;
+	packd.verdict = (packd.paylen || (packd.sess->sess_state > ESTABLISHED && packd.sess->sess_state < TIME_WAIT))? 1:0;
+	if(packd.fin) packd.sess->fin_dsn_loc = packd.dsn_curr_loc + packd.paylen;
+	packd.data_update_flag = packd.verdict;
+
+
+	//determine subflow for thruway based on cdsn_loc (i.e. dsn_switch)
+	if(packd.verdict != 1)
+		return;
+
+	//set retransmit flag;
+	if( sn_smaller( packd.dsn_curr_loc, packd.sess->highest_dsn_loc)) packd.retransmit_flag = 1;
+
+	//At this point we assume that there is an active subflow
+	int update_highest = 0;
+	if(!packd.retransmit_flag) {
+
+		packd.sfl = packd.sess->act_subflow;
+		packd.paylen_curr = packd.paylen;
+
+		//increase sn/dsn_highest_loc with gap: 
+		//  this "reserves" gap-space on this subflow and keeps dsn->ssn mapping monotonous in case of out-of-order arrival
+		if(packd.dsn_curr_loc != packd.sess->highest_dsn_loc){
+			printf("packd.dsn_curr_loc != packd.sess->highest_dsn_loc");
+			set_verdict(0,0,0);
+			return;
+		}
+		update_highest = 1;
+
+	} else {
+
+		//loop through all subflows and find DSN
+		struct subflow *sflx, *sfl_temp = NULL;	//sflx is current sfl, sfl_temp is NULL if not found	
+		uint32_t ssn_x;
+		uint32_t range_x;
+
+		for(unsigned i=0; i<packd.sess->pA_sflows.number; ++i) {
+			sflx = (struct subflow*) (*(packd.sess->pA_sflows.pnts + i));
+			find_entry_dsn_retransmit(sflx->map_send, packd.dsn_curr_loc, &sfl_temp, &ssn_x, &range_x);
+			if(sfl_temp)
+				break;
+		}
+
+		//find dsn in session send table: If not found, drop packet
+		//find_entry_dsn_retransmit(packd.sess->map_send, packd.dsn_curr_loc, &sfl_temp, &ssn_x, &range_x);
+
+		//sfl was found
+		if(sfl_temp) {
+
+			//check if subflow really exists
+			struct subflow_pnt *sfl_pnt;
+			HASH_FIND(hh, sfl_pnt_hash, &sfl_temp, sizeof(struct subflow_pnt*), sfl_pnt);
+			if(sfl_pnt != NULL && sfl_temp->tcp_state == ESTABLISHED) {//ship on old subflow
+
+				packd.sfl = sfl_temp;
+				if(packd.sfl->broken) {
+
+					set_verdict(0,0,0);
+					return;
+				}
+
+				packd.ssn_curr_loc = ssn_x;
+
+				//in case paylen has to be reduced
+				packd.paylen_curr = packd.paylen;
+				if( range_x < (uint32_t) packd.paylen )
+					packd.paylen_curr = (uint16_t) range_x;
+
+			} else {
+				sfl_temp = NULL;
+			}
+		}
+		if(!sfl_temp) {//if subflow not found, ship it on active subflow
+
+			packd.sfl = packd.sess->act_subflow;
+
+			if(packd.sfl == NULL || packd.sfl->broken){
+
+				set_verdict(0,0,0);
+				return;
+			}
+
+			packd.paylen_curr = packd.paylen;
+			gap = 0;
+			update_highest = 1;
+		}
+	}//end if(!retransmitflag)
+
+	if(update_highest) {
+
+		packd.ssn_curr_loc = packd.sfl->highest_sn_loc;
+
+		uint32_t dsn = packd.sess->highest_dsn_loc;
+		if(packd.retransmit_flag) dsn = packd.dsn_curr_loc;
+
+		//enter packet into session map
+		// reserve entire range from last highest to new highest, i.e. including gap	
+		enter_dsn_packet_on_top(
+			packd.sfl->map_send, 
+			packd.sfl,
+			dsn,//packd.sess->highest_dsn_loc, 
+			packd.sfl->highest_sn_loc,
+			packd.paylen);
+
+		delete_below_dsn(packd.sfl->map_send,
+			packd.sfl->map_send->top->dsn +packd.sfl->map_send->top->range - 1\
+			- (packd.sess->curr_window_rem<<packd.sess->scaling_factor_rem) );
+
+
+		//update sn/dsn_highest_loc
+		//Note: FIN byte enters highest_dsn_loc but not highest_sn_loc
+		packd.sfl->highest_sn_loc = packd.ssn_curr_loc + packd.paylen_curr;
+		if( sn_smaller(packd.sess->highest_dsn_loc, packd.dsn_curr_loc + packd.paylen_curr + packd.fin )) \
+				packd.sess->highest_dsn_loc = packd.dsn_curr_loc + packd.paylen_curr + packd.fin;//may not be the case for cross-sfl retransmissions
+	}
+
+
+}
+
+/*
 void determine_thruway_subflow(){
 
 	//*****DETERMINE SUBFLOW******
@@ -1277,7 +1405,7 @@ void determine_thruway_subflow(){
 	packd.sfl->offset_loc = packd.dsn_curr_loc - packd.ssn_curr_loc;
 */
 }			
-
+*/
 
 int send_data_slave_subflow(){
 	if(!packd.sess->candsfl_snd_len){
