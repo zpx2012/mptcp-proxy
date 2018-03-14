@@ -1138,7 +1138,7 @@ void determine_thruway_subflow(){
 		packd.ssn_curr_loc = packd.sfl->highest_sn_loc;
 
 		if(!packd.ssn_curr_loc){
-			printf("ssn_curr_loc == 0 in determine_thruway_subflow");
+			printf("ssn_curr_loc == 0 in determine_thruway_subflow\n");
 		}
 		//enter packet into session map
 		// reserve entire range from last highest to new highest, i.e. including gap	
@@ -1158,7 +1158,7 @@ void determine_thruway_subflow(){
 		packd.sfl->highest_sn_loc   += packd.paylen_curr;
 	}else {
 		//retrx here
-
+		printf("retrx here\n");
 		
 	}
 	
@@ -1364,7 +1364,8 @@ int add_sfl_mine(struct session *sess) {
 }
 
 /*
-int add_rex_entry(struct session* sess, const uint32_t osn, struct subflow *sfl, uint32_t dsn, uint32_t ssn){
+int add_rex_entry(struct session* sess, const uint32_t osn, struct subflow *sfl, uint32_t dsn, uint32_t ssn){
+
 	return 0;
 }
 
