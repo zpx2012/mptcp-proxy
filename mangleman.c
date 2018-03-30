@@ -1091,6 +1091,8 @@ int mangle_packet() {
 
 void split_conn_level_data(){
 
+	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc;
+
 	if(packd.paylen <= 3)
 		return;
 
@@ -1127,8 +1129,6 @@ void split_conn_level_data(){
 void determine_thruway_subflow_mine(){
 
 	//*****DETERMINE SUBFLOW******
-
-	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc;
 	packd.retransmit_flag = 0;
 	packd.verdict = (packd.paylen || (packd.sess->sess_state > ESTABLISHED && packd.sess->sess_state < TIME_WAIT))? 1:0;
 	if(packd.fin) packd.sess->fin_dsn_loc = packd.dsn_curr_loc + packd.paylen;
@@ -1460,6 +1460,7 @@ int send_data_slave_subflow(){
 	}
 
 	//update dsn,ssn
+	packd.dsn_curr_loc += packd.sess->candsfl_snd_len;
 	packd.sess->highest_dsn_loc += packd.sess->candsfl_snd_len;
 	packd.sess->slav_subflow->highest_sn_loc += packd.sess->candsfl_snd_len;
 	return 1;
