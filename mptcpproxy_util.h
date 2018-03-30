@@ -422,15 +422,6 @@ struct packet_data{
 };
 extern struct packet_data packd;//defined in filter05
 
-//++++++++++new
-struct rex_entry{
-	struct subflow *sfl;//in case origin sfl is closed
-	uint32_t dsn;
-	uint32_t ssn;//new tcp packet seq num
-
-	uint32_t osn;//origin tcp packet seq num, index
-};
-
 
 //struct for mapping entries
 struct map_entry{

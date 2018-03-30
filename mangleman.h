@@ -109,14 +109,10 @@ int update_subflow_control_plane();
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int update_session_control_plane();
 
-void split_conn_level_data();
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //eval states
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern int mangle_packet();
-
-void create_new_packet_assemble();
-
 

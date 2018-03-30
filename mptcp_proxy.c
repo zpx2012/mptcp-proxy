@@ -834,7 +834,7 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 
 		}
 		break;
-	case 3:{//hook == 3, output
+	case 3:{//hook == 3
 
 			packd.fwd_type = T_TO_M;
 		
@@ -843,16 +843,9 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 			packd.ft.prt_loc = ntohs(packd.tcph->th_sport);
 			packd.ft.prt_rem = ntohs(packd.tcph->th_dport);
 
-			//subflows?
-			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
-			if(packd.sfl != NULL) {
-				packd.sess = packd.sfl->sess;
-			}
-			else{ //kernel original packet?
-				HASH_FIND(hh, sess_hash, &packd.ft, sizeof(struct fourtuple), packd.sess);
-				//packd.sess == null or not, don't care, will be processed latter
-			}
-			
+			HASH_FIND(hh, sess_hash, &packd.ft, sizeof(struct fourtuple), packd.sess);
+			packd.sfl = NULL;
+
 		}
 		break;
 	case 2:{//hook == 2
@@ -866,25 +859,13 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 			packd.ft.prt_rem = ntohs(packd.tcph->th_dport);
 
 			//incoming TCP packet
-			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
-			if(packd.sfl != NULL) {//found output sfl
-				packd.sess = packd.sfl->sess;
-				break;
-			}
-			else {
-				HASH_FIND(hh, sess_hash, &packd.ft, sizeof(struct fourtuple), packd.sess);
-				if(packd.sess != NULL)//found output kernel original packet
-					break;
-			}
-
-/*			//incoming TCP packet
 			HASH_FIND(hh, sess_hash, &packd.ft, sizeof(struct fourtuple), packd.sess);
 			packd.sfl = NULL;
 
 			if(packd.sess != NULL) {
 				break;
 			}
-*/
+
 			packd.fwd_type = M_TO_T;
 
 			packd.ft.ip_loc = ntohl(packd.ip4h->ip_dst);

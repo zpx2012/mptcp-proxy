@@ -191,12 +191,12 @@ void check_fifo_msg() {
 	int ret = read(fd_fifo_dwn, buf_in, LEN_FIFO_REQ);
 
 	if(ret < -1) {
-		snprintf(msg_buf,MAX_MSG_LENGTH, "check_fifo_msg: reading from pipe failed");
+		sprintf(msg_buf, "check_fifo_msg: reading from pipe failed");
 		add_msg(msg_buf);
 	}
 
 	buf_in[ret] = '\0';
-	snprintf(msg_buf,MAX_MSG_LENGTH, "check_fifo_msg: received \"%s\"", buf_in);
+	sprintf(msg_buf, "check_fifo_msg: received \"%s\"", buf_in);
 	add_msg(msg_buf);	
 
 	buf_in[ret] = '\0';	
@@ -212,13 +212,13 @@ void check_fifo_msg() {
 	fd_fifo_up = open(FIFO_NAME_UP, O_WRONLY | O_NONBLOCK);
 	ret = write(fd_fifo_up, buf_out, strlen(buf_out));
 	if(ret < -1) {
-		snprintf(msg_buf,MAX_MSG_LENGTH, "check_fifo_msg: writing to pipe failed");
+		sprintf(msg_buf, "check_fifo_msg: writing to pipe failed");
 		add_msg(msg_buf);
 	}
 	close(fd_fifo_up);
 
 	if(success == 0) {
-		snprintf(msg_buf,MAX_MSG_LENGTH, "check_fifo_msg: parse_fifo_command failed");
+		sprintf(msg_buf, "check_fifo_msg: parse_fifo_command failed");
 		add_msg(msg_buf);
 		return;
 	}
@@ -226,7 +226,7 @@ void check_fifo_msg() {
 	if(cmcmd.cmd != 'L') {
 		ret = do_fifo_cmd();
 		if(ret == 0) {
-			snprintf(msg_buf,MAX_MSG_LENGTH, "check_fifo_msg: do_fifo_cmd failed");
+			sprintf(msg_buf, "check_fifo_msg: do_fifo_cmd failed");
 			add_msg(msg_buf);
 		}
 	}
@@ -325,20 +325,20 @@ int do_fifo_cmd() {
 	}
 	
 	if(curr_sess==NULL) {
-		snprintf(msg_buf,MAX_MSG_LENGTH,"do_fifo_cmd: sess with id=%d not found - FIFO CMD ABORTED", cmcmd.sess);
+		sprintf(msg_buf,"do_fifo_cmd: sess with id=%d not found - FIFO CMD ABORTED", cmcmd.sess);
 		add_msg(msg_buf);	
 		return 0;
 	}
 	
 	if(curr_sess->conman_state != '0') {
-		snprintf(msg_buf,MAX_MSG_LENGTH,"do_fifo_cmd: sess->conman_state=%c != 0 - FIFO CMD ABORTED", curr_sess->conman_state);	
+		sprintf(msg_buf,"do_fifo_cmd: sess->conman_state=%c != 0 - FIFO CMD ABORTED", curr_sess->conman_state);	
 		add_msg(msg_buf);
 		return 0;
 	}
 	if(curr_sess->sess_state < ESTABLISHED || curr_sess->sess_state >= TIME_WAIT) {
 		curr_sess->conman_state = '0';
 		add_msg(msg_buf);
-		snprintf(msg_buf,MAX_MSG_LENGTH,"do_fifo_cmd: sess_state=%d not established - FIFO CMD ABORTED", curr_sess->sess_state);
+		sprintf(msg_buf,"do_fifo_cmd: sess_state=%d not established - FIFO CMD ABORTED", curr_sess->sess_state);
 		return 0;
 	} 	
 
@@ -361,10 +361,6 @@ int do_fifo_cmd() {
 	}
 }
 
-//++++++++++++++++++++++++++++++++++++++++++++++++
-//CONMAN: do_add(struct session *sess)
-//++++++++++++++++++++++++++++++++++++++++++++++++
-
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //CONMAN: do_add(struct session *sess)
@@ -376,7 +372,7 @@ int add_sfl_fifo(struct session *sess) {
 	sess->conman_state = 'A';
 	struct fourtuple ft;
 	if(!determine_fourtuple(sess, &ft)){ 
-		snprintf(msg_buf,MAX_MSG_LENGTH,"add_sfl_fifo: new subflow cannot be created - FIFO CMD ABORTED");
+		sprintf(msg_buf,"add_sfl_fifo: new subflow cannot be created - FIFO CMD ABORTED");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -386,11 +382,11 @@ int add_sfl_fifo(struct session *sess) {
 	unsigned char backup = 1;
 	if(ALLOW_PEER_MULTIPATH) backup = 0;
 	if(initiate_cand_subflow(sess, &ft, backup) == 0){
-		snprintf(msg_buf,MAX_MSG_LENGTH,"add_sfl_fifo: initiate_cand_subflow() creates error - FIFO CMD ABORTED");
+		sprintf(msg_buf,"add_sfl_fifo: initiate_cand_subflow() creates error - FIFO CMD ABORTED");
 		add_msg(msg_buf);
 		return 0;
 	}
-	snprintf(msg_buf,MAX_MSG_LENGTH,"add_sfl_fifo: new subflow initiated");
+	sprintf(msg_buf,"add_sfl_fifo: new subflow initiated");
 	add_msg(msg_buf);
 	return 1;
 }
@@ -408,7 +404,7 @@ int delete_sfl_fifo(struct session *sess) {
 
 	if(sflx == NULL) {
 
-		snprintf(msg_buf,MAX_MSG_LENGTH, "delete_sfl_fifo: subflow not found - FIFO CMD ABORTED");
+		sprintf(msg_buf, "delete_sfl_fifo: subflow not found - FIFO CMD ABORTED");
 		add_msg(msg_buf);
 		return 0;
 
@@ -416,7 +412,7 @@ int delete_sfl_fifo(struct session *sess) {
 
 	if( (cmcmd.sfl>-1) && ((int)sflx->index != cmcmd.sfl) ) {
 
-		snprintf(msg_buf,MAX_MSG_LENGTH, "delete_sfl_fifo: subflow index incorrect - FIFO CMD ABORTED");
+		sprintf(msg_buf, "delete_sfl_fifo: subflow index incorrect - FIFO CMD ABORTED");
 		add_msg(msg_buf);
 		return 0;
 
@@ -424,7 +420,7 @@ int delete_sfl_fifo(struct session *sess) {
 
 	//check if subflow is candidate
 	if(sflx->act_state == 1) {
-		snprintf(msg_buf,MAX_MSG_LENGTH, "delete_sfl_fifo: sfl index=%zu is active, cannot terminate!", sflx->index);
+		sprintf(msg_buf, "delete_sfl_fifo: sfl index=%zu is active, cannot terminate!", sflx->index);
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -433,14 +429,14 @@ int delete_sfl_fifo(struct session *sess) {
 /*
 
 	if(terminate_subflow(sess, sflx) == 0){
-		snprintf(msg_buf,MAX_MSG_LENGTH, "delete_sfl_fifo: terminate_cand_subflow() creates error - FIFO CMD ABORTED");
+		sprintf(msg_buf, "delete_sfl_fifo: terminate_cand_subflow() creates error - FIFO CMD ABORTED");
 		add_msg(msg_buf);
 		sess->conman_state == '0';
 		return 0;
 	}
 */
 	if(!send_reset_subflow(sflx)) {
-		snprintf(msg_buf,MAX_MSG_LENGTH, "delete_sfl_fifo: resetting subflow() creates error - FIFO CMD ABORTED");
+		sprintf(msg_buf, "delete_sfl_fifo: resetting subflow() creates error - FIFO CMD ABORTED");
 		add_msg(msg_buf);
 		//TODO What's intented ?
 		//sess->conman_state == '0';
@@ -448,7 +444,7 @@ int delete_sfl_fifo(struct session *sess) {
 	}
 
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "delete_sfl_fifo: sess id=%zu - subflow deletion initiated", sess->index); 
+	sprintf(msg_buf, "delete_sfl_fifo: sess id=%zu - subflow deletion initiated", sess->index); 
 	add_msg(msg_buf);
 	//send entry to event queue for retransmission
 	return 1;
@@ -468,14 +464,14 @@ int switch_sfl_fifo(struct session *sess) {
 
 	if(new_sfl == NULL) {
 
-		snprintf(msg_buf,MAX_MSG_LENGTH, "switch_sfl_fifo: subflow not found - FIFO CMD ABORTED");
+		sprintf(msg_buf, "switch_sfl_fifo: subflow not found - FIFO CMD ABORTED");
 		add_msg(msg_buf);
 		return 0;
 
 	}
 	if( (cmcmd.sfl>-1) && ( (int)new_sfl->index != cmcmd.sfl) ) {
 
-		snprintf(msg_buf,MAX_MSG_LENGTH, "switch_sfl_fifo: subflow index incorrect - FIFO CMD ABORTED");
+		sprintf(msg_buf, "switch_sfl_fifo: subflow index incorrect - FIFO CMD ABORTED");
 		add_msg(msg_buf);
 		return 0;
 
@@ -489,12 +485,12 @@ int switch_sfl_fifo(struct session *sess) {
 	if(sess->act_subflow != sess->last_subflow) {
 		if(!send_switch_ack(sess->act_subflow, sess->last_subflow)){
 
-			snprintf(msg_buf,MAX_MSG_LENGTH, "switch_active_sfl: send_switch_ack() returned error");
+			sprintf(msg_buf, "switch_active_sfl: send_switch_ack() returned error");
 			add_msg(msg_buf);
 		}
 	}
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "switch_sfl_fifo: sess id=%lu switched from sfl id=%zu to sfl id=%zu",
+	sprintf(msg_buf, "switch_sfl_fifo: sess id=%lu switched from sfl id=%zu to sfl id=%zu",
 			sess->index,
 			sess->last_subflow->index, sess->act_subflow->index);
 	add_msg(msg_buf);
@@ -521,7 +517,7 @@ int break_sfl_fifo(struct session *sess) {
 
 	//if new_sfl == NULL try to create new subflow
 	if(new_sfl == NULL) {
-		snprintf(msg_buf,MAX_MSG_LENGTH, "break_sfl_fifo: candidate subflow not found -> creating new subflow");
+		sprintf(msg_buf, "break_sfl_fifo: candidate subflow not found -> creating new subflow");
 		add_msg(msg_buf);
 
 		//get fourtuple for new subflow (all except active)
@@ -533,7 +529,7 @@ int break_sfl_fifo(struct session *sess) {
 		struct fourtuple ft;
 		if(!determine_fourtuple(sess, &ft)) {
 
-			snprintf(msg_buf,MAX_MSG_LENGTH,"break_sfl_fifo: new subflow cannot be created - FIFO CMD ABORTED");
+			sprintf(msg_buf,"break_sfl_fifo: new subflow cannot be created - FIFO CMD ABORTED");
 			add_msg(msg_buf);
 			return 0;
 		}
@@ -546,13 +542,13 @@ int break_sfl_fifo(struct session *sess) {
 
 		unsigned char backup = 0;
 		if(initiate_cand_subflow(sess, &ft, backup) == 0){
-			snprintf(msg_buf,MAX_MSG_LENGTH,"break_sfl_fifo: initiating new subflow creates error - FIFO CMD ABORTED");
+			sprintf(msg_buf,"break_sfl_fifo: initiating new subflow creates error - FIFO CMD ABORTED");
 			add_msg(msg_buf);
 			return 0;
 		}
 	
 	} else {
-		snprintf(msg_buf,MAX_MSG_LENGTH,"break_sfl_fifo: sess id=%zu - deleting old sfl id=%zu and using new sfl id=%zu", 
+		sprintf(msg_buf,"break_sfl_fifo: sess id=%zu - deleting old sfl id=%zu and using new sfl id=%zu", 
 				sess->index, sess->act_subflow->index, new_sfl->index);
 		add_msg(msg_buf);
 
@@ -581,7 +577,7 @@ void check_for_subflow_break(char * const ifname, const uint32_t old_ipaddr) {
 
 	char buf_ip[34];
 	sprintIPaddr(buf_ip, old_ipaddr);
-	snprintf(msg_buf,MAX_MSG_LENGTH,"check_for_subflow_break: if=%s discontinued ip address=%s", ifname, buf_ip);
+	sprintf(msg_buf,"check_for_subflow_break: if=%s discontinued ip address=%s", ifname, buf_ip);
 	add_msg(msg_buf);
 
 	struct session *curr_sess, *tmp_sess;
@@ -603,10 +599,10 @@ void check_for_subflow_break(char * const ifname, const uint32_t old_ipaddr) {
 				if(handle_subflow_break(sflx)) {
 					active_broken = 1;
 
-					snprintf(msg_buf,MAX_MSG_LENGTH,"check_for_subflow_break: active broken");
+					sprintf(msg_buf,"check_for_subflow_break: active broken");
 					add_msg(msg_buf);
 				} else {
-					snprintf(msg_buf,MAX_MSG_LENGTH,"check_for_subflow_break: candidate broken");
+					sprintf(msg_buf,"check_for_subflow_break: candidate broken");
 					add_msg(msg_buf);
 				}
 			}
@@ -614,7 +610,7 @@ void check_for_subflow_break(char * const ifname, const uint32_t old_ipaddr) {
 		
 		if(active_broken){
 
-			snprintf(msg_buf,MAX_MSG_LENGTH,"check_for_subflow_break: active sfl id=%zu broken", curr_sess->act_subflow->index);
+			sprintf(msg_buf,"check_for_subflow_break: active sfl id=%zu broken", curr_sess->act_subflow->index);
 			add_msg(msg_buf);
 
 			strcpy(cmcmd.ifname, "");
@@ -634,7 +630,7 @@ void check_for_subflow_break(char * const ifname, const uint32_t old_ipaddr) {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void check_for_remote_break(struct session * const sess, struct subflow * const sfl_in, unsigned char addr_id_rem) {
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "check_for_remote_break: addr_id=%u", addr_id_rem);
+	sprintf(msg_buf, "check_for_remote_break: addr_id=%u", addr_id_rem);
 	add_msg(msg_buf);
 
 
@@ -673,7 +669,7 @@ void check_for_remote_break(struct session * const sess, struct subflow * const 
 void do_make(char * const ifname, const uint32_t new_ipaddr) {
 	char buf_ip[34];
 	sprintIPaddr(buf_ip, new_ipaddr);
-	snprintf(msg_buf,MAX_MSG_LENGTH, "do_make: if=%s with ip address=%s", ifname, buf_ip);
+	sprintf(msg_buf, "do_make: if=%s with ip address=%s", ifname, buf_ip);
 	add_msg(msg_buf);
 
 	struct session *curr_sess, *tmp_sess;
@@ -688,7 +684,7 @@ void do_make(char * const ifname, const uint32_t new_ipaddr) {
 			if(sflx != NULL && strcmp(sflx->ifname_loc, ifname) == 0 &&
 					sflx->ft.ip_loc == new_ipaddr) {
 				sflx->broken = 0;
-				snprintf(msg_buf,MAX_MSG_LENGTH, "do_make: resetting broken flag for sess_id=%zu, sfl_id=%zu", curr_sess->index, sflx->index);
+				sprintf(msg_buf, "do_make: resetting broken flag for sess_id=%zu, sfl_id=%zu", curr_sess->index, sflx->index);
 				add_msg(msg_buf);
 
 
@@ -716,7 +712,7 @@ void do_break_before_make(char * const ifname, const uint32_t old_ipaddr, const 
 	char buf_ip_new[34];
 	sprintIPaddr(buf_ip_new, new_ipaddr);
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "do_break_before_make: ip address of if=%s changed from %s to %s", ifname, buf_ip_old, buf_ip_new);
+	sprintf(msg_buf, "do_break_before_make: ip address of if=%s changed from %s to %s", ifname, buf_ip_old, buf_ip_new);
 	add_msg(msg_buf);
 
 	struct session *curr_sess, *tmp_sess;
@@ -746,7 +742,7 @@ void do_remove_address(struct session *sess, const uint32_t old_ipaddr) {
 	char buf_ip_old[34];
 	sprintIPaddr(buf_ip_old, old_ipaddr);
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "do_remove_address: remove address %s for sess id=%zu", buf_ip_old, sess->index);
+	sprintf(msg_buf, "do_remove_address: remove address %s for sess id=%zu", buf_ip_old, sess->index);
 	add_msg(msg_buf);
 
 	int found = 0;
@@ -756,7 +752,7 @@ void do_remove_address(struct session *sess, const uint32_t old_ipaddr) {
 		sflx = (struct subflow*) get_pnt_pA(&sess->pA_sflows, i);
 		
 		if( sflx->ft.ip_loc == old_ipaddr && sflx->act_state == CANDIDATE && sflx->tcp_state < TIME_WAIT) {
-			snprintf(msg_buf,MAX_MSG_LENGTH, "do_remove_address: THIS DOES NOT WORK. WE SHOULD SEND INDEPENDENT ACK WITH REMOVE_ADDR!");
+			sprintf(msg_buf, "do_remove_address: THIS DOES NOT WORK. WE SHOULD SEND INDEPENDENT ACK WITH REMOVE_ADDR!");
 			add_msg(msg_buf);
 
 			//mapping between address and address_id must be removed in case a connection has more than 256 address changes
@@ -820,32 +816,6 @@ void delete_remove_addr_event(struct tp_event *evt) {
 	free( evt );
 }
 
-//++++++++++++++++++++++++++++++++++++++++++++++++
-//determine fourtuple: We assume that act_subflow != NULL
-//++++++++++++++++++++++++++++++++++++++++++++++++
-int determine_fourtuple_mine(struct session *sess, struct fourtuple *ft) {
-	ft->ip_loc = sess->act_subflow->ft.ip_loc;
-	ft->ip_rem = sess->act_subflow->ft.ip_rem;
-	ft->prt_rem = sess->act_subflow->ft.prt_rem;
-
-
-	struct subflow *sflx;
-	do{ 
-		ft->prt_loc = toss_port_number();
-		HASH_FIND(hh, sfl_hash, ft, sizeof(struct fourtuple), sflx);
-		
-	}while(ft->prt_loc == sess->act_subflow->ft.prt_loc || sflx);
-	
-	char buf_ft[100];
-	sprintFourtuple(buf_ft, ft);
-	snprintf(msg_buf,MAX_MSG_LENGTH, "determine_fourtuple: 4tuple for new sfl is %s", buf_ft);
-	add_msg(msg_buf);
-
-	return 1;
-}
-
-
-
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //determine fourtuple: We assume that act_subflow != NULL
@@ -868,7 +838,7 @@ int determine_fourtuple(struct session *sess, struct fourtuple *ft) {
 	if(ft->ip_loc == 0){
 		if(USE_PORT_FOR_NEW_SUBFLOWS == 0){
 
-			snprintf(msg_buf,MAX_MSG_LENGTH, "determine_fourtuple: cannot establish fourtuple for new subflow!");
+			sprintf(msg_buf, "determine_fourtuple: cannot establish fourtuple for new subflow!");
 			add_msg(msg_buf);			
 			return 0;
 		} else {
@@ -890,7 +860,7 @@ int determine_fourtuple(struct session *sess, struct fourtuple *ft) {
 
 	char buf_ft[100];
 	sprintFourtuple(buf_ft, ft);
-	snprintf(msg_buf,MAX_MSG_LENGTH, "determine_fourtuple: 4tuple for new sfl is %s", buf_ft);
+	sprintf(msg_buf, "determine_fourtuple: 4tuple for new sfl is %s", buf_ft);
 	add_msg(msg_buf);
 
 	return 1;
@@ -907,7 +877,7 @@ void update_default_route(uint32_t ip) {
 	sprintIPaddr(s_ip, ip);
 
 	if(!found) {
-		snprintf(msg_buf,MAX_MSG_LENGTH, "update_default_route: inteface not found to ip  = %s", s_ip);
+		sprintf(msg_buf, "update_default_route: inteface not found to ip  = %s", s_ip);
 		add_msg(msg_buf);
 		return;
 	}
@@ -921,7 +891,7 @@ void update_default_route(uint32_t ip) {
 
 	if(str[i] != '.'){
 
-		snprintf(msg_buf,MAX_MSG_LENGTH, "update_default_route: do not find '.' in str = %s", str);
+		sprintf(msg_buf, "update_default_route: do not find '.' in str = %s", str);
 		add_msg(msg_buf);
 		return;
 	}
@@ -930,7 +900,7 @@ void update_default_route(uint32_t ip) {
 	str[i+3] = '\0';
 	strcat(str, ifname);
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "update_default_route: new route = %s", str);		
+	sprintf(msg_buf, "update_default_route: new route = %s", str);		
 	add_msg(msg_buf);
 
 	system("route del default");
@@ -943,7 +913,7 @@ void update_default_route(uint32_t ip) {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void auxil_toggle(char c) {
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "auxil_toggle: input char=%c", c);
+	sprintf(msg_buf, "auxil_toggle: input char=%c", c);
 	add_msg(msg_buf);
 
 	switch(c) {
