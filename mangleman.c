@@ -906,6 +906,9 @@ int update_session_control_plane() {
 	case ESTABLISHED:
 		ret = session_established();
 		break;
+	case PRE_SYN_SENT:
+		ret = session_pre_syn_sent();
+		break;
 	case SYN_SENT:
 		ret = session_syn_sent();	
 		break;
@@ -993,21 +996,24 @@ int mangle_packet() {
 	//*****SESSION ESTABLISHMENT******
 	//Sess = NULL && SYN only: contemplate session creation or subflow creation
 	//   Evaluates MP_CAP or MP_JOIN
-	if(packd.sess == NULL) {
+	if( packd.syn == 1 && packd.ack == 0) {
 
-		if( packd.syn == 1 && packd.ack == 0) {
-
+		if(packd.sess == NULL) {
 			return contemplate_new_session();
 		}
-		else{
+		else if(packd.sfl && packd.sfl->tcp_state == PRE_SYN_SENT){
+
+		} 
+	}
+	else if( packd.sess == NULL){
+		
 			set_verdict(1,0,0);
 			return 0;
-		}
-	} else {//generic features if session exists
-
-		if(packd.sess->timestamp_flag) update_timestamp();
-
 	}
+
+	//generic features if session exists
+	if(packd.sess->timestamp_flag) update_timestamp();
+
 
 	//*****DATA-PLANE MANAGEMENT******
 	if(packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT) {
@@ -1143,6 +1149,7 @@ void determine_thruway_subflow_mine(){
 		packd.sfl = packd.sess->act_subflow;
 		packd.paylen_curr = packd.paylen;
 
+		packd.ssn_curr_loc = packd.sfl->highest_sn_loc;
 		//increase sn/dsn_highest_loc with gap: 
 		//  this "reserves" gap-space on this subflow and keeps dsn->ssn mapping monotonous in case of out-of-order arrival
 		if(packd.dsn_curr_loc != packd.sess->highest_dsn_loc){
@@ -1150,7 +1157,6 @@ void determine_thruway_subflow_mine(){
 			set_verdict(0,0,0);
 			return;
 		}
-		update_highest = 1;
 
 	} else {
 
@@ -1212,7 +1218,7 @@ void determine_thruway_subflow_mine(){
 
 	if(update_highest) {
 
-		packd.ssn_curr_loc = packd.sfl->highest_sn_loc;
+
 
 		uint32_t dsn = packd.sess->highest_dsn_loc;
 		if(packd.retransmit_flag) dsn = packd.dsn_curr_loc;

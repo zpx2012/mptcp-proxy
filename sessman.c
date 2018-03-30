@@ -352,7 +352,7 @@ int contemplate_new_session_output() {
 		sess->tsval = get_timestamp(packd.buf + packd.pos_thead+20, packd.tcplen-20, 0);
 
 
-	sflx->sess = sess;
+
 
 	//packd update
 	packd.sfl = sflx;
@@ -394,6 +394,131 @@ int contemplate_new_session_output() {
 	return 1;
 }//end contemplate_new_session_output
 
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//contemplate new session output
+//bind port number, connect
+//create sess, subflow
+//++++++++++++++++++++++++++++++++++++++++++++++++
+int contemplate_new_session_output_mine() {
+
+	//create socket
+	int sockfd;
+	uint16_t sfl_port;
+	struct sockaddr_in sin_loc, sin_rem;
+	socklen_t sin_loc_len;
+	
+    sockfd = socket(AF_INET , SOCK_STREAM , 0);
+    if (sockfd == -1){
+        printf("Could not create socket");
+    }
+
+	//bind new port number
+	sin_loc.sin_family = AF_INET;
+    sin_loc.sin_port = 0; 
+    sin_loc.sin_addr.s_addr = packd.ip4h->ip_src; 
+    if (bind(sockfd, (const struct sockaddr *)&sin_loc, sizeof(sin_loc)) == -1) {
+        printf("Failed to bind");
+    }
+    sin_loc_len = sizeof(sin_loc);
+    if (getsockname(sockfd, (struct sockaddr *)&sin_loc, &sin_loc_len) == -1) {
+        printf("getsockname() failed");
+    }
+    sfl_port = ntohs(sin_loc.sin_port);
+
+	//connect to dst
+	sin_rem.sin_addr.s_addr = packd.ip4h->ip_dst;
+    sin_rem.sin_family = AF_INET;
+    sin_rem.sin_port = packd.tcph->th_dport;
+ 
+    //Connect to remote server
+    if (connect(sockfd , (struct sockaddr *)&sin_rem , sizeof(sin_rem)) < 0){
+        perror("connect failed. Error");
+        return 1;
+    }
+
+
+
+	//create TPcap option and append to packd.mptcp_opt_buf (which is still zero)
+	//if too long, kill the whole MPTCP idea and fallback to ordinary TCP mode
+	uint32_t key_loc[2];
+	create_key(key_loc);//create local key
+
+	uint32_t token_loc;
+	uint32_t idsn_loc;
+	uint32_t idsn_h_loc;
+	create_idsn_token(key_loc, &idsn_loc, &token_loc,&idsn_h_loc);
+
+	//create subflow
+	// set sess* = NULL since not yet existent.
+	// overwrite = 1 in case subflow already exists
+	struct fourtuple *ft_sfl = malloc(sizeof(struct fourtuple));
+	ft_sfl->ip_loc = packd.ft.ip_loc;
+	ft_sfl->ip_rem = packd.ft.ip_rem;
+	ft_sfl->prt_rem = packd.ft.prt_rem;
+	ft_sfl->prt_loc = sfl_port;
+
+	struct subflow  *sflx;
+	sflx = create_subflow(
+		 ft_sfl,
+		 0,//address id loc
+		 0,//address id rem
+		 PRE_SYN_SENT,//tcp_state
+		 ACTIVE,//act_state
+		 0,//loc ISSN
+		 0,//rem ISSN
+		 0,//loc offset
+		 0,//remote offset
+		 0,//random number loc
+		 0,//random number rem
+		 1);
+	if(sflx == NULL) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output returns NULL when creating subflow");
+		add_msg(msg_buf);
+		return 0;
+	}
+
+	//create session
+	struct fourtuple *ft_sess = malloc(sizeof(struct fourtuple));
+	ft_sess->ip_loc = packd.ft.ip_loc;
+	ft_sess->ip_rem = packd.ft.ip_rem;
+	ft_sess->prt_rem = packd.ft.prt_rem;
+	ft_sess->prt_loc = packd.ft.prt_loc;
+	
+	struct session *sess;
+	sess = create_session(
+		ft_sess,
+		key_loc, //local key
+		0, //remote key not yet knwon
+		idsn_h_loc,
+	 	idsn_loc, //loc IDSN
+		0, //rem IDSN
+	 	token_loc, //loc token
+		0, //rem token
+		0,
+		0, //rem offset
+		PRE_SYN_SENT,
+		sflx,
+		1);
+	if(sess == NULL) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output returns NULL when creating session");
+		add_msg(msg_buf);
+		return 0;
+	}
+
+	sflx->sess = sess;
+
+	//???
+	struct session_parms *sess_parm;
+	sess_parm = create_session_parm(sess->token_loc, &packd.ft, 1);
+	if(sess_parm == NULL) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output returns NULL when creating session_parm");
+		add_msg(msg_buf);
+		return 0;
+	}
+
+
+
+}//end contemplate_new_session_output
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -468,7 +593,122 @@ int contemplate_new_session_input(){
 
 }//contemplate_new_session_input
 
+int session_pre_syn_sent(){
 
+	if(!packd.syn || packd.ack) {
+		set_verdict(1,0,0);
+		return 0;
+	}
+
+	if(packd.hook < 3 && packd.fwd_type == M_TO_T){
+		set_verdict(1,0,0);
+		//TODO: Confirm return value
+		return 0;
+	}
+
+	//mine:do we need this?
+	packd.fwd_type = T_TO_M;
+
+	//behaves like an output: packet arrives from TCP and is sent to subflow
+	packd.ft.ip_loc = ntohl(packd.ip4h->ip_src);
+	packd.ft.ip_rem = ntohl(packd.ip4h->ip_dst);
+	packd.ft.prt_loc = ntohs(packd.tcph->th_sport);
+	packd.ft.prt_rem = ntohs(packd.tcph->th_dport);
+
+	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: input tcp_seq=%lu, tcp_an=%lu",
+			(long unsigned) ntohl(packd.tcph->th_seq),
+			(long unsigned) ntohl(packd.tcph->th_ack));
+	add_msg(msg_buf);
+
+
+	unsigned char init_len = packd.tcplen-20;
+	//unsigned char len = packd.tcplen - 20;
+
+	//find window scale factor
+	unsigned char scaling_factor = find_window_scaling(packd.buf+packd.pos_thead+20, &init_len);
+	int timestamp_flag = find_offset_of_tcp_option(packd.buf+packd.pos_thead+20, init_len, 8);
+
+	if(!create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, NULL) ) {
+
+		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: total option len too long, len=%u", packd.mptcp_opt_len);
+		add_msg(msg_buf);	
+		return 0;
+	}
+
+	if(DO_SACK) {
+		packd.sfl->sack_flag = 1;
+		if(find_tcp_option(packd.buf+packd.pos_thead+20, init_len, 4)){
+			packd.sess->sack_flag = 1;
+		} else {
+			packd.sess->sack_flag = 0;
+
+			//furnish with sack flag for subflow sack support
+			if(append_sack(packd.buf+packd.pos_thead+20, &init_len)){
+				packd.tcplen += 2;
+				packd.pos_pay += 2;
+				packd.totlen += 2;
+			}
+		}
+	} else {
+		packd.sess->sack_flag = 0;
+		packd.sfl->sack_flag = 0;
+
+		//remove sack flag to suppress sack on subflow
+		if(eliminate_tcp_option(packd.buf+packd.pos_thead+20, &init_len, 4)) {
+			packd.tcplen -= 2;
+			packd.pos_pay -= 2;
+			packd.totlen -= 2;
+		}
+	}
+
+	// buffer initial tcp options until the session has been created
+	unsigned char init_opt[40];
+	memmove(init_opt, packd.buf+packd.pos_thead+20, init_len);
+
+	packd.sess->init_top_len = init_len;//these are buffered inital options
+	memmove(packd.sess->init_top_data, init_opt, init_len);//these are the compacted inital options
+
+	packd.sess->init_window_loc = ntohs(packd.tcph->th_win);
+	packd.sess->scaling_factor_loc = scaling_factor;
+	packd.sess->curr_window_loc = (packd.sess->init_window_loc)>>scaling_factor;
+	packd.sess->timestamp_flag = timestamp_flag;
+	if(packd.sess->timestamp_flag)
+		packd.sess->tsval = get_timestamp(packd.buf + packd.pos_thead+20, packd.tcplen-20, 0);
+
+
+	if(!output_data_mptcp()) {
+		set_verdict(1,0,0);
+		execute_sess_teardown(sess);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: output_data_mptcp fails");
+		add_msg(msg_buf);
+		return 0;
+	}
+
+	//buffer packet in case retransmission occurs
+	cache_packet_header();
+
+	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: new session created, sess_id=%zu, sess_state=SYN_SENT", packd.sess->index);
+	add_msg(msg_buf);
+	set_verdict(1,1,1);
+
+	
+	packd.sfl->tcp_state = SYN_SENT;
+	packd.sess->sess_state = SYN_SENT;
+
+	//there is room for opimization: the first subflow does not have to be in IP tables
+	//	after SYN/ACK handshake
+
+	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_sess_output: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, sfl_seq=%lu, sfl_an=%lu",
+		(long unsigned) packd.sfl->isn_loc, (long unsigned) packd.sfl->isn_rem,
+		(long unsigned) packd.sess->idsn_loc, (long unsigned) packd.sess->idsn_rem,
+		(long unsigned) ntohl(packd.tcph->th_seq),
+		(long unsigned) ntohl(packd.tcph->th_ack));
+	add_msg(msg_buf);
+	
+	return 1;
+
+
+}
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
