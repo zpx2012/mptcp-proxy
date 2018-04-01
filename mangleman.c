@@ -1031,25 +1031,117 @@ int update_session_control_plane() {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int mangle_packet() {
 
-	if(packd.sess->timestamp_flag) update_timestamp();
+	if(packd.nb_mptcp_options > 0){
 
+		//*****SELF-INDUCED PACKETS******
+		if( packd.hook == 3){
+
+			set_verdict(1,0,0);
+			return 0;
+		}
+		//*****CHECK FOR DATA RST******
+		if( packd.hook < 3 && packd.fwd_type == M_TO_T && packd.sess != NULL && find_MPsubkind(mptopt, packd.nb_mptcp_options, MPTCP_RST) > -1){
+
+			handle_data_reset_input();
+			return(0);
+		}
+	}
+
+	//*****TCP RESET******
+	// 
+	//handles RSTs send by tcp
+	//sess can be NULL
+	if(packd.rst == 1) {
+
+		//handle all other RSTs
+		if(packd.hook < 3 && packd.fwd_type == M_TO_T) handle_reset_input();//sent by other MPTCP host
+		if(packd.hook > 1 && packd.fwd_type == T_TO_M) handle_reset_output();//sent by TCP
+		return 0; //terminate here
+	}
+
+	//*****SESSION ESTABLISHMENT******
+	//Sess = NULL && SYN only: contemplate session creation or subflow creation
+	//   Evaluates MP_CAP or MP_JOIN
+	if(packd.sess == NULL) {
+
+		if( packd.syn == 1 && packd.ack == 0) {
+
+			return contemplate_new_session();
+		}
+		else{
+			set_verdict(1,0,0);
+			return 0;
+		}
+	} else {//generic features if session exists
+
+		if(packd.sess->timestamp_flag) update_timestamp();
+
+	}
 
 	//*****DATA-PLANE MANAGEMENT******
 	if(packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT) {
 
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
 
-		
-
 			update_conn_level_data();
 			determine_thruway_subflow();//sets verdict
+
+			//*****SIDE ACK MANAGEMENT******
+			//packet is sent on packd.sfl, which may be last or active
+			if(packd.ack == 1) {
+			
+				//determine side acks and update SANs for them
+				find_side_acks();
+
+				//update thruway for ACKs, i.e. no payload
+				if(packd.verdict == 0) update_thruway_subflow();//updates verdict
+		
+				if(packd.verdict == 0) return 0;//packet terminates here
+
+				//prepare DAN and send side ACKS
+				if( packd.sess->pA_sflows_data.number > 0) send_side_acks();
+
+			}//end if packd.ACK == 1
+
 
 			//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
 			if(packd.rst == 0) set_dss_and_prio();
 
 			update_packet_output();
 
+		} else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
+
+			if(packd.sfl->broken) {
+				set_verdict(0,0,0);
+				return 0;
+			}
+
+			packd.verdict = 0;
+			if(packd.sfl->tcp_state >= ESTABLISHED) {
+				update_subflow_level_data();
+				packd.verdict = 1;//packd.sess->sent_state;
+			
+
+				if( packd.nb_mptcp_options > 0 ) {
+
+					process_dss();
+					process_remove_addr();
+					process_prio();
+	
+				}//end if packd.nb_mptcp_options
+
+				update_packet_input();
+			}
+
+		}//end if hook = 1/3
 	}//end if (packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT)
+
+
+
+	//*****CONTROL-PLANE MANAGEMENT******
+	//Subflow control plane: only for INPUT (hook = 1) && CANDIDATE sfls and when session established
+	if(packd.hook<3 && packd.fwd_type == M_TO_T && packd.sess->sess_state >= ESTABLISHED)
+		update_subflow_control_plane();
 
 	//Session control plane
 	return update_session_control_plane();
