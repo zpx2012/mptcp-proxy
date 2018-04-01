@@ -84,9 +84,6 @@
 #define FILE_NAME_30 "/tmp/table_data_3.txt"
 #define FILE_NAME_MSG "/tmp/mptcp_proxy_msg.txt"
 
-//++++new
-#define PRE_SYN_SENT 0
-
 //session and subflow states: order very important
 #define SYN_SENT 1
 #define PRE_SYN_REC_1 2
@@ -322,6 +319,25 @@ struct print_data{
 extern struct print_data prt_data;
 
 struct packet_data{
+
+	struct fourtuple ft;
+	struct session *sess;
+	struct subflow *sfl;
+
+	//for output
+	uint32_t dsn_curr_loc;
+	uint32_t dan_curr_rem;
+
+	uint16_t paylen_curr;//if paylen of packet has to be reduced
+	uint32_t ssn_curr_loc;
+	uint32_t san_curr_rem;
+	
+	//for input
+	uint32_t dsn_curr_rem;
+	uint32_t dan_curr_loc;
+	uint32_t ssn_curr_rem;
+	uint32_t san_curr_loc;
+
 	uint32_t id;
 
 	size_t hook;
@@ -383,23 +399,6 @@ struct packet_data{
 	unsigned char nb_sack_in;
 	unsigned char nb_sack_tcp;
 
-	struct fourtuple ft;
-	struct session *sess;
-	struct subflow *sfl;
-
-	//for output
-	uint32_t dsn_curr_loc;
-	uint32_t dan_curr_rem;
-
-	uint16_t paylen_curr;//if paylen of packet has to be reduced
-	uint32_t ssn_curr_loc;
-	uint32_t san_curr_rem;
-	
-	//for input
-	uint32_t dsn_curr_rem;
-	uint32_t dan_curr_loc;
-	uint32_t ssn_curr_rem;
-	uint32_t san_curr_loc;
 
 	//uint32_t ssn_curr_loc;
 
@@ -448,9 +447,6 @@ struct map_table{
 struct session;
 
 struct subflow{
-
-	int sockfd;
-
 	struct fourtuple ft;//key
 	size_t index;//index in subflow table: do we need this?
 
@@ -524,11 +520,6 @@ struct addrid{
 struct session{
 	//++++new
 	uint32_t idsn_h_loc;
-	unsigned char candsfl_snd_buf[4096]; //why not in sfl? 2 sfls, 1 sess. more memory waste
-	uint16_t candsfl_snd_len;
-	struct pntArray pA_rex_entry;
-	unsigned char candsfl_rev_buf[3];
-	uint16_t candsfl_rev_len;
 	//----new
 
 	struct fourtuple ft;//key, this is the ft used by the TCP control block
@@ -540,9 +531,12 @@ struct session{
 	uint32_t key_loc[2];
 	uint32_t key_rem[2];
 
+
+
 	uint32_t token_loc;
 	uint32_t token_rem;
 
+	uint32_t idsn_h_loc;
 	uint32_t idsn_loc;//init DSN local
 	uint32_t idsn_rem;//init DSN remote
 
