@@ -536,7 +536,6 @@ struct session{
 	uint32_t token_loc;
 	uint32_t token_rem;
 
-	uint32_t idsn_h_loc;
 	uint32_t idsn_loc;//init DSN local
 	uint32_t idsn_rem;//init DSN remote
 
