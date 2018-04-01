@@ -68,7 +68,7 @@ void handle_reset_output() {
 		return;
 	}
 
-	sprintf(msg_buf,"handle_reset_output: Sending MP_RST on sess_id=%zu, sfl_id=%zu", packd.sess->index, packd.sess->act_subflow->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH,"handle_reset_output: Sending MP_RST on sess_id=%zu, sfl_id=%zu", packd.sess->index, packd.sess->act_subflow->index);
 	add_msg(msg_buf);
 
 	packd.sfl = packd.sess->act_subflow;
@@ -96,7 +96,7 @@ void handle_reset_output() {
 	} else
 		set_verdict(1,0,0);
 
-	sprintf(msg_buf,"handle_reset_output: sess id=%zu entering sess_state RST_WAIT", packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH,"handle_reset_output: sess id=%zu entering sess_state RST_WAIT", packd.sess->index);
 	add_msg(msg_buf);
 }
 
@@ -116,7 +116,7 @@ void handle_data_reset_input() {
 		char buf_key2[30];
 		sprint_buffer((unsigned char *) key, (char*) &buf_key1, 8, 1);
 		sprint_buffer((unsigned char *) packd.sess->key_loc, (char*) &buf_key2, 8, 1);
-		sprintf(msg_buf, "handle_data_reset_input: key not recongized. found:%s. expected:%s", buf_key1, buf_key2);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "handle_data_reset_input: key not recongized. found:%s. expected:%s", buf_key1, buf_key2);
 		add_msg(msg_buf);
 
 		set_verdict(0,0,0);
@@ -143,7 +143,7 @@ void handle_data_reset_input() {
 
 	set_verdict(1,1,0);
 
-	sprintf(msg_buf, "handle_data_reset_input: sess_id=%zu terminates after receiving MP RST", packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "handle_data_reset_input: sess_id=%zu terminates after receiving MP RST", packd.sess->index);
 	add_msg(msg_buf);
 
 	//delete session
@@ -161,12 +161,12 @@ void handle_reset_input() {
 		return;
 	}
 	if(packd.sess->sess_state == RST_WAIT) {
-		sprintf(msg_buf, "handle_reset_input: RST received in RST_WAIT state. Deleting sfl_id=%zu", packd.sfl->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "handle_reset_input: RST received in RST_WAIT state. Deleting sfl_id=%zu", packd.sfl->index);
 		add_msg(msg_buf);	
 
 		if(packd.sfl == packd.sess->act_subflow){
 
-			sprintf(msg_buf, "handle_reset_input: received TCP RST on act sfl_id=%zu, sess in RST_WAIT, tearing down sess_id=%zu", 
+			snprintf(msg_buf,MAX_MSG_LENGTH, "handle_reset_input: received TCP RST on act sfl_id=%zu, sess in RST_WAIT, tearing down sess_id=%zu", 
 				packd.sfl->index, packd.sess->index);
 			add_msg(msg_buf);
 			delete_session_parm(packd.sess->token_loc);
@@ -177,7 +177,7 @@ void handle_reset_input() {
 	}
 
 	if(packd.sfl->tcp_state == TIME_WAIT) {
-		sprintf(msg_buf, "handle_reset_input: RST received in TIME_WAIT state. Deleting sfl_id=%zu", packd.sfl->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "handle_reset_input: RST received in TIME_WAIT state. Deleting sfl_id=%zu", packd.sfl->index);
 		add_msg(msg_buf);	
 		delete_subflow(&packd.sfl->ft);
 		set_verdict(0,0,0);	
@@ -188,7 +188,7 @@ void handle_reset_input() {
 		if(packd.sfl == packd.sess->last_subflow){
 
 			packd.sess->ack_inf_flag = 1;
-			sprintf(msg_buf, "handle_reset_input: RST received on last_sfl, id=%zu, resetting ack_inf_flag to 1", packd.sfl->index);
+			snprintf(msg_buf,MAX_MSG_LENGTH, "handle_reset_input: RST received on last_sfl, id=%zu, resetting ack_inf_flag to 1", packd.sfl->index);
 			add_msg(msg_buf);
 		}
 
@@ -209,7 +209,7 @@ void handle_reset_input() {
 			return;
 		}
 
-		sprintf(msg_buf, "handle_reset_input: active sfl id=%zu receives TCP RST", packd.sfl->index);	
+		snprintf(msg_buf,MAX_MSG_LENGTH, "handle_reset_input: active sfl id=%zu receives TCP RST", packd.sfl->index);	
 		add_msg(msg_buf);
 		strcpy(cmcmd.ifname, "");
 		cmcmd.ip_loc = 0;
@@ -745,7 +745,7 @@ void process_dss() {
 				packd.sess->conman_state = '0';
 				packd.sess->ack_inf_flag = 1;
 
-				sprintf(msg_buf, "process_dss: reset conman state and ack_inf_flag for sess_id=%zu", packd.sess->index);
+				snprintf(msg_buf,MAX_MSG_LENGTH, "process_dss: reset conman state and ack_inf_flag for sess_id=%zu", packd.sess->index);
 				add_msg(msg_buf);
 
 			}
@@ -769,7 +769,7 @@ void process_remove_addr() {
 	unsigned char addr_id_rem;
 	if(analyze_MPremove_addr(mptopt, packd.nb_mptcp_options, &addr_id_rem) ) {
 
-		sprintf(msg_buf, "process_remove_addr: addr_id_rem=%u, sess_id=%zu", addr_id_rem, packd.sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "process_remove_addr: addr_id_rem=%u, sess_id=%zu", addr_id_rem, packd.sess->index);
 		add_msg(msg_buf);
 
 		check_for_remote_break(packd.sess, packd.sfl, addr_id_rem);
@@ -792,7 +792,7 @@ void process_prio(){
 
 		//we currently only consider switch with backup = 0.
 
-		sprintf(msg_buf,"process_prio: MPprio found in sess_id=%zu, sfl_id=%zu, backup=%u", packd.sess->index, packd.sfl->index, *backup);
+		snprintf(msg_buf,MAX_MSG_LENGTH,"process_prio: MPprio found in sess_id=%zu, sfl_id=%zu, backup=%u", packd.sess->index, packd.sfl->index, *backup);
 		add_msg(msg_buf);
 		if(*backup == 0 && packd.sfl != packd.sess->act_subflow) {
 
@@ -823,7 +823,7 @@ void update_packet_input() {
 					dssopt_in.dsn, dssopt_in.ssn + packd.sfl->isn_rem, dssopt_in.range - dssopt_in.Fflag);
 
 				if( find_DSN(&packd.dsn_curr_rem, packd.sfl->map_recv, packd.ssn_curr_rem ) == 0 ) {
-					sprintf(msg_buf, "update_packet_input: DSN not found. sess_id=%zu, sfl_id=%zu, ssn_curr_rem=%lu", 
+					snprintf(msg_buf,MAX_MSG_LENGTH, "update_packet_input: DSN not found. sess_id=%zu, sfl_id=%zu, ssn_curr_rem=%lu", 
 						packd.sess->index, packd.sfl->index, (long unsigned int) packd.ssn_curr_rem);
 					add_msg(msg_buf);
 					set_verdict(0,0,0);

@@ -71,7 +71,7 @@ int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned c
 	}
 
 
-	sprintf(msg_buf, "initiate_cand_subflow: finding local addrid=%u", addr_id_loc );
+	snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: finding local addrid=%u", addr_id_loc );
 	add_msg(msg_buf);
 
 	//find remote addrid. Must be there.
@@ -79,7 +79,7 @@ int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned c
 	while(i < sess->pA_addrid_rem.number && ((struct addrid*) get_pnt_pA(&sess->pA_addrid_rem, i))->addr != ft->ip_rem) i++;
 	unsigned char addr_id_rem = ((struct addrid*) get_pnt_pA(&sess->pA_addrid_rem, i))->id;
 
-	sprintf(msg_buf, "initiate_cand_subflow: finding remote addrid=%u", addr_id_rem );
+	snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: finding remote addrid=%u", addr_id_rem );
 	add_msg(msg_buf);
 
 	//create tcp option: option sent during initial subflow + TP_JOIN
@@ -100,7 +100,7 @@ int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned c
 
 	//check if length is ok:
 	if(opt_len > 40) {
-		sprintf(msg_buf, "initiate_cand_subflow: option length=%u is too long - ABORT", opt_len);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: option length=%u is too long - ABORT", opt_len);
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -117,7 +117,7 @@ int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned c
 	if(found==0){
 		char buf_ip[34];
 		sprintIPaddr(buf_ip, ft->ip_loc);
-		sprintf(msg_buf, "initiate_cand_subflow: local IP=%s not found - ABORT", buf_ip);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: local IP=%s not found - ABORT", buf_ip);
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -139,12 +139,12 @@ int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned c
 	}
 
  	if(same == 1) {
-		sprintf(msg_buf, "initiate_cand_subflow: fourtuple already exists - ABORT");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: fourtuple already exists - ABORT");
 		add_msg(msg_buf);
 		return 0;
 	}
  	if(dst_known == 0) {
-		sprintf(msg_buf, "initiate_cand_subflow: ip_rem or prt_rem not known - ABORT");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: ip_rem or prt_rem not known - ABORT");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -169,7 +169,7 @@ int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned c
 		 0,//rand number rem: comes later	
 		 0);
 	if(sfl1 == NULL) {
-		sprintf(msg_buf, "initiate_cand_subflow: returns NULL when creating subflow");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: returns NULL when creating subflow");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -195,14 +195,14 @@ int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned c
 		opt_buf, 
 		opt_len);
 
-	sprintf(msg_buf, "initiate_cand_subflow: sending SYN packet, sfl_id=%zu, sess_id=%zu", sfl1->index, sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: sending SYN packet, sfl_id=%zu, sess_id=%zu", sfl1->index, sess->index);
 	add_msg(msg_buf);
 
 	//send syn packet
 	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(ft->ip_rem))<0) {
 		
 		delete_subflow(ft);
-		sprintf(msg_buf, "initiate_cand_subflow: send_raw_packet returns error, sfl_id=%zu, sess_id=%zu", sfl1->index, sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: send_raw_packet returns error, sfl_id=%zu, sess_id=%zu", sfl1->index, sess->index);
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -241,7 +241,7 @@ int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, un
 		addrid_rem->id = addr_id_rem;
 		add_pnt_pA(&sess->pA_addrid_rem, addrid_rem);
 	}
-	sprintf(msg_buf, "create_new_subflow_input: finding remote addrid=%u", addr_id_rem );
+	snprintf(msg_buf,MAX_MSG_LENGTH, "create_new_subflow_input: finding remote addrid=%u", addr_id_rem );
 	add_msg(msg_buf);
 
 
@@ -250,7 +250,7 @@ int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, un
 	while(i < sess->pA_addrid_loc.number && ((struct addrid*) get_pnt_pA(&sess->pA_addrid_loc, i))->addr != ft.ip_loc) i++;
 	unsigned char addr_id_loc = ((struct addrid*) get_pnt_pA(&sess->pA_addrid_loc, i))->id;
 
-	sprintf(msg_buf, "create_new_subflow_input: finding local addrid=%u", addr_id_loc );
+	snprintf(msg_buf,MAX_MSG_LENGTH, "create_new_subflow_input: finding local addrid=%u", addr_id_loc );
 	add_msg(msg_buf);
 
 
@@ -276,7 +276,7 @@ int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, un
 
 	//check if length is ok:
 	if(opt_len > 40) {
-		sprintf(msg_buf, "create_new_subflow_input: option length=%u is too long - ABORT", opt_len);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "create_new_subflow_input: option length=%u is too long - ABORT", opt_len);
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -300,12 +300,12 @@ int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, un
 
 	}
  	if(same == 1) {
-		sprintf(msg_buf, "create_new_subflow_input: fourtuple already exists - ABORT");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "create_new_subflow_input: fourtuple already exists - ABORT");
 		add_msg(msg_buf);
 		return 0;
 	}
  	if(src_known == 0) {
-		sprintf(msg_buf, "create_new_subflow_input: ip_loc=%lu, prt_loc=%u not known - ABORT", (long unsigned int) ft.ip_loc, ft.prt_rem);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "create_new_subflow_input: ip_loc=%lu, prt_loc=%u not known - ABORT", (long unsigned int) ft.ip_loc, ft.prt_rem);
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -327,7 +327,7 @@ int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, un
 		 rand_nmb_rem,
 		 0);//overwrite
 	if(sfl1 == NULL) {
-		sprintf(msg_buf, "create_new_subflow_input: returns NULL when creating subflow");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "create_new_subflow_input: returns NULL when creating subflow");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -352,13 +352,13 @@ int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, un
 		opt_len);
 
 
-	sprintf(msg_buf, "create_new_subflow_input: sending SYN/ACK packet, sfl_id=%zu, sess_id=%zu", sfl1->index, sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "create_new_subflow_input: sending SYN/ACK packet, sfl_id=%zu, sess_id=%zu", sfl1->index, sess->index);
 	add_msg(msg_buf);
 
 	//send syn packet
 	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(ft.ip_rem))<0) {
 		delete_subflow(&ft);
-		sprintf(msg_buf, "create_new_subflow_input: send_raw_packet returns error");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "create_new_subflow_input: send_raw_packet returns error");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -412,7 +412,7 @@ int subflow_syn_sent() {
 	create_mac(packd.sess->key_rem, packd.sess->key_loc, rand_nmb_rem, packd.sfl->rand_nmb_loc, mac_test);
 	if(memcmp(mac_test, mac, 8) != 0) {
 
-		sprintf(msg_buf, "subflow_syn_sent: MAC on SYN/ACK packet for sess id=%zu, sfl id=%zu is incorrect!",
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: MAC on SYN/ACK packet for sess id=%zu, sfl id=%zu is incorrect!",
 				packd.sess->index, packd.sfl->index);
 		add_msg(msg_buf);
 		set_verdict(1,0,0);
@@ -457,14 +457,14 @@ int subflow_syn_sent() {
 			opt_buf, 
 			opt_len);//opt len
 
-	sprintf(msg_buf, "subflow_syn_sent: sending ACK packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: sending ACK packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 	add_msg(msg_buf);
 
 	//send ack packet
 	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.ft.ip_rem))<0) {
 
 		delete_subflow(&packd.ft);
-		sprintf(msg_buf, "subflow_syn_sent: send_raw_packet returns error");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: send_raw_packet returns error");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -480,7 +480,7 @@ int subflow_syn_sent() {
 	packd.sess->conman_state = '0';//this means: command to subflow establishment is reset
 	set_verdict(0,0,0);//packet has to be terminated here
 
-	sprintf(msg_buf, "subflow_syn_sent: sess id=%zu, sfl id=%zu, TCP state changed to ESTABLISHED, sfl_sack=%d", packd.sess->index, packd.sfl->index, packd.sfl->sack_flag);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: sess id=%zu, sfl id=%zu, TCP state changed to ESTABLISHED, sfl_sack=%d", packd.sess->index, packd.sfl->index, packd.sfl->sack_flag);
 	add_msg(msg_buf);
 
 	//in case of BREAK
@@ -516,7 +516,7 @@ int subflow_syn_received() {
 	create_mac(packd.sess->key_rem, packd.sess->key_loc, packd.sfl->rand_nmb_rem, packd.sfl->rand_nmb_loc, mac_test);
 	if(memcmp(mac_test, mac, 20) != 0){
 
-		sprintf(msg_buf, "subflow_syn_received: MAC on ACK packet for sess id=%zu, sfl id=%zu is incorrect!",
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_received: MAC on ACK packet for sess id=%zu, sfl id=%zu is incorrect!",
 				packd.sess->index, packd.sfl->index);
 		add_msg(msg_buf);
 		set_verdict(1,0,0);
@@ -532,7 +532,7 @@ int subflow_syn_received() {
 
 	set_verdict(0,0,0);//packet has to be terminated here
 
-	sprintf(msg_buf, "subflow_syn_received: sess id=%zu, sfl id=%zu, TCP state changed to ESTABLISHED, sfl_sack_flag=%d", packd.sess->index, packd.sfl->index, packd.sfl->sack_flag);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_received: sess id=%zu, sfl id=%zu, TCP state changed to ESTABLISHED, sfl_sack_flag=%d", packd.sess->index, packd.sfl->index, packd.sfl->sack_flag);
 	add_msg(msg_buf);	
 	return 1;
 }
@@ -551,7 +551,7 @@ int terminate_subflow(struct session *sess, struct subflow *sfl) {
 
 	//check if subflow is in session
 	if(sfl->sess != sess){
-		sprintf(msg_buf, "terminate_cand_subflow: sfl->sess index=%zu does not match sess index=%zu", sfl->sess->index, sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "terminate_cand_subflow: sfl->sess index=%zu does not match sess index=%zu", sfl->sess->index, sess->index);
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -582,7 +582,7 @@ int terminate_subflow(struct session *sess, struct subflow *sfl) {
 		opt_buf, 
 		opt_len);//opt len
 
-	sprintf(msg_buf, "terminate_cand_subflow: sending FIN packet, sfl_id=%zu, sess_id=%zu", sfl->index, sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "terminate_cand_subflow: sending FIN packet, sfl_id=%zu, sess_id=%zu", sfl->index, sess->index);
 	add_msg(msg_buf);
 
 
@@ -590,19 +590,19 @@ int terminate_subflow(struct session *sess, struct subflow *sfl) {
 	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(sfl->ft.ip_rem))<0){
 		
 		delete_subflow(&sfl->ft);
-		sprintf(msg_buf,"terminate_cand_subflow: send_raw_packet returns error");
+		snprintf(msg_buf,MAX_MSG_LENGTH,"terminate_cand_subflow: send_raw_packet returns error");
 		add_msg(msg_buf);
 		return 0;
 	}
 
 	if(sfl->tcp_state == CLOSE_WAIT) {
 		sfl->tcp_state = LAST_ACK;
-		sprintf(msg_buf,"terminate_subflow: state change to LAST_ACK");
+		snprintf(msg_buf,MAX_MSG_LENGTH,"terminate_subflow: state change to LAST_ACK");
 		add_msg(msg_buf);
 	}
 	else{
 		sfl->tcp_state = FIN_WAIT_1;
-		sprintf(msg_buf,"terminate_subflow: state change to FIN_WAIT_1");
+		snprintf(msg_buf,MAX_MSG_LENGTH,"terminate_subflow: state change to FIN_WAIT_1");
 		add_msg(msg_buf);
 	}
 
@@ -650,7 +650,7 @@ int subflow_established() {
 			opt_buf, 
 			opt_len);//opt len
 
-	sprintf(msg_buf, "subflow_established: sending FIN/ACK or ACK packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_established: sending FIN/ACK or ACK packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 	add_msg(msg_buf);
 
 
@@ -658,7 +658,7 @@ int subflow_established() {
 	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.sfl->ft.ip_rem))<0){
 
 		delete_subflow(& (packd.sfl->ft));
-		sprintf(msg_buf, "subflow_established: send_raw_packet returns error");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_established: send_raw_packet returns error");
 		add_msg(msg_buf);
 		set_verdict(0,0,0);//packet has to be terminated here
 		return 0;
@@ -666,11 +666,11 @@ int subflow_established() {
 
 	if(flags == 16) {//active subflow
 		packd.sfl->tcp_state = CLOSE_WAIT;
-		sprintf(msg_buf, "subflow_established: state change to CLOSE_WAIT, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_established: state change to CLOSE_WAIT, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 		add_msg(msg_buf);
 	} else {//candidate subflow
 		packd.sfl->tcp_state = LAST_ACK;
-		sprintf(msg_buf, "subflow_established: state change to LAST_ACK, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_established: state change to LAST_ACK, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 		add_msg(msg_buf);
 
 	}
@@ -709,7 +709,7 @@ int subflow_close_wait() {
 			opt_buf, 
 			opt_len);//opt len
 
-	sprintf(msg_buf, "subflow_established: sending FIN/ACK packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_established: sending FIN/ACK packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 	add_msg(msg_buf);
 
 
@@ -717,7 +717,7 @@ int subflow_close_wait() {
 	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.sfl->ft.ip_rem))<0){
 
 		delete_subflow(& (packd.sfl->ft));
-		sprintf(msg_buf, "subflow_established: send_raw_packet returns error");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_established: send_raw_packet returns error");
 		add_msg(msg_buf);
 		set_verdict(0,0,0);//packet has to be terminated here
 		return 0;
@@ -725,7 +725,7 @@ int subflow_close_wait() {
 
 	//create_rex_event(&packd.sfl->ft, packd.sfl->tcp_state, raw_buf, pack_len);
 	packd.sfl->tcp_state = LAST_ACK;
-	sprintf(msg_buf, "subflow_close_wait: state change to LAST_ACK, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_close_wait: state change to LAST_ACK, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 	add_msg(msg_buf);
 	return 1;
 }
@@ -741,7 +741,7 @@ int subflow_last_ack() {
 	if(packd.ack != 1)
 		return 1;
 
-	sprintf(msg_buf, "subflow_last_ack: sess id=%zu, sfl id=%zu terminated", packd.sess->index, packd.sfl->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_last_ack: sess id=%zu, sfl id=%zu terminated", packd.sess->index, packd.sfl->index);
 	add_msg(msg_buf);
 	delete_subflow(&(packd.sfl->ft));
 	set_verdict(0,0,0);//packet has to be terminated here
@@ -761,7 +761,7 @@ int subflow_last_ack() {
 		packd.sfl->highest_sn_loc += 1;	
 		packd.sfl->tcp_state = FIN_WAIT_2;
 		set_verdict(0,0,0);//packet has to be terminated here
-		sprintf(msg_buf, "subflow_fin_wait_1: state change to FIN_WAIT_2, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_fin_wait_1: state change to FIN_WAIT_2, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 		add_msg(msg_buf);		
 	}
 
@@ -792,14 +792,14 @@ int subflow_last_ack() {
 			opt_buf, 
 			opt_len);//opt len
 
-	sprintf(msg_buf, "subflow_fin_wait_1: sending ACK packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_fin_wait_1: sending ACK packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 	add_msg(msg_buf);
 
 	//send packet
 	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.sfl->ft.ip_rem))<0) {
 
 		delete_subflow(& (packd.sfl->ft));
-		sprintf(msg_buf,"subflow_fin_wait_1: send_raw_packet returns error");
+		snprintf(msg_buf,MAX_MSG_LENGTH,"subflow_fin_wait_1: send_raw_packet returns error");
 		add_msg(msg_buf);
 		set_verdict(1,0,0);//packet has to be terminated here
 		return 0;
@@ -808,11 +808,11 @@ int subflow_last_ack() {
 	if(packd.ack == 1) {
 		packd.sfl->tcp_state = TIME_WAIT;
 		create_sfl_close_event(&packd.sfl->ft);
-		sprintf(msg_buf,"subflow_fin_wait_1:  sess id=%zu, sfl id=%zu entering TCP state TIME_WAIT", packd.sess->index, packd.sfl->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH,"subflow_fin_wait_1:  sess id=%zu, sfl id=%zu entering TCP state TIME_WAIT", packd.sess->index, packd.sfl->index);
 		add_msg(msg_buf);
 	} else {
 		packd.sfl->tcp_state = CLOSING;
-		sprintf(msg_buf,"subflow_fin_wait_1: state change to CLOSING, sess id=%zu, sfl id=%zu ", packd.sess->index, packd.sfl->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH,"subflow_fin_wait_1: state change to CLOSING, sess id=%zu, sfl id=%zu ", packd.sess->index, packd.sfl->index);
 		add_msg(msg_buf);
 	}
 	return 1;
@@ -852,21 +852,21 @@ int subflow_fin_wait_2() {
 			opt_buf, 
 			opt_len);//opt len
 
-	sprintf(msg_buf, "subflow_fin_wait_2: sending ACK packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_fin_wait_2: sending ACK packet, sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
 	add_msg(msg_buf);
 
 	//send packet
 	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.sfl->ft.ip_rem))<0) {
 
 		delete_subflow(&(packd.sfl->ft));
-		sprintf(msg_buf, "subflow_fin_wait_2: send_raw_packet returns error");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_fin_wait_2: send_raw_packet returns error");
 		add_msg(msg_buf);
 		set_verdict(1,0,0);//packet has to be terminated here
 		return 0;
 	}
 	packd.sfl->tcp_state = TIME_WAIT;
 	create_sfl_close_event(&packd.sfl->ft);
-	sprintf(msg_buf, "subflow_fin_wait_2: sess id=%zu, sfl id=%zu entering TCP state TIME_WAIT", packd.sess->index, packd.sfl->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_fin_wait_2: sess id=%zu, sfl id=%zu entering TCP state TIME_WAIT", packd.sess->index, packd.sfl->index);
 	add_msg(msg_buf);
 	return 1;
 }
@@ -883,7 +883,7 @@ int subflow_closing() {
 
 	packd.sfl->tcp_state = TIME_WAIT;
 	create_sfl_close_event(&packd.sfl->ft);
-	sprintf(msg_buf, "subflow_closing:  sess id=%zu, sfl id=%zu entering TCP state TIME_WAIT", packd.sess->index, packd.sfl->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_closing:  sess id=%zu, sfl id=%zu entering TCP state TIME_WAIT", packd.sess->index, packd.sfl->index);
 	add_msg(msg_buf);
 	return 1;
 }
@@ -912,7 +912,7 @@ int send_traffic_ack(struct subflow *sfl) {
 
 	//send packet
 	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(sfl->ft.ip_rem))<0){
-		sprintf(msg_buf, "send_traffic_ack: send_raw_packet returns error");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "send_traffic_ack: send_raw_packet returns error");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -928,16 +928,16 @@ int send_traffic_ack(struct subflow *sfl) {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int send_switch_ack(struct subflow *new_sfl, struct subflow *old_sfl) {
 	if(new_sfl == NULL){
-		sprintf(msg_buf, "send_switch_ack: new_subflow = NULL");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "send_switch_ack: new_subflow = NULL");
 		add_msg(msg_buf);
 		return 0;
 	} 
 
-	sprintf(msg_buf, "send_switch_ack: new subflow index = %zu", new_sfl->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "send_switch_ack: new subflow index = %zu", new_sfl->index);
 	add_msg(msg_buf);
 
 	if(old_sfl != NULL) {
-		sprintf(msg_buf, "send_switch_ack: old subflow index = %zu", old_sfl->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "send_switch_ack: old subflow index = %zu", old_sfl->index);
 		add_msg(msg_buf);
 	}
 
@@ -970,7 +970,7 @@ int send_switch_ack(struct subflow *new_sfl, struct subflow *old_sfl) {
 
 		//send packet
 	if(send_raw_packet(raw_sd, raw_buf, pack_len, htonl(new_sfl->ft.ip_rem))<0) {
-		sprintf(msg_buf, "send_switch_ack: send_raw_packet returns error");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "send_switch_ack: send_raw_packet returns error");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -1003,7 +1003,7 @@ int send_switch_ack(struct subflow *new_sfl, struct subflow *old_sfl) {
 		//send packet
 	if(send_raw_packet(raw_sd, raw_buf, pack_len, htonl(old_sfl->ft.ip_rem))<0) {
 		
-		sprintf(msg_buf, "send_traffic_ack: send_raw_packet returns error");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "send_traffic_ack: send_raw_packet returns error");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -1023,12 +1023,12 @@ int send_switch_ack(struct subflow *new_sfl, struct subflow *old_sfl) {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int send_break_ack(struct subflow *new_sfl, unsigned char addr_id_loc) {
 	 if(new_sfl == NULL) {
-		sprintf(msg_buf, "send_break_ack: fails since sfl = NULL"); 
+		snprintf(msg_buf,MAX_MSG_LENGTH, "send_break_ack: fails since sfl = NULL"); 
 		add_msg(msg_buf);	
 		return 0;
 	 }		
 
-	 sprintf(msg_buf, "send_break_ack: sess_id=%zu, new sfl_id = %zu", new_sfl->sess->index, new_sfl->index);
+	 snprintf(msg_buf,MAX_MSG_LENGTH, "send_break_ack: sess_id=%zu, new sfl_id = %zu", new_sfl->sess->index, new_sfl->index);
 	 add_msg(msg_buf);
 
 	 //turn on active subflow
@@ -1063,7 +1063,7 @@ int send_break_ack(struct subflow *new_sfl, unsigned char addr_id_loc) {
 
 	 //send packet
 	 if(send_raw_packet(raw_sd, raw_buf, pack_len, htonl(new_sfl->ft.ip_rem))<0){
-		 sprintf(msg_buf, "send_break_ack: send_raw_packet returns error");
+		 snprintf(msg_buf,MAX_MSG_LENGTH, "send_break_ack: send_raw_packet returns error");
 		 add_msg(msg_buf);
 		 return 0;
 	 }
@@ -1136,7 +1136,7 @@ struct subflow* create_subflow(struct fourtuple *ft1,
 
 	char ifname_loc[10];
 	if(find_interface(&if_tab1, ifname_loc, ft1->ip_loc) == 0) {
-		sprintf(msg_buf, "create_subflow: interface \"%s\" not found", ifname_loc);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "create_subflow: interface \"%s\" not found", ifname_loc);
 		add_msg(msg_buf);	
 	}
 
@@ -1302,7 +1302,7 @@ void handle_rex_event(struct tp_event *evt) {
 		int dsec = REX_TIME_INTERVAL;
 		if( rex->count < MAX_RETRANSMIT -1) dsec = dsec<<(rex->count);
 		else dsec = REX_TIME_INTERVAL;
-		sprintf(msg_buf, "handle_rex_event: retransmit on sfl_id=%zu in sess_id=%zu", sflx->index, sflx->sess->index);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "handle_rex_event: retransmit on sfl_id=%zu in sess_id=%zu", sflx->index, sflx->sess->index);
 		add_msg(msg_buf);	
 		insert_event(evt, dsec, 0);
 
@@ -1312,7 +1312,7 @@ void handle_rex_event(struct tp_event *evt) {
 		//if canidate, only this subflow, otherwise the whole session.
 		if(sflx->act_state == 0) {
 			send_reset_subflow(sflx);
-			sprintf(msg_buf, "handle_rex_event: reset sfl id=%zu in sess id=%zu", sflx->index, sflx->sess->index);
+			snprintf(msg_buf,MAX_MSG_LENGTH, "handle_rex_event: reset sfl id=%zu in sess id=%zu", sflx->index, sflx->sess->index);
 			add_msg(msg_buf);
 			delete_subflow(&sflx->ft);
 		} else {
@@ -1320,7 +1320,7 @@ void handle_rex_event(struct tp_event *evt) {
 			for(unsigned i=0; i< sess->pA_sflows.number; i++) {
 				struct subflow *sfly = (struct subflow*) sess->pA_sflows.pnts[i];
 				send_reset_subflow(sfly);
-				sprintf(msg_buf, "handle_rex_event: reset sfl id=%zu and sess id=%zu", sfly->index, sfly->sess->index);
+				snprintf(msg_buf,MAX_MSG_LENGTH, "handle_rex_event: reset sfl id=%zu and sess id=%zu", sfly->index, sfly->sess->index);
 				add_msg(msg_buf);
 			}
 			delete_session_parm(sess->token_loc);
@@ -1371,7 +1371,7 @@ void handle_sfl_close_event(struct tp_event *evt) {
 	delete_sfl_close_event(evt);
 	if(!sfl) return;	
 
-	sprintf(msg_buf, "handle_sfl_close_event: sess id=%zu, sfl id=%zu terminated", sfl->sess->index, sfl->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "handle_sfl_close_event: sess id=%zu, sfl id=%zu terminated", sfl->sess->index, sfl->index);
 	add_msg(msg_buf);
 	delete_subflow(&sfl->ft);
 }
@@ -1425,7 +1425,7 @@ void handle_prio_event(struct tp_event *evt) {
 		return;	
 	}
 
-	sprintf(msg_buf, "handle_prio_event: send break ack for sess_id=%zu, addr_id=%u on act subflow id=%zu", 
+	snprintf(msg_buf,MAX_MSG_LENGTH, "handle_prio_event: send break ack for sess_id=%zu, addr_id=%u on act subflow id=%zu", 
 			sess->index, prio->addr_id_loc, sess->act_subflow->index);
 	add_msg(msg_buf);	
 	send_break_ack(sess->act_subflow, prio->addr_id_loc);
@@ -1455,7 +1455,7 @@ void create_sfl_break_event(struct fourtuple *ft) {
 	HASH_FIND(hh, sfl_hash, ft, sizeof(struct fourtuple), sfl);
 	if(!sfl) return;
 
-	sprintf(msg_buf, "create_sfl_break_event: created for sfl_id=%zu, sess_id=%zu", sfl->index, sfl->sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "create_sfl_break_event: created for sfl_id=%zu, sess_id=%zu", sfl->index, sfl->sess->index);
 	add_msg(msg_buf);
 
 	//create break event data
@@ -1487,7 +1487,7 @@ void handle_sfl_break_event(struct tp_event *evt) {
 
 	if(sfl->broken){
 		if(check_sfl_teardown_timer(sfl)) {
-			sprintf(msg_buf, "handle_sfl_break_event: sess id=%zu, sfl id=%zu terminated", sfl->sess->index, sfl->index);
+			snprintf(msg_buf,MAX_MSG_LENGTH, "handle_sfl_break_event: sess id=%zu, sfl id=%zu terminated", sfl->sess->index, sfl->index);
 			add_msg(msg_buf);
 			execute_sfl_teardown(sfl);
 			delete_sfl_break_event(evt);	
@@ -1541,7 +1541,7 @@ int check_sfl_teardown_timer(struct subflow *sfl) {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void execute_sfl_teardown(struct subflow *sfl) {
 	if(sfl == NULL) return;
-	sprintf(msg_buf, "execute_sfl_teardown: sfl id=%zu is terminated", sfl->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "execute_sfl_teardown: sfl id=%zu is terminated", sfl->index);
 	add_msg(msg_buf);
 	delete_subflow(&sfl->ft);
 }
