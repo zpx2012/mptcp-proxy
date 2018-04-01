@@ -1200,8 +1200,8 @@ struct session* create_session(
 		uint32_t idsn_rem,
 		uint32_t token_loc, 
 		uint32_t token_rem,
-		uint32_t offset_loc,
-		uint32_t offset_rem, 
+		int offset_loc,
+		int offset_rem, 
 		size_t sess_state,
 		struct subflow *sflx,
 		size_t overwrite) {
