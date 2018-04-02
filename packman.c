@@ -256,7 +256,7 @@ int create_MPcap(unsigned char *mpbuf, uint32_t *key_loc, uint32_t *key_rem) {
 	*(mpbuf) = MPTCP_KIND;
 	*(mpbuf+1) = tpcap_len;
 	*(mpbuf+2) = ( ((unsigned char) MPTCP_CAP)<<4) & 0xf0;
-	*(mpbuf+3) = 0x81;//no checksum
+	*(mpbuf+3) = 0x81;
 	*((uint32_t*) (mpbuf+4)) = key_loc[0];
 	*((uint32_t*) (mpbuf+8)) = key_loc[1];
 	if(key_rem != NULL) {

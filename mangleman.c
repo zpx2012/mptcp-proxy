@@ -553,7 +553,7 @@ void set_dss_and_prio() {
 
 	//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
 	
-	int demand_dss = (packd.paylen > 0 || packd.fin == 1 || packd.sess->sess_state > ESTABLISHED || packd.ack == 1)? 18:0;
+	int demand_dss = (packd.paylen > 0 || packd.fin == 1 || packd.sess->sess_state > ESTABLISHED || packd.ack == 1)? 20:0;
 
 	//check if enough room
 	if( demand_dss + packd.tcp_opt_len > 40 ) {
