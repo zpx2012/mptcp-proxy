@@ -781,7 +781,7 @@ int update_interfaces(struct if_table *iftab, char **ifname, uint32_t *old_addr,
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //Eval packet: Here the packet gets first
 //++++++++++++++++++++++++++++++++++++++++++++++++
-void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
+void eval_packet_old(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 	(void) len;
 
 	memset(&packd,0,sizeof(struct packet_data));
@@ -865,6 +865,140 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 			if(packd.sess != NULL) {
 				break;
 			}
+
+			packd.fwd_type = M_TO_T;
+
+			packd.ft.ip_loc = ntohl(packd.ip4h->ip_dst);
+			packd.ft.ip_rem = ntohl(packd.ip4h->ip_src);
+			packd.ft.prt_loc = ntohs(packd.tcph->th_dport);
+			packd.ft.prt_rem = ntohs(packd.tcph->th_sport);
+
+			//incoming MPTCP packet
+			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
+			if(packd.sfl != NULL) {
+				packd.sess = packd.sfl->sess;
+			}
+			else packd.sess = NULL;
+
+			break;
+		}
+		printf("sess =%lu\n", (long unsigned) packd.sess);
+	}
+
+
+
+	//find TPTCP options:start at tcpoptions.
+	packd.nb_mptcp_options = parse_mptcp_options(buf+(packd.pos_thead)+20, (packd.tcplen)-20, mptopt);
+	packd.mptcp_opt_len=0;//reset this value
+	packd.tcp_options_compacted = 0;//reset this value
+	packd.retransmit_flag = 0;
+	buffer_tcp_header_checksum();//compuates & buffers checksum of tcp header only
+
+	//reset dssopt_out
+	memset(&dssopt_out, 0, sizeof(struct dss_option));
+
+	//reset print_line
+	if(PRINT_FILE) memset(&packd.prt_line, 0, sizeof(struct print_line));
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//Eval packet: Here the packet gets first
+//++++++++++++++++++++++++++++++++++++++++++++++++
+void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
+	(void) len;
+
+	memset(&packd,0,sizeof(struct packet_data));
+	//hook
+	packd.id = id;
+	packd.hook = hook;
+	set_verdict(1,0,0);//init with accept: can be changed later	
+
+	//buffer
+	packd.buf = buf;
+
+	//packet headers
+	packd.pos_i4head = 0;	
+	packd.ip4h = (struct ipheader*) (packd.buf+packd.pos_i4head);
+	packd.tcph = (struct tcpheader*) (packd.buf+packd.pos_i4head+(packd.ip4h->ip_h1<<2));
+
+	//Map headers on packet
+	packd.totlen = ntohs(packd.ip4h->ip_len);
+	packd.ip4len = (uint16_t) (packd.ip4h->ip_h1<<2);
+	packd.pos_thead = packd.pos_i4head + packd.ip4len;
+	packd.tcplen = (uint16_t) packd.tcph->th_off<<2;
+	packd.pos_pay = packd.pos_thead + packd.tcplen;
+	packd.paylen = packd.totlen - packd.ip4len - packd.tcplen;
+
+	//new versions
+	packd.flags = (uint8_t)(packd.tcph->th_flags);//flags	
+	packd.syn = (packd.flags & 0x02)>>1;
+	packd.ack = (packd.flags & 0x10)>>4;
+	packd.fin = packd.flags & 0x01;
+	packd.rst = (packd.flags & 0x04)>>2;
+
+
+	//set fourtuple find session or subflow
+	switch(packd.hook){
+
+	case 1:{
+
+			packd.fwd_type = M_TO_T;
+
+			packd.ft.ip_loc = ntohl(packd.ip4h->ip_dst);
+			packd.ft.ip_rem = ntohl(packd.ip4h->ip_src);
+			packd.ft.prt_loc = ntohs(packd.tcph->th_dport);
+			packd.ft.prt_rem = ntohs(packd.tcph->th_sport);
+
+			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
+			if(packd.sfl != NULL) {
+				packd.sess = packd.sfl->sess;
+			}
+			else packd.sess = NULL;
+
+		}
+		break;
+	case 3:{//hook == 3,output
+
+			packd.fwd_type = T_TO_M;
+		
+			packd.ft.ip_loc = ntohl(packd.ip4h->ip_src);
+			packd.ft.ip_rem = ntohl(packd.ip4h->ip_dst);
+			packd.ft.prt_loc = ntohs(packd.tcph->th_sport);
+			packd.ft.prt_rem = ntohs(packd.tcph->th_dport);
+
+			//subflows?
+			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
+			if(packd.sfl != NULL) {
+				packd.sess = packd.sfl->sess;
+			}
+			else{ //kernel original packet?
+				HASH_FIND(hh, sess_hash, &packd.ft, sizeof(struct fourtuple), packd.sess);
+				//packd.sess == null or not, don't care, will be processed latter
+			}
+		}
+		break;
+	case 2:{//hook == 2
+
+			packd.fwd_type = T_TO_M;
+
+			//behaves like an output: packet arrives from TCP and is sent to subflow
+			packd.ft.ip_loc = ntohl(packd.ip4h->ip_src);
+			packd.ft.ip_rem = ntohl(packd.ip4h->ip_dst);
+			packd.ft.prt_loc = ntohs(packd.tcph->th_sport);
+			packd.ft.prt_rem = ntohs(packd.tcph->th_dport);
+
+			//incoming TCP packet
+			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
+			if(packd.sfl != NULL) {//found: output sfl
+				packd.sess = packd.sfl->sess;
+				break;
+			}
+			else {
+				HASH_FIND(hh, sess_hash, &packd.ft, sizeof(struct fourtuple), packd.sess);
+				if(packd.sess != NULL)//found: output kernel original packet
+				break;
+			}
+
 
 			packd.fwd_type = M_TO_T;
 

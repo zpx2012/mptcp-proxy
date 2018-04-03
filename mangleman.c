@@ -976,6 +976,9 @@ int update_session_control_plane() {
 	case ESTABLISHED:
 		ret = session_established();
 		break;
+	case PRE_SYN_SENT:
+		ret = session_pre_syn_sent();
+		break;
 	case SYN_SENT:
 		ret = session_syn_sent();	
 		break;

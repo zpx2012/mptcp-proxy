@@ -85,6 +85,9 @@
 #define FILE_NAME_MSG "/tmp/mptcp_proxy_msg.txt"
 
 //session and subflow states: order very important
+//++++new
+#define PRE_SYN_SENT 0
+
 #define SYN_SENT 1
 #define PRE_SYN_REC_1 2
 #define PRE_SYN_REC_2 3
@@ -447,6 +450,11 @@ struct map_table{
 struct session;
 
 struct subflow{
+	//+++new
+	int sockfd;
+	uint8_t is_master;
+	//---new
+
 	struct fourtuple ft;//key
 	size_t index;//index in subflow table: do we need this?
 
