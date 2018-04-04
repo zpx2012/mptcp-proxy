@@ -824,7 +824,7 @@ int session_syn_sent() {
 		}
 		else set_verdict(1,1,0);
 
-
+		//+++send syn/ack to browser, call connect to invoke second subflow
 
 		snprintf(msg_buf,MAX_MSG_LENGTH, "syn_sent: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
 			(long unsigned) packd.sfl->isn_loc, (long unsigned) packd.sfl->isn_rem, 

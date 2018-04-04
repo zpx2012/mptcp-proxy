@@ -322,6 +322,9 @@ struct print_data{
 extern struct print_data prt_data;
 
 struct packet_data{
+	//+++new
+	int is_from_subflow:
+	//---new
 
 	struct fourtuple ft;
 	struct session *sess;

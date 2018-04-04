@@ -936,6 +936,8 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 	packd.fin = packd.flags & 0x01;
 	packd.rst = (packd.flags & 0x04)>>2;
 
+	packd.is_from_subflow = 0;
+
 
 	//set fourtuple find session or subflow
 	switch(packd.hook){
@@ -970,8 +972,9 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
 			if(packd.sfl != NULL) {
 				packd.sess = packd.sfl->sess;
+				packd.is_from_subflow = 1;
 			}
-			else{ //kernel original packet?
+			else{ //browser original packet?
 				HASH_FIND(hh, sess_hash, &packd.ft, sizeof(struct fourtuple), packd.sess);
 				//packd.sess == null or not, don't care, will be processed latter
 			}
@@ -990,13 +993,14 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 			//incoming TCP packet
 			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
 			if(packd.sfl != NULL) {//found: output sfl
+				packd.is_from_subflow = 1;
 				packd.sess = packd.sfl->sess;
 				break;
 			}
 			else {
 				HASH_FIND(hh, sess_hash, &packd.ft, sizeof(struct fourtuple), packd.sess);
 				if(packd.sess != NULL)//found: output kernel original packet
-				break;
+					break;
 			}
 
 
