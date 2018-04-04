@@ -39,6 +39,8 @@ int contemplate_new_session_output();
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int contemplate_new_session_input();
 
+extern int session_pre_syn_sent();
+
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //SESSMAN: process SYN_SENT
 //  Target states: PRE_EST

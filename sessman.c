@@ -507,8 +507,7 @@ int contemplate_new_session_output() {
 		return 0;
 	}
 
-
-
+	return 1;
 }//end contemplate_new_session_output
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -673,7 +672,7 @@ int session_pre_syn_sent(){
 
 	if(!output_data_mptcp()) {
 		set_verdict(1,0,0);
-		execute_sess_teardown(sess);
+		execute_sess_teardown(packd.sess);
 		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: output_data_mptcp fails");
 		add_msg(msg_buf);
 		return 0;
