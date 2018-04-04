@@ -794,18 +794,10 @@ int session_syn_sent() {
 		packd.sess->highest_dan_rem = packd.sess->idsn_rem+1;
 
 		packd.sfl->isn_rem = ntohl(packd.tcph->th_seq);	
-		packd.sess->offset_rem = packd.sfl->isn_rem + OFFSET_TCP_SN - packd.sess->idsn_rem;
-		packd.sfl->offset_rem = packd.sess->idsn_rem - packd.sfl->isn_rem;
+		packd.sess->offset_rem = packd.sfl->isn_rem - packd.sess->idsn_rem;		
 
-
-
-//		enter_dsn_packet(packd.sfl->map_recv, packd.sfl, packd.sess->idsn_rem, packd.sfl->isn_rem, 1);
 		packd.sfl->highest_sn_loc += 1;
-		packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;
-
-		//update SN/AN -> DSN/DAN
-		packd.tcph->th_seq = htonl( packd.sfl->isn_rem + packd.sess->offset_rem + packd.sfl->offset_rem );
-		packd.tcph->th_ack = htonl( packd.sfl->highest_an_loc + packd.sess->offset_loc + packd.sfl->offset_loc );
+		packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;		
 
 		packd.sfl->tcp_state = PRE_EST;
 		packd.sess->sess_state = PRE_EST;
@@ -847,6 +839,146 @@ int session_syn_sent() {
 	return 0;
 }
 
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//session SYN_SENT
+//  Targe states: PRE_EST
+//  Currently, we omit simultaneous open
+//++++++++++++++++++++++++++++++++++++++++++++++++
+int session_syn_sent_old(){
+	//Check for INPUT (or FWD with M_TO_T) + SYN + ACK + MPTCP option
+	if(packd.hook < 3 && packd.fwd_type == M_TO_T && packd.syn && packd.ack) {
+		//drop session if remote host does not speak MPTCP
+		if(packd.nb_mptcp_options == 0) {
+			snprintf(msg_buf,MAX_MSG_LENGTH,"session_syn_sent: no MPTCP options attached. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+			add_msg(msg_buf);
+			delete_subflow(&packd.ft);
+			delete_session_parm(packd.sess->token_loc);
+			delete_session(&packd.sess->ft, 1);
+			set_verdict(1,0,0);
+			return 0;
+		}
+
+		//get rem IDSN from MPTCP CAP option
+		uint32_t key_rem[2];
+		uint32_t key_loc[2];
+		if(!analyze_MPcap(mptopt, packd.nb_mptcp_options, key_loc, key_rem)) {
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: analyze_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+			add_msg(msg_buf);
+			delete_subflow(&packd.ft);
+			delete_session_parm(packd.sess->token_loc);
+			delete_session(&packd.sess->ft, 1);
+			set_verdict(1,0,0);
+			return 0;
+		}
+
+		//add or eliminate SACK based on DO_SACK
+		int adjust_packet = 0;
+
+		//check sack support for subflow
+		unsigned char len = packd.tcplen-20;
+		if(DO_SACK) {
+
+			if(find_tcp_option(packd.buf+packd.pos_thead+20, len, 4)) {
+			
+				//everything fine; in case sess->sack_flag == 0, simply keep the sack_flag rolling
+			} else{
+
+				packd.sfl->sack_flag = 0;//no sfl sack support
+				if( packd.sess->sack_flag) {
+
+					//furnish with sack flag for subflow sack support
+					if(append_sack(packd.buf+packd.pos_thead+20, &len)){
+						packd.tcplen += 2;
+						packd.pos_pay += 2;
+						packd.totlen += 2;
+						adjust_packet = 1;
+					}
+				}
+			}
+		} else {
+			if(find_tcp_option(packd.buf+packd.pos_thead+20, len, 4)) {
+				//ensure no sess->sack support
+				if(eliminate_tcp_option(packd.buf+packd.pos_thead+20, &len, 4)){
+					packd.tcplen -= 2;
+					packd.pos_pay -= 2;
+					packd.totlen -= 2;
+					adjust_packet = 1;
+				}
+			} else {
+				//everthing fine
+			}
+		}
+
+
+		unsigned char init_len = packd.tcplen-20;
+		unsigned char scaling_factor = find_window_scaling(packd.buf+packd.pos_thead+20, &init_len);
+		packd.sess->init_window_rem = ntohs(packd.tcph->th_win);
+		packd.sess->scaling_factor_rem = scaling_factor;
+		packd.sess->curr_window_rem = (packd.sess->init_window_loc)>>scaling_factor;
+
+
+		packd.sess->key_rem[0] = key_rem[0];
+		packd.sess->key_rem[1] = key_rem[1];
+
+		create_idsn_token(packd.sess->key_rem, &packd.sess->idsn_rem, &packd.sess->token_rem,NULL);
+
+
+		packd.sess->highest_dsn_rem = packd.sess->idsn_rem+1;
+		packd.sess->highest_dan_rem = packd.sess->idsn_rem+1;
+
+		packd.sfl->isn_rem = ntohl(packd.tcph->th_seq);	
+		packd.sess->offset_rem = packd.sfl->isn_rem + OFFSET_TCP_SN - packd.sess->idsn_rem;
+		packd.sfl->offset_rem = packd.sess->idsn_rem - packd.sfl->isn_rem;
+
+
+
+//		enter_dsn_packet(packd.sfl->map_recv, packd.sfl, packd.sess->idsn_rem, packd.sfl->isn_rem, 1);
+		packd.sfl->highest_sn_loc += 1;
+		packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;
+
+		//update SN/AN -> DSN/DAN
+		packd.tcph->th_seq = htonl( packd.sfl->isn_rem + packd.sess->offset_rem + packd.sfl->offset_rem );
+		packd.tcph->th_ack = htonl( packd.sfl->highest_an_loc + packd.sess->offset_loc + packd.sfl->offset_loc );
+
+		packd.sfl->tcp_state = PRE_EST;
+		packd.sess->sess_state = PRE_EST;
+
+		if(adjust_packet) {
+			packd.mptcp_opt_len = 0;//since option is already attached
+			if(!output_data_mptcp()) {
+				set_verdict(1,0,0);
+				execute_sess_teardown(packd.sess);
+				snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: output_data_mptcp fails for sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+				add_msg(msg_buf);
+
+				return 0;
+			}
+			set_verdict(1,1,1);
+		}
+		else set_verdict(1,1,0);
+
+
+
+		snprintf(msg_buf,MAX_MSG_LENGTH, "syn_sent: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
+			(long unsigned) packd.sfl->isn_loc, (long unsigned) packd.sfl->isn_rem, 
+			(long unsigned) packd.sess->idsn_loc, (long unsigned) packd.sess->idsn_rem,
+			(long unsigned) ntohl(packd.tcph->th_seq),
+			(long unsigned) ntohl(packd.tcph->th_ack));
+		add_msg(msg_buf);
+
+		return 1;
+	}
+
+	//consider SYN retransmission
+	if(packd.hook > 1 && packd.fwd_type == T_TO_M && packd.syn && !packd.ack) {
+		retransmit_cached_packet_header();
+		set_verdict(1,1,1);
+		//TODO: Confirm return value
+		return 0;
+	}
+	set_verdict(1,0,0);
+	return 0;
+}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //session PRE_SYN_REC_1
@@ -998,6 +1130,75 @@ int session_pre_est() {
 		return 0;
 	}
 
+//	packd.sfl = packd.sess->act_subflow;
+
+	//append IDSNloc and IDSNrem to packd.mptcp_opt_buf (which is still zero)
+	//if too long, kill the whole MPTCP idea and fallback to ordinary TCP mode
+	if( !create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, packd.sess->key_rem) ){
+
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: analyze_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+		add_msg(msg_buf);
+		delete_subflow(&packd.ft);
+		delete_session_parm(packd.sess->token_loc);
+		delete_session(&packd.sess->ft, 1);
+		set_verdict(1,0,0);
+		return 0;
+	}
+
+	packd.sess->highest_dsn_loc += 1;
+	packd.sess->last_dan_loc = packd.sess->highest_dsn_loc;
+	packd.sess->highest_dan_loc = packd.sess->highest_dsn_loc;
+
+	packd.sfl->highest_sn_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc - packd.sfl->offset_loc;
+	packd.sfl->highest_an_rem = ntohl(packd.tcph->th_ack) - packd.sess->offset_rem - packd.sfl->offset_rem ;
+	packd.sfl->highest_sn_rem = packd.sfl->highest_an_rem;
+	packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;
+
+
+//	packd.tcph->th_seq = htonl(packd.sfl->highest_sn_loc);
+//	packd.tcph->th_ack = htonl(packd.sfl->highest_an_rem);
+
+	packd.sess->curr_window_loc = ntohs(packd.tcph->th_win);
+	packd.sfl->tcp_state = ESTABLISHED;
+	packd.sess->sess_state = ESTABLISHED;
+
+	if(!output_data_mptcp()){
+		set_verdict(1,0,0);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: output_data_mptcp fails, sess_id=%zu", packd.sess->index);
+		add_msg(msg_buf);
+		return 0;
+	}
+
+	//buffer packet in case retransmission occurs
+	cache_packet_header();
+
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: PRE_EST->ESTABLISHED - sess->sack=%d, sfl->sack=%d, sess_id=%zu, sfl_id=%zu",
+		packd.sess->sack_flag, packd.sfl->sack_flag, packd.sess->index, packd.sfl->index);
+	add_msg(msg_buf);
+	set_verdict(1,1,1);
+
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: isn_loc=%u, isn_rem=%u, idsn_loc=%u, idsn_rem=%u, sfl_seq=%u, sfl_an=%u",
+		packd.sfl->isn_loc, packd.sfl->isn_rem, 
+		packd.sess->idsn_loc, packd.sess->idsn_rem,
+		ntohl(packd.tcph->th_seq),
+		ntohl(packd.tcph->th_ack));
+	add_msg(msg_buf);
+
+	return 1;
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//session PRE_EST
+//  Target states: ESTABLISHED
+//  Add TP_CAP headers with both ISDNs
+//++++++++++++++++++++++++++++++++++++++++++++++++
+int session_pre_est_old() {
+
+	if(packd.hook<=1 || packd.fwd_type != T_TO_M || packd.syn || !packd.ack || packd.fin) {
+		set_verdict(1,0,0);
+		return 0;
+	}
+
 	packd.sfl = packd.sess->act_subflow;
 
 	//append IDSNloc and IDSNrem to packd.mptcp_opt_buf (which is still zero)
@@ -1054,7 +1255,6 @@ int session_pre_est() {
 
 	return 1;
 }
-
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //session SYN_REC
