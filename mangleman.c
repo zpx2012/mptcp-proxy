@@ -1270,12 +1270,7 @@ int mangle_packet_old() {
 	if(packd.hook<3 && packd.fwd_type == M_TO_T && packd.sess->sess_state >= ESTABLISHED)
 		update_subflow_control_plane();
 
-	//Session control plane
-	if(packd.is_from_subflow)
-		return update_session_control_plane();
-
-	return 0;
-
+	return update_session_control_plane();	
 }
 
 

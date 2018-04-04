@@ -323,7 +323,7 @@ extern struct print_data prt_data;
 
 struct packet_data{
 	//+++new
-	int is_from_subflow:
+	int is_from_subflow;
 	//---new
 
 	struct fourtuple ft;
