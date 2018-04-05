@@ -204,7 +204,7 @@ int contemplate_new_session() {
 
 	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session: nb_mptcp_options=%zu, hook=%zu, fwd_type=%zu, no action taken", packd.nb_mptcp_options, packd.hook, packd.fwd_type);
 	add_msg(msg_buf);
-	set_verdict(1,0,0);	
+//	set_verdict(1,0,0);	
 	return 0;
 }
 
@@ -533,6 +533,7 @@ int contemplate_new_session_output() {
 			return -1;
 	}
 
+	set_verdict(0,0,0);	
 	return 1;
 }//end contemplate_new_session_output
 
