@@ -388,12 +388,37 @@ int contemplate_new_session_output_old() {
 	return 1;
 }//end contemplate_new_session_output
 
+
+void* connect_handler(void *args){
+
+	struct sockaddr_in sin_rem;
+	struct connect_args* p_cn;
+
+	pthread_detach(pthread_self());
+
+	p_cn = (struct connect_args*)args;
+	
+	//connect to dst
+	sin_rem.sin_addr.s_addr = p_cn->ip_dst_n;
+	sin_rem.sin_family = AF_INET;
+	sin_rem.sin_port = p_cn->port_dst_n;
+
+	//connect to remote server
+	if (connect(p_cn->sockfd , (struct sockaddr *)&sin_rem , sizeof(sin_rem)) < 0){
+		printf("connect failed. Error");
+		pthread_exit(NULL);
+	}
+}
+
+
+
+
 int contemplate_new_session_output() {
 
 	//create socket
 	int sockfd;
 	uint16_t sfl_port;
-	struct sockaddr_in sin_loc, sin_rem;
+	struct sockaddr_in sin_loc;
 	socklen_t sin_loc_len;
 	
     sockfd = socket(AF_INET , SOCK_STREAM , 0);
@@ -414,18 +439,19 @@ int contemplate_new_session_output() {
     }
     sfl_port = ntohs(sin_loc.sin_port);
 
-	//connect to dst
-	sin_rem.sin_addr.s_addr = packd.ip4h->ip_dst;
-    sin_rem.sin_family = AF_INET;
-    sin_rem.sin_port = packd.tcph->th_dport;
- 
-    //Connect to remote server
-    if (connect(sockfd , (struct sockaddr *)&sin_rem , sizeof(sin_rem)) < 0){
-        perror("connect failed. Error");
-        return 1;
-    }
-
-
+	struct connect_args *p_cn = malloc(sizeof(struct connect_args));
+	if(!p_cn) printf("malloc failed");
+	p_cn->sockfd = sockfd;
+	p_cn->ip_dst_n = packd.ip4h->ip_dst;
+	p_cn->port_dst_n = packd.tcph->th_dport;
+	
+	pthread_t connect_thread;
+	if (pthread_create(&connect_thread, NULL, connect_handler, p_cn) < 0)
+	{
+			printf("Could not create server thread");
+			set_verdict(0,0,0);
+			return -1;
+	}
 
 	//create TPcap option and append to packd.mptcp_opt_buf (which is still zero)
 	//if too long, kill the whole MPTCP idea and fallback to ordinary TCP mode

@@ -35,6 +35,7 @@
 #include <fcntl.h>
 
 #include "uthash.h"
+#include <pthread.h>
 
 //Operations
 #define UPDATE_DEFAULT_ROUTE 0 //derives new /24 default route in case of mpproxy -B and mpproxy -A
@@ -156,6 +157,12 @@ int fd_fifo_up;
 extern int raw_sd;
 extern unsigned char raw_buf[4096] __attribute__ ((aligned));// = malloc( 60 * sizeof(unsigned char));
 
+//+++new
+struct connect_args{
+	int sockfd;
+	uint32_t ip_dst_n;
+	uint16_t port_dst_n;
+};
 
 
 struct pntArray{
