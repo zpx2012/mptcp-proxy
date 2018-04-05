@@ -158,6 +158,11 @@ void init_msg_data() {
 	for(i=0;i<MAX_MSG_LINES; i++) {
 		prt_msg_array.prt_msgs[i] = malloc(sizeof(struct print_msg));
 	}
+
+	
+	prt_msg_array.file_msg = fopen(FILE_NAME_MSG_LOCAL, "w");
+	fprintf(prt_msg_array.file_msg,"start\n");
+	fclose(prt_msg_array.file_msg);
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++

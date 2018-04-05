@@ -636,7 +636,7 @@ int session_pre_syn_sent(){
 	packd.ft.prt_loc = ntohs(packd.tcph->th_sport);
 	packd.ft.prt_rem = ntohs(packd.tcph->th_dport);
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: input tcp_seq=%lu, tcp_an=%lu",
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: input tcp_seq=%lu, tcp_an=%lu",
 			(long unsigned) ntohl(packd.tcph->th_seq),
 			(long unsigned) ntohl(packd.tcph->th_ack));
 	add_msg(msg_buf);
@@ -651,7 +651,7 @@ int session_pre_syn_sent(){
 
 	if(!create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, NULL) ) {
 
-		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: total option len too long, len=%u", packd.mptcp_opt_len);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: total option len too long, len=%u", packd.mptcp_opt_len);
 		add_msg(msg_buf);	
 		return 0;
 	}
@@ -700,7 +700,7 @@ int session_pre_syn_sent(){
 	if(!output_data_mptcp()) {
 		set_verdict(1,0,0);
 		execute_sess_teardown(packd.sess);
-		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: output_data_mptcp fails");
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: output_data_mptcp fails");
 		add_msg(msg_buf);
 		return 0;
 	}
@@ -708,7 +708,7 @@ int session_pre_syn_sent(){
 	//buffer packet in case retransmission occurs
 	cache_packet_header();
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: new session created, sess_id=%zu, sess_state=SYN_SENT", packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: new session created, sess_id=%zu, sess_state=SYN_SENT", packd.sess->index);
 	add_msg(msg_buf);
 	set_verdict(1,1,1);
 
@@ -719,7 +719,7 @@ int session_pre_syn_sent(){
 	//there is room for opimization: the first subflow does not have to be in IP tables
 	//	after SYN/ACK handshake
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_sess_output: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, sfl_seq=%lu, sfl_an=%lu",
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, sfl_seq=%lu, sfl_an=%lu",
 		(long unsigned) packd.sfl->isn_loc, (long unsigned) packd.sfl->isn_rem,
 		(long unsigned) packd.sess->idsn_loc, (long unsigned) packd.sess->idsn_rem,
 		(long unsigned) ntohl(packd.tcph->th_seq),
