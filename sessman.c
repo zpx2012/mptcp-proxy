@@ -439,20 +439,6 @@ int contemplate_new_session_output() {
     }
     sfl_port = ntohs(sin_loc.sin_port);
 
-	struct connect_args *p_cn = malloc(sizeof(struct connect_args));
-	if(!p_cn) printf("malloc failed");
-	p_cn->sockfd = sockfd;
-	p_cn->ip_dst_n = packd.ip4h->ip_dst;
-	p_cn->port_dst_n = packd.tcph->th_dport;
-	
-	pthread_t connect_thread;
-	if (pthread_create(&connect_thread, NULL, connect_handler, p_cn) < 0)
-	{
-			printf("Could not create server thread");
-			set_verdict(0,0,0);
-			return -1;
-	}
-
 	//create TPcap option and append to packd.mptcp_opt_buf (which is still zero)
 	//if too long, kill the whole MPTCP idea and fallback to ordinary TCP mode
 	uint32_t key_loc[2];
@@ -468,15 +454,15 @@ int contemplate_new_session_output() {
 	//create subflow
 	// set sess* = NULL since not yet existent.
 	// overwrite = 1 in case subflow already exists
-	struct fourtuple *ft_sfl = malloc(sizeof(struct fourtuple));
-	ft_sfl->ip_loc = packd.ft.ip_loc;
-	ft_sfl->ip_rem = packd.ft.ip_rem;
-	ft_sfl->prt_rem = packd.ft.prt_rem;
-	ft_sfl->prt_loc = sfl_port;
+	struct fourtuple ft_sfl;
+	ft_sfl.ip_loc = packd.ft.ip_loc;
+	ft_sfl.ip_rem = packd.ft.ip_rem;
+	ft_sfl.prt_rem = packd.ft.prt_rem;
+	ft_sfl.prt_loc = sfl_port;
 
 	struct subflow  *sflx;
 	sflx = create_subflow(
-		 ft_sfl,
+		 &ft_sfl,
 		 0,//address id loc
 		 0,//address id rem
 		 PRE_SYN_SENT,//tcp_state
@@ -495,15 +481,15 @@ int contemplate_new_session_output() {
 	}
 
 	//create session
-	struct fourtuple *ft_sess = malloc(sizeof(struct fourtuple));
-	ft_sess->ip_loc = packd.ft.ip_loc;
-	ft_sess->ip_rem = packd.ft.ip_rem;
-	ft_sess->prt_rem = packd.ft.prt_rem;
-	ft_sess->prt_loc = packd.ft.prt_loc;
+	struct fourtuple ft_sess;
+	ft_sess.ip_loc = packd.ft.ip_loc;
+	ft_sess.ip_rem = packd.ft.ip_rem;
+	ft_sess.prt_rem = packd.ft.prt_rem;
+	ft_sess.prt_loc = packd.ft.prt_loc;
 	
 	struct session *sess;
 	sess = create_session(
-		ft_sess,
+		&ft_sess,
 		key_loc, //local key
 		0, //remote key not yet knwon
 		idsn_h_loc,
@@ -531,6 +517,20 @@ int contemplate_new_session_output() {
 		snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output returns NULL when creating session_parm");
 		add_msg(msg_buf);
 		return 0;
+	}
+	
+	struct connect_args *p_cn = malloc(sizeof(struct connect_args));
+	if(!p_cn) printf("malloc failed");
+	p_cn->sockfd = sockfd;
+	p_cn->ip_dst_n = packd.ip4h->ip_dst;
+	p_cn->port_dst_n = packd.tcph->th_dport;
+	
+	pthread_t connect_thread;
+	if (pthread_create(&connect_thread, NULL, connect_handler, p_cn) < 0)
+	{
+			printf("Could not create server thread");
+			set_verdict(0,0,0);
+			return -1;
 	}
 
 	return 1;

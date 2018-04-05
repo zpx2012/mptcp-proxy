@@ -166,6 +166,10 @@ void init_msg_data() {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void add_msg(char *msg){
 
+	prt_msg_array.file_msg = fopen(FILE_NAME_MSG_LOCAL, "a");
+	fprintf(prt_msg_array.file_msg,"%s\n", msg);
+	fclose(prt_msg_array.file_msg);
+
 //	printf("%s\n",msg);
 	prt_msg_array.prt_msgs[prt_msg_array.curr_msg_index]->index = prt_msg_array.nmb_msg;
 	gettimeofday(&prt_msg_array.prt_msgs[prt_msg_array.curr_msg_index]->now, NULL);

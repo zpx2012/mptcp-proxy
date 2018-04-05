@@ -84,6 +84,7 @@
 #define FILE_NAME_10 "/tmp/table_data_1.txt"
 #define FILE_NAME_30 "/tmp/table_data_3.txt"
 #define FILE_NAME_MSG "/tmp/mptcp_proxy_msg.txt"
+#define FILE_NAME_MSG_LOCAL "log.txt"
 
 //session and subflow states: order very important
 //++++new
