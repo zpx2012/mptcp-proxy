@@ -953,6 +953,7 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 
 			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
 			if(packd.sfl != NULL) {
+				packd.is_from_subflow = 1;
 				packd.sess = packd.sfl->sess;
 			}
 			else packd.sess = NULL;
