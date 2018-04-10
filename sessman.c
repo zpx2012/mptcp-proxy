@@ -1776,8 +1776,8 @@ struct session* create_session(
 	sess->teardown_flag = 0;
 
 	//add rules for browser conn
-	subflow_IPtables('A',1,ft1->ip_loc, ft1->prt_loc, ft1->ip_rem, ft1->prt_rem);
-	subflow_IPtables('A',2,ft1->ip_loc, ft1->prt_loc, ft1->ip_rem, ft1->prt_rem);
+	subflow_IPtables('A',2,ft1->ip_rem, ft1->prt_rem, ft1->ip_loc, ft1->prt_loc);
+	subflow_IPtables('A',3,ft1->ip_loc, ft1->prt_loc, ft1->ip_rem, ft1->prt_rem);
 
 	return sess;
 }
