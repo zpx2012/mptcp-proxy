@@ -1082,6 +1082,13 @@ int mangle_packet() {
 	//*****DATA-PLANE MANAGEMENT******
 	if(packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT) {
 
+		if(!packd.is_from_subflow){
+			snprintf(msg_buf,MAX_MSG_LENGTH, "mangle_packet: receive data packet from browser");
+			add_msg(msg_buf);
+			set_verdict(1,1,0);
+			return 0;
+		}	
+
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
 
 			update_conn_level_data();

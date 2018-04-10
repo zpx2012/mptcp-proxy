@@ -439,6 +439,13 @@ int contemplate_new_session_output() {
     }
     sfl_port = ntohs(sin_loc.sin_port);
 
+
+	unsigned char init_len = packd.tcplen-20;
+		
+	//find window scale factor
+	unsigned char scaling_factor = find_window_scaling(packd.buf+packd.pos_thead+20, &init_len);
+	int timestamp_flag = find_offset_of_tcp_option(packd.buf+packd.pos_thead+20, init_len, 8);
+
 	//create TPcap option and append to packd.mptcp_opt_buf (which is still zero)
 	//if too long, kill the whole MPTCP idea and fallback to ordinary TCP mode
 	uint32_t key_loc[2];
@@ -519,6 +526,48 @@ int contemplate_new_session_output() {
 		return 0;
 	}
 	
+	if(DO_SACK) {
+		sflx->sack_flag = 1;
+		if(find_tcp_option(packd.buf+packd.pos_thead+20, init_len, 4)){
+			sess->sack_flag = 1;
+		} else {
+			sess->sack_flag = 0;
+
+			//furnish with sack flag for subflow sack support
+			if(append_sack(packd.buf+packd.pos_thead+20, &init_len)){
+				packd.tcplen += 2;
+				packd.pos_pay += 2;
+				packd.totlen += 2;
+			}
+		}
+	} else {
+		sess->sack_flag = 0;
+		sflx->sack_flag = 0;
+
+		//remove sack flag to suppress sack on subflow
+		if(eliminate_tcp_option(packd.buf+packd.pos_thead+20, &init_len, 4)) {
+			packd.tcplen -= 2;
+			packd.pos_pay -= 2;
+			packd.totlen -= 2;
+		}
+	}
+
+	// buffer initial tcp options until the session has been created
+	unsigned char init_opt[40];
+	memmove(init_opt, packd.buf+packd.pos_thead+20, init_len);
+
+	sess->init_top_len = init_len;//these are buffered inital options
+	memmove(sess->init_top_data, init_opt, init_len);//these are the compacted inital options
+
+	sess->init_window_loc = ntohs(packd.tcph->th_win);
+	sess->scaling_factor_loc = scaling_factor;
+	sess->curr_window_loc = (sess->init_window_loc)>>scaling_factor;
+	sess->timestamp_flag = timestamp_flag;
+	if(sess->timestamp_flag)
+		sess->tsval = get_timestamp(packd.buf + packd.pos_thead+20, packd.tcplen-20, 0);
+
+
+	//call connect
 	struct connect_args *p_cn = malloc(sizeof(struct connect_args));
 	if(!p_cn) printf("malloc failed");
 	p_cn->sockfd = sockfd;
@@ -641,61 +690,12 @@ int session_pre_syn_sent(){
 			(long unsigned) ntohl(packd.tcph->th_ack));
 	add_msg(msg_buf);
 
-
-	unsigned char init_len = packd.tcplen-20;
-	//unsigned char len = packd.tcplen - 20;
-
-	//find window scale factor
-	unsigned char scaling_factor = find_window_scaling(packd.buf+packd.pos_thead+20, &init_len);
-	int timestamp_flag = find_offset_of_tcp_option(packd.buf+packd.pos_thead+20, init_len, 8);
-
 	if(!create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, NULL) ) {
 
 		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: total option len too long, len=%u", packd.mptcp_opt_len);
 		add_msg(msg_buf);	
 		return 0;
 	}
-
-	if(DO_SACK) {
-		packd.sfl->sack_flag = 1;
-		if(find_tcp_option(packd.buf+packd.pos_thead+20, init_len, 4)){
-			packd.sess->sack_flag = 1;
-		} else {
-			packd.sess->sack_flag = 0;
-
-			//furnish with sack flag for subflow sack support
-			if(append_sack(packd.buf+packd.pos_thead+20, &init_len)){
-				packd.tcplen += 2;
-				packd.pos_pay += 2;
-				packd.totlen += 2;
-			}
-		}
-	} else {
-		packd.sess->sack_flag = 0;
-		packd.sfl->sack_flag = 0;
-
-		//remove sack flag to suppress sack on subflow
-		if(eliminate_tcp_option(packd.buf+packd.pos_thead+20, &init_len, 4)) {
-			packd.tcplen -= 2;
-			packd.pos_pay -= 2;
-			packd.totlen -= 2;
-		}
-	}
-
-	// buffer initial tcp options until the session has been created
-	unsigned char init_opt[40];
-	memmove(init_opt, packd.buf+packd.pos_thead+20, init_len);
-
-	packd.sess->init_top_len = init_len;//these are buffered inital options
-	memmove(packd.sess->init_top_data, init_opt, init_len);//these are the compacted inital options
-
-	packd.sess->init_window_loc = ntohs(packd.tcph->th_win);
-	packd.sess->scaling_factor_loc = scaling_factor;
-	packd.sess->curr_window_loc = (packd.sess->init_window_loc)>>scaling_factor;
-	packd.sess->timestamp_flag = timestamp_flag;
-	if(packd.sess->timestamp_flag)
-		packd.sess->tsval = get_timestamp(packd.buf + packd.pos_thead+20, packd.tcplen-20, 0);
-
 
 	if(!output_data_mptcp()) {
 		set_verdict(1,0,0);
@@ -843,6 +843,37 @@ int session_syn_sent() {
 		else set_verdict(1,1,0);
 
 		//+++send syn/ack to browser, call connect to invoke second subflow
+		uint16_t pack_len = packd.tcplen + packd.ip4len;
+		memcpy(raw_buf, packd.buf, pack_len);
+
+		//change dst
+		struct ipheader* ip4h = (struct ipheader*)(raw_buf+packd.pos_i4head);
+		struct tcpheader* tcph = (struct tcpheader*)(raw_buf+packd.pos_thead);
+		ip4h->ip_dst = htonl(packd.sess->ft.ip_loc);
+		tcph->th_dport = htons(packd.sess->ft.prt_loc);
+		tcph->th_ack = htonl(packd.sess->idsn_loc + packd.sess->offset_loc+1);
+
+//		((struct ipheader*)(raw_buf+packd.pos_i4head))->ip_dst = htonl(packd.sess->ft.ip_loc);	
+//		((struct tcpheader*)(raw_buf+packd.pos_thead))->th_dport = packd.sess->ft.prt_loc;
+//		((struct tcpheader*)(raw_buf+packd.pos_thead))->th_ack = packd.sess->idsn_loc + packd.sess->offset_loc+1;
+
+		//change timestamp
+		if(packd.sess->timestamp_flag) 
+			set_timestamps(raw_buf+packd.pos_thead+20 , packd.pos_pay-packd.pos_thead-20, packd.sess->tsval, 0, 1);
+		
+		//update of both checksums
+		compute_checksums(raw_buf, packd.ip4len, pack_len);
+
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: sending SYN/ACK packet to browser");
+		add_msg(msg_buf);
+
+		//send syn/ack packet
+		if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.ft.ip_rem))<0) {
+			delete_subflow(&packd.sess->ft);
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: send_raw_packet returns error");
+			add_msg(msg_buf);
+			return 0;
+		}
 
 		snprintf(msg_buf,MAX_MSG_LENGTH, "syn_sent: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
 			(long unsigned) packd.sfl->isn_loc, (long unsigned) packd.sfl->isn_rem, 
@@ -1743,6 +1774,10 @@ struct session* create_session(
 	init_pA(&sess->pA_sflows_data);//initalize pntArray of subflows that received data
 
 	sess->teardown_flag = 0;
+
+	//add rules for browser conn
+	subflow_IPtables('A',1,ft1->ip_loc, ft1->prt_loc, ft1->ip_rem, ft1->prt_rem);
+	subflow_IPtables('A',2,ft1->ip_loc, ft1->prt_loc, ft1->ip_rem, ft1->prt_rem);
 
 	return sess;
 }

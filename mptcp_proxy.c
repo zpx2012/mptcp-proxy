@@ -1247,6 +1247,15 @@ int main() {
 		exit(1);
 	}
 
+/*	//+++new
+	// setting socket option to use MARK value 
+    int mark = MARK;
+    if (setsockopt(raw_sd, SOL_SOCKET, SO_MARK, &mark, sizeof(mark)) < 0)
+    {
+        log_error("failed to set mark on raw socket.");
+        exit(1);
+    } 
+*/
 	//setup or raw socket for NETLINK to report interface changes
 	struct sockaddr_nl addr;
 	nl_sd = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);

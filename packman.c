@@ -1224,6 +1224,12 @@ uint16_t copy_options_to_buffer(unsigned char *buf, size_t nb_opt, struct tcp_op
 //  returns the length of the new TCP option header
 //++++++++++++++++++++++++++++++++++++++++++++++++
 uint16_t pad_options_buffer(unsigned char *buf, uint16_t len) {
+	if(!buf || !len) return 0;
+	memset(buf+len,1,(((len+3)>>2)<<2)-len);
+	return (((len+3)>>2)<<2);
+}
+
+uint16_t pad_options_buffer_old(unsigned char *buf, uint16_t len) {
 	memset(buf+len,1,(((len+3)>>2)<<2)-len);
 	return (((len+3)>>2)<<2);
 }

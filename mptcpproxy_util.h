@@ -89,6 +89,7 @@
 //session and subflow states: order very important
 //++++new
 #define PRE_SYN_SENT 0
+#define MARK 100
 
 #define SYN_SENT 1
 #define PRE_SYN_REC_1 2
