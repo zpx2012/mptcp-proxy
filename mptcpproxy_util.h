@@ -943,3 +943,5 @@ void del_pnt_pA(struct pntArray *pa, void *pnt);
 void clear_pA(struct  pntArray *pa);
 
 void sprintFourtuple(char* buf, struct fourtuple *ft);
+
+int system_safe(const char *command);

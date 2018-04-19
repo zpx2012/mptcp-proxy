@@ -903,8 +903,8 @@ void update_default_route(uint32_t ip) {
 	snprintf(msg_buf,MAX_MSG_LENGTH, "update_default_route: new route = %s", str);		
 	add_msg(msg_buf);
 
-	system("route del default");
-	system(str);
+	system_safe("route del default");
+	system_safe(str);
 }
 
 

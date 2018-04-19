@@ -108,7 +108,7 @@ void subflow_IPtables(
 		op, str_ip_rem, str_ip_loc, 
 		(unsigned int) prt_rem, (unsigned int) prt_loc );
 		add_msg(iptables_string);
-		system(iptables_string);
+		system_safe(iptables_string);
 		break;
 	case 2:
 		sprintf(iptables_string, 
@@ -116,7 +116,7 @@ void subflow_IPtables(
 		op, str_ip_rem, str_ip_loc, 
 		(unsigned int) prt_rem, (unsigned int) prt_loc );
 		add_msg(iptables_string);
-		system(iptables_string);
+		system_safe(iptables_string);
 		break;
 	case 3:	
 		sprintf(iptables_string, 
@@ -124,7 +124,7 @@ void subflow_IPtables(
 		op, str_ip_loc, str_ip_rem, 
 		(unsigned int) prt_loc, (unsigned int) prt_rem );
 		add_msg(iptables_string);
-		system(iptables_string);
+		system_safe(iptables_string);
 		break;
 	}	
 	
@@ -425,7 +425,7 @@ void create_alias(char* ifname, size_t index, uint32_t ipaddr) {
 	
 	snprintf(msg_buf,MAX_MSG_LENGTH, "create_alias: cmd=%s", cmd);
 	add_msg(msg_buf);
-	system(cmd);
+	system_safe(cmd);
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -452,7 +452,7 @@ void delete_alias_entry(struct if_table *iftab, size_t tab_index, size_t alias_i
 	
 	snprintf(msg_buf,MAX_MSG_LENGTH, "delete_alias_entry: cmd=%s", cmd);
 	add_msg(msg_buf);
-	system(cmd);
+	system_safe(cmd);
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -526,7 +526,7 @@ int update_iftable(struct if_table *iftab, char * const ifname, const uint32_t n
 			add_msg(msg_buf);
 
 			strcat(cmd,"\n");
-			system(cmd);
+			system_safe(cmd);
 
 		}
 		if(!include_aliases) return 0;
@@ -1244,10 +1244,10 @@ int main() {
 //	init_dummy_iface();
 
 	//start of iptables
-	system("iptables -F");
-	system("iptables -A INPUT -p tcp --tcp-flags SYN SYN -j QUEUE");
-	system("iptables -A OUTPUT -p tcp --tcp-flags SYN SYN -j QUEUE");
-	system("iptables -A FORWARD -p tcp --tcp-flags SYN SYN -j QUEUE");
+	system_safe("iptables -F");
+	system_safe("iptables -A INPUT -p tcp --tcp-flags SYN SYN -j QUEUE");
+	system_safe("iptables -A OUTPUT -p tcp --tcp-flags SYN SYN -j QUEUE");
+	system_safe("iptables -A FORWARD -p tcp --tcp-flags SYN SYN -j QUEUE");
 	
 	//setup of raw socket to send packets
 	add_msg("setting up raw socket");
@@ -1350,7 +1350,7 @@ int main() {
 #endif
  
  	//flush iptables
-	 system("iptables -F");
+	 system_safe("iptables -F");
 
 	//destroying all alias interfaces
 	 snprintf(msg_buf,MAX_MSG_LENGTH,"deleting all alias interfaces\n");

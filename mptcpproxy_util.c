@@ -707,3 +707,13 @@ void clear_pA(struct  pntArray *pa) {
 	free(pa->pnts);
 
 }
+
+int system_safe(const char *command){
+	int systemRet = system(commandLine);
+	if(systemRet == -1){
+		snprintf(msg_buf,MAX_MSG_LENGTH, "system return error");
+		add_msg(msg_buf);
+	}
+	return systemRet;
+}
+
