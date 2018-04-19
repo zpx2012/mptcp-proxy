@@ -425,23 +425,13 @@ void create_complete_MPdss(unsigned char *mpbuf, uint32_t idsn_high, unsigned ch
 	}
 }
 
-int create_complete_MPdss_mine(unsigned char *top, uint16_t *len, 
+int create_complete_MPdss_nondssopt(unsigned char *top, 
 		uint32_t data_ack_h, uint32_t data_seq_next_h, uint32_t sub_seq_next_h, uint32_t idsn_high, unsigned char *payload,uint16_t len_payload) {
-//*for Data Seq is 8 octets and Data Ack is 8 octets
-//	unsigned char tpdss_len = (dssopt_out.Aflag)? 8:4;//4 bytes min, 8bytes if dan present
-//	tpdss_len += (dssopt_out.Mflag)? 10:0;//add 8bytes more for dsn and ssn
-//	*(p_start+3) += (dssopt_out.Rflag & 0x01)<<5;
-//	*(p_start+3) += (dssopt_out.Fflag & 0x01)<<4;
-//	*(p_start+3) += (dssopt_out.mflag & 0x01)<<3;
-//	*(p_start+3) += (dssopt_out.Mflag & 0x01)<<2;
-//	*(p_start+3) += (dssopt_out.aflag & 0x01)<<1;
-//	*(p_start+3) += dssopt_out.Aflag & 0x01;
 
 	unsigned char tpdss_len = 20;
 
-	if((*len) + tpdss_len > 40) return 0;
 	
-	unsigned char* p_start = top + (*len);
+	unsigned char* p_start = top;
 
 	*(p_start) = 30;
 	*(p_start+1) = tpdss_len;
@@ -452,7 +442,6 @@ int create_complete_MPdss_mine(unsigned char *top, uint16_t *len,
 	*((uint32_t*) (p_start+12)) = htonl(sub_seq_next_h);
 	*((uint16_t*) (p_start+16)) = htons(len_payload);
 	*((uint16_t*) (p_start+18)) = mpdsm_checksum(p_start+8,idsn_high,payload,len_payload);
-	(*len) += tpdss_len;
 	return 1;
 }
 

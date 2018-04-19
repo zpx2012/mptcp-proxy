@@ -64,6 +64,7 @@ int create_new_session_input(uint32_t *key_rem) {
 		 &packd.ft,
 		 0,//address id loc
 		 0,//address id rem
+		 0,
 		 PRE_SYN_REC_1,
 		 ACTIVE,
 		 0,//loc ISN
@@ -411,19 +412,17 @@ void* connect_handler(void *args){
 }
 
 
+int create_socket_call_connect(int *p_sockfd, uint16_t *p_port){
 
-
-int contemplate_new_session_output() {
-
-	//create socket
 	int sockfd;
-	uint16_t sfl_port;
 	struct sockaddr_in sin_loc;
 	socklen_t sin_loc_len;
 	
     sockfd = socket(AF_INET , SOCK_STREAM , 0);
     if (sockfd == -1){
-        printf("Could not create socket");
+        snprintf(msg_buf,MAX_MSG_LENGTH, "create_socket_call_connect:Could not create socket");
+		add_msg(msg_buf);
+		return -1;
     }
 
 	//bind new port number
@@ -431,14 +430,50 @@ int contemplate_new_session_output() {
     sin_loc.sin_port = 0; 
     sin_loc.sin_addr.s_addr = packd.ip4h->ip_src; 
     if (bind(sockfd, (const struct sockaddr *)&sin_loc, sizeof(sin_loc)) == -1) {
-        printf("Failed to bind");
+        snprintf(msg_buf,MAX_MSG_LENGTH, "create_socket_call_connect:Failed to bind");
+		add_msg(msg_buf);
+		return -1;
     }
     sin_loc_len = sizeof(sin_loc);
     if (getsockname(sockfd, (struct sockaddr *)&sin_loc, &sin_loc_len) == -1) {
-        printf("getsockname() failed");
+        snprintf(msg_buf,MAX_MSG_LENGTH, "create_socket_call_connect:getsockname() failed");
+		add_msg(msg_buf);
+		return -1;
     }
-    sfl_port = ntohs(sin_loc.sin_port);
 
+	//call connect
+	struct connect_args *p_cn = malloc(sizeof(struct connect_args));
+	if(!p_cn) {
+		snprintf(msg_buf,MAX_MSG_LENGTH,"malloc failed");
+		add_msg(msg_buf);
+		return -1;		
+	}
+	p_cn->sockfd = sockfd;
+	p_cn->ip_dst_n = packd.ip4h->ip_dst;
+	p_cn->port_dst_n = packd.tcph->th_dport;
+	
+	pthread_t connect_thread;
+	if (pthread_create(&connect_thread, NULL, connect_handler, p_cn) < 0)
+	{
+			snprintf(msg_buf,MAX_MSG_LENGTH,"Could not create server thread");
+			add_msg(msg_buf);
+			set_verdict(0,0,0);
+			return -1;
+	}
+
+	//return
+	*p_sockfd = sockfd;
+    *p_port = ntohs(sin_loc.sin_port);
+	return 0;
+}
+
+int contemplate_new_session_output() {
+
+	//create socket
+	int sockfd;
+	uint16_t sfl_port;
+
+	create_socket_call_connect(&sockfd,&sfl_port);
 
 	unsigned char init_len = packd.tcplen-20;
 		
@@ -472,6 +507,7 @@ int contemplate_new_session_output() {
 		 &ft_sfl,
 		 0,//address id loc
 		 0,//address id rem
+		 sockfd,
 		 PRE_SYN_SENT,//tcp_state
 		 ACTIVE,//act_state
 		 0,//loc ISSN
@@ -516,6 +552,8 @@ int contemplate_new_session_output() {
 	}
 
 	sflx->sess = sess;
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: new session created, sess_id=%zu, sess_state=SYN_SENT", packd.sess->index);
+	add_msg(msg_buf);
 
 	//???
 	struct session_parms *sess_parm;
@@ -565,22 +603,6 @@ int contemplate_new_session_output() {
 	sess->timestamp_flag = timestamp_flag;
 	if(sess->timestamp_flag)
 		sess->tsval = get_timestamp(packd.buf + packd.pos_thead+20, packd.tcplen-20, 0);
-
-
-	//call connect
-	struct connect_args *p_cn = malloc(sizeof(struct connect_args));
-	if(!p_cn) printf("malloc failed");
-	p_cn->sockfd = sockfd;
-	p_cn->ip_dst_n = packd.ip4h->ip_dst;
-	p_cn->port_dst_n = packd.tcph->th_dport;
-	
-	pthread_t connect_thread;
-	if (pthread_create(&connect_thread, NULL, connect_handler, p_cn) < 0)
-	{
-			printf("Could not create server thread");
-			set_verdict(0,0,0);
-			return -1;
-	}
 
 	set_verdict(0,0,0);	
 	return 1;
@@ -676,27 +698,29 @@ int session_pre_syn_sent(){
 		return 0;
 	}
 
-	//mine:do we need this?
-	packd.fwd_type = T_TO_M;
-
-	//behaves like an output: packet arrives from TCP and is sent to subflow
-	packd.ft.ip_loc = ntohl(packd.ip4h->ip_src);
-	packd.ft.ip_rem = ntohl(packd.ip4h->ip_dst);
-	packd.ft.prt_loc = ntohs(packd.tcph->th_sport);
-	packd.ft.prt_rem = ntohs(packd.tcph->th_dport);
-
 	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: input tcp_seq=%lu, tcp_an=%lu",
 			(long unsigned) ntohl(packd.tcph->th_seq),
 			(long unsigned) ntohl(packd.tcph->th_ack));
 	add_msg(msg_buf);
 
-	if(!create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, NULL) ) {
-
-		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: total option len too long, len=%u", packd.mptcp_opt_len);
-		add_msg(msg_buf);	
-		return 0;
+	if(packd.is_master){
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent:master");
+		add_msg(msg_buf);		
+		if(!create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, NULL) ) {
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: total option len too long, len=%u", packd.mptcp_opt_len);
+			add_msg(msg_buf);	
+			return 0;
+		}
+	} else {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: slave");
+		add_msg(msg_buf);
+		if(!create_MPjoin_syn(packd.mptcp_opt_buf, &packd.mptcp_opt_len, packd.sess->token_rem, packd.sfl->rand_nmb_loc,packd.sfl->addr_id_loc, 0); ) {
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: total option len too long, len=%u", packd.mptcp_opt_len);
+			add_msg(msg_buf);	
+			return 0;
+		}
 	}
-
+	
 	if(!output_data_mptcp()) {
 		set_verdict(1,0,0);
 		execute_sess_teardown(packd.sess);
@@ -705,16 +729,13 @@ int session_pre_syn_sent(){
 		return 0;
 	}
 
-	//buffer packet in case retransmission occurs
-	cache_packet_header();
-
-	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: new session created, sess_id=%zu, sess_state=SYN_SENT", packd.sess->index);
-	add_msg(msg_buf);
-	set_verdict(1,1,1);
-
-	
 	packd.sfl->tcp_state = SYN_SENT;
 	packd.sess->sess_state = SYN_SENT;
+
+	//update tsn
+	packd.sfl->isn_loc = htonl(packd.tcph->th_seq);
+	packd.sfl->highest_sn_loc = packd.sfl->isn_loc;
+	packd.sfl->offset_loc = packd.sfl->isn_loc;
 
 	//there is room for opimization: the first subflow does not have to be in IP tables
 	//	after SYN/ACK handshake
@@ -726,11 +747,11 @@ int session_pre_syn_sent(){
 		(long unsigned) ntohl(packd.tcph->th_ack));
 	add_msg(msg_buf);
 	
+	set_verdict(1,1,1);
 	return 1;
 
 
 }
-
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //session SYN_SENT
@@ -751,129 +772,10 @@ int session_syn_sent() {
 			return 0;
 		}
 
-		//get rem IDSN from MPTCP CAP option
-		uint32_t key_rem[2];
-		uint32_t key_loc[2];
-		if(!analyze_MPcap(mptopt, packd.nb_mptcp_options, key_loc, key_rem)) {
-			snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: analyze_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
-			add_msg(msg_buf);
-			delete_subflow(&packd.ft);
-			delete_session_parm(packd.sess->token_loc);
-			delete_session(&packd.sess->ft, 1);
-			set_verdict(1,0,0);
-			return 0;
-		}
-
-		//add or eliminate SACK based on DO_SACK
-		int adjust_packet = 0;
-
-		//check sack support for subflow
-		unsigned char len = packd.tcplen-20;
-		if(DO_SACK) {
-
-			if(find_tcp_option(packd.buf+packd.pos_thead+20, len, 4)) {
-			
-				//everything fine; in case sess->sack_flag == 0, simply keep the sack_flag rolling
-			} else{
-
-				packd.sfl->sack_flag = 0;//no sfl sack support
-				if( packd.sess->sack_flag) {
-
-					//furnish with sack flag for subflow sack support
-					if(append_sack(packd.buf+packd.pos_thead+20, &len)){
-						packd.tcplen += 2;
-						packd.pos_pay += 2;
-						packd.totlen += 2;
-						adjust_packet = 1;
-					}
-				}
-			}
-		} else {
-			if(find_tcp_option(packd.buf+packd.pos_thead+20, len, 4)) {
-				//ensure no sess->sack support
-				if(eliminate_tcp_option(packd.buf+packd.pos_thead+20, &len, 4)){
-					packd.tcplen -= 2;
-					packd.pos_pay -= 2;
-					packd.totlen -= 2;
-					adjust_packet = 1;
-				}
-			} else {
-				//everthing fine
-			}
-		}
-
-
-		unsigned char init_len = packd.tcplen-20;
-		unsigned char scaling_factor = find_window_scaling(packd.buf+packd.pos_thead+20, &init_len);
-		packd.sess->init_window_rem = ntohs(packd.tcph->th_win);
-		packd.sess->scaling_factor_rem = scaling_factor;
-		packd.sess->curr_window_rem = (packd.sess->init_window_loc)>>scaling_factor;
-
-
-		packd.sess->key_rem[0] = key_rem[0];
-		packd.sess->key_rem[1] = key_rem[1];
-
-		create_idsn_token(packd.sess->key_rem, &packd.sess->idsn_rem, &packd.sess->token_rem,NULL);
-
-
-		packd.sess->highest_dsn_rem = packd.sess->idsn_rem+1;
-		packd.sess->highest_dan_rem = packd.sess->idsn_rem+1;
-
-		packd.sfl->isn_rem = ntohl(packd.tcph->th_seq);	
-		packd.sess->offset_rem = packd.sfl->isn_rem - packd.sess->idsn_rem;		
-
-		packd.sfl->highest_sn_loc += 1;
-		packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;		
-
-		packd.sfl->tcp_state = PRE_EST;
-		packd.sess->sess_state = PRE_EST;
-
-		if(adjust_packet) {
-			packd.mptcp_opt_len = 0;//since option is already attached
-			if(!output_data_mptcp()) {
-				set_verdict(1,0,0);
-				execute_sess_teardown(packd.sess);
-				snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: output_data_mptcp fails for sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
-				add_msg(msg_buf);
-
-				return 0;
-			}
-			set_verdict(1,1,1);
-		}
-		else set_verdict(1,1,0);
-
-		//+++send syn/ack to browser, call connect to invoke second subflow
-		uint16_t pack_len = packd.tcplen + packd.ip4len;
-		memcpy(raw_buf, packd.buf, pack_len);
-
-		//change dst
-		struct ipheader* ip4h = (struct ipheader*)(raw_buf+packd.pos_i4head);
-		struct tcpheader* tcph = (struct tcpheader*)(raw_buf+packd.pos_thead);
-		ip4h->ip_dst = htonl(packd.sess->ft.ip_loc);
-		tcph->th_dport = htons(packd.sess->ft.prt_loc);
-		tcph->th_ack = htonl(packd.sess->idsn_loc + packd.sess->offset_loc+1);
-
-//		((struct ipheader*)(raw_buf+packd.pos_i4head))->ip_dst = htonl(packd.sess->ft.ip_loc);	
-//		((struct tcpheader*)(raw_buf+packd.pos_thead))->th_dport = packd.sess->ft.prt_loc;
-//		((struct tcpheader*)(raw_buf+packd.pos_thead))->th_ack = packd.sess->idsn_loc + packd.sess->offset_loc+1;
-
-		//change timestamp
-		if(packd.sess->timestamp_flag) 
-			set_timestamps(raw_buf+packd.pos_thead+20 , packd.pos_pay-packd.pos_thead-20, packd.sess->tsval, 0, 1);
-		
-		//update of both checksums
-		compute_checksums(raw_buf, packd.ip4len, pack_len);
-
-		snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: sending SYN/ACK packet to browser");
-		add_msg(msg_buf);
-
-		//send syn/ack packet
-		if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.ft.ip_rem))<0) {
-			delete_subflow(&packd.sess->ft);
-			snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: send_raw_packet returns error");
-			add_msg(msg_buf);
-			return 0;
-		}
+		if(packd.is_master)
+			subflow_syn_sent_master();
+		else
+			subflow_syn_sent_slave();
 
 		snprintf(msg_buf,MAX_MSG_LENGTH, "syn_sent: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
 			(long unsigned) packd.sfl->isn_loc, (long unsigned) packd.sfl->isn_rem, 
@@ -885,15 +787,89 @@ int session_syn_sent() {
 		return 1;
 	}
 
-	//consider SYN retransmission
-	if(packd.hook > 1 && packd.fwd_type == T_TO_M && packd.syn && !packd.ack) {
-		retransmit_cached_packet_header();
-		set_verdict(1,1,1);
-		//TODO: Confirm return value
-		return 0;
-	}
 	set_verdict(1,0,0);
 	return 0;
+}
+
+
+
+
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//session PRE_EST
+//  Target states: ESTABLISHED
+//  Add TP_CAP headers with both ISDNs
+//++++++++++++++++++++++++++++++++++++++++++++++++
+int session_pre_est() {
+
+	if(packd.hook<=1 || packd.fwd_type != T_TO_M || packd.syn || !packd.ack || packd.fin) {
+		set_verdict(1,0,0);
+		return 0;
+	}
+
+//	packd.sfl = packd.sess->act_subflow;
+
+	//append IDSNloc and IDSNrem to packd.mptcp_opt_buf (which is still zero)
+	//if too long, kill the whole MPTCP idea and fallback to ordinary TCP mode
+	if(packd.is_master){
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est:master");
+		add_msg(msg_buf);	
+		if( !create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, packd.sess->key_rem) ){
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: create_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+			add_msg(msg_buf);
+			delete_subflow(&packd.ft);
+			delete_session_parm(packd.sess->token_loc);
+			delete_session(&packd.sess->ft, 1);
+			set_verdict(1,0,0);
+			return 0;
+		}
+	} else {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est:slave");
+		add_msg(msg_buf);	
+
+		uint32_t mac_test[5];
+		create_mac(packd.sess->key_loc, packd.sess->key_rem, packd.sfl->rand_nmb_loc, packd.sfl->rand_nmb_rem, mac_test);
+		if(!create_MPjoin_ack(opt_buf, &opt_len, mac_test)){
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: create_MPjoin fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+			add_msg(msg_buf);
+			delete_subflow(&packd.ft);
+			delete_session_parm(packd.sess->token_loc);
+			delete_session(&packd.sess->ft, 1);
+			set_verdict(1,0,0);
+			return 0;
+		}
+		
+		//retransmit packet
+	}
+
+	if(!output_data_mptcp()){
+		set_verdict(1,0,0);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: output_data_mptcp fails, sess_id=%zu", packd.sess->index);
+		add_msg(msg_buf);
+		return 0;
+	}
+
+	packd.sess->highest_dsn_loc += 1;
+	packd.sess->last_dan_loc = packd.sess->highest_dsn_loc;
+	packd.sess->highest_dan_loc = packd.sess->highest_dsn_loc;
+
+
+	packd.sess->curr_window_loc = ntohs(packd.tcph->th_win);
+	packd.sfl->tcp_state = ESTABLISHED;
+	packd.sess->sess_state = ESTABLISHED;
+
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: PRE_EST->ESTABLISHED - sess->sack=%d, sfl->sack=%d, sess_id=%zu, sfl_id=%zu",
+		packd.sess->sack_flag, packd.sfl->sack_flag, packd.sess->index, packd.sfl->index);
+	add_msg(msg_buf);
+	set_verdict(1,1,1);
+
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: isn_loc=%u, isn_rem=%u, idsn_loc=%u, idsn_rem=%u, sfl_seq=%u, sfl_an=%u",
+		packd.sfl->isn_loc, packd.sfl->isn_rem, 
+		packd.sess->idsn_loc, packd.sess->idsn_rem,
+		ntohl(packd.tcph->th_seq),
+		ntohl(packd.tcph->th_ack));
+	add_msg(msg_buf);
+
+	return 1;
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1175,74 +1151,6 @@ int session_pre_syn_rec_1() {
 }
 
 
-//++++++++++++++++++++++++++++++++++++++++++++++++
-//session PRE_EST
-//  Target states: ESTABLISHED
-//  Add TP_CAP headers with both ISDNs
-//++++++++++++++++++++++++++++++++++++++++++++++++
-int session_pre_est() {
-
-	if(packd.hook<=1 || packd.fwd_type != T_TO_M || packd.syn || !packd.ack || packd.fin) {
-		set_verdict(1,0,0);
-		return 0;
-	}
-
-//	packd.sfl = packd.sess->act_subflow;
-
-	//append IDSNloc and IDSNrem to packd.mptcp_opt_buf (which is still zero)
-	//if too long, kill the whole MPTCP idea and fallback to ordinary TCP mode
-	if( !create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, packd.sess->key_rem) ){
-
-		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: analyze_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
-		add_msg(msg_buf);
-		delete_subflow(&packd.ft);
-		delete_session_parm(packd.sess->token_loc);
-		delete_session(&packd.sess->ft, 1);
-		set_verdict(1,0,0);
-		return 0;
-	}
-
-	packd.sess->highest_dsn_loc += 1;
-	packd.sess->last_dan_loc = packd.sess->highest_dsn_loc;
-	packd.sess->highest_dan_loc = packd.sess->highest_dsn_loc;
-
-	packd.sfl->highest_sn_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc - packd.sfl->offset_loc;
-	packd.sfl->highest_an_rem = ntohl(packd.tcph->th_ack) - packd.sess->offset_rem - packd.sfl->offset_rem ;
-	packd.sfl->highest_sn_rem = packd.sfl->highest_an_rem;
-	packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;
-
-
-//	packd.tcph->th_seq = htonl(packd.sfl->highest_sn_loc);
-//	packd.tcph->th_ack = htonl(packd.sfl->highest_an_rem);
-
-	packd.sess->curr_window_loc = ntohs(packd.tcph->th_win);
-	packd.sfl->tcp_state = ESTABLISHED;
-	packd.sess->sess_state = ESTABLISHED;
-
-	if(!output_data_mptcp()){
-		set_verdict(1,0,0);
-		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: output_data_mptcp fails, sess_id=%zu", packd.sess->index);
-		add_msg(msg_buf);
-		return 0;
-	}
-
-	//buffer packet in case retransmission occurs
-	cache_packet_header();
-
-	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: PRE_EST->ESTABLISHED - sess->sack=%d, sfl->sack=%d, sess_id=%zu, sfl_id=%zu",
-		packd.sess->sack_flag, packd.sfl->sack_flag, packd.sess->index, packd.sfl->index);
-	add_msg(msg_buf);
-	set_verdict(1,1,1);
-
-	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: isn_loc=%u, isn_rem=%u, idsn_loc=%u, idsn_rem=%u, sfl_seq=%u, sfl_an=%u",
-		packd.sfl->isn_loc, packd.sfl->isn_rem, 
-		packd.sess->idsn_loc, packd.sess->idsn_rem,
-		ntohl(packd.tcph->th_seq),
-		ntohl(packd.tcph->th_ack));
-	add_msg(msg_buf);
-
-	return 1;
-}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //session PRE_EST
@@ -1752,6 +1660,7 @@ struct session* create_session(
 	sess->ack_inf_flag = 1;
 	sess->act_subflow = sflx;
 	sess->last_subflow = sflx;
+	sess->slav_subflow = NULL;
 	sess->scaling_factor_loc = 0;
 	sess->scaling_factor_rem = 0;
 

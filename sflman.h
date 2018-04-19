@@ -20,6 +20,9 @@ struct tp_event;
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int subflow_completed(struct subflow *sfl);
 
+int create_new_subflow_output_slave();
+
+
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //SUFLOW: initiate_cand_subflow()
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -37,6 +40,10 @@ extern int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, uns
 //  creates new subflow when hook=1 and TPjion
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, unsigned char backup, uint32_t rand_nmb);
+
+int subflow_syn_sent_master();
+
+int subflow_syn_sent_slave();
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -152,6 +159,7 @@ int handle_subflow_break(struct subflow *const sflx);
 extern struct subflow* create_subflow(struct fourtuple *ft1,
 		 unsigned char addr_id_loc,
 		 unsigned char addr_id_rem,
+		 int sockfd,
 		 int tcp_state,
 		 int act_state,
 		 uint32_t isn_loc,

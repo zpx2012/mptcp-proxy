@@ -1026,7 +1026,17 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 		printf("sess =%lu\n", (long unsigned) packd.sess);
 	}
 
-
+{
+	//new
+	if(packd.sfl){
+		if(packd.sfl == packd.sess->act_subflow)
+			packd.is_master = 1;
+		if(packd.sfl != packd.sess->slav_subflow){
+			snprintf(msg_buf,MAX_MSG_LENGTH, "eval_packet: not master, not slav");
+			add_msg(msg_buf);
+		}
+	}
+}
 
 	//find TPTCP options:start at tcpoptions.
 	packd.nb_mptcp_options = parse_mptcp_options(buf+(packd.pos_thead)+20, (packd.tcplen)-20, mptopt);

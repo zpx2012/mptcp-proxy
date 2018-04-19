@@ -1082,15 +1082,15 @@ int mangle_packet() {
 	//*****DATA-PLANE MANAGEMENT******
 	if(packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT) {
 
-		if(!packd.is_from_subflow){
-			snprintf(msg_buf,MAX_MSG_LENGTH, "mangle_packet: receive data packet from browser");
-			add_msg(msg_buf);
-			set_verdict(1,1,0);
-			return 0;
-		}	
-
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
 
+			if(!packd.is_from_subflow){
+			
+				split_browser_data_send();
+				set_verdict(0,0,0);
+				return 0;
+			}
+			
 			update_conn_level_data();
 			determine_thruway_subflow();//sets verdict
 
@@ -1117,7 +1117,8 @@ int mangle_packet() {
 
 			update_packet_output();
 
-		} else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
+		} 
+		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
 			if(packd.sfl->broken) {
 				set_verdict(0,0,0);
@@ -1280,4 +1281,78 @@ int mangle_packet_old() {
 	return update_session_control_plane();	
 }
 
+int Send(int sockfd, const void *buf, size_t len, int flags){
+	int ret;
+	if(ret = send(sockfd, buf,  len, flags) < 0) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "Sent: send returns error");
+		add_msg(msg_buf);
+		return ret;
+	}
+	snprintf(msg_buf,MAX_MSG_LENGTH, "Sent: send success");
+	add_msg(msg_buf);	
+	return ret;
+}
 
+int split_browser_data_send(){
+
+	if(!packd.sess->slav_subflow){
+		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:slav subflow has not established");
+		add_msg(msg_buf);
+		return -1;
+	}
+	//get dsn
+	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc;
+	packd.dan_curr_loc = ntohl(packd.tcph->th_ack) - packd.sess->offset_rem;
+
+	//get Mflag
+
+	if(packd.paylen <= PIVOTPOINT){
+		subflow_send_data(packd.sess->act_subflow, packd.buf+packd.pos_pay, packd.paylen, packd.dan_curr_loc, packd.dsn_curr_loc);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:sent packd.paylen <= PIVOTPOINT");
+		add_msg(msg_buf);
+	} else {	
+		//first part
+		subflow_send_data(packd.sess->act_subflow, packd.buf+packd.pos_pay, PIVOTPOINT, packd.dan_curr_loc, packd.dsn_curr_loc);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:sent first part");
+		add_msg(msg_buf);	
+		
+		//second part
+		subflow_send_data(packd.sess->slav_subflow, packd.buf+packd.pos_pay+PIVOTPOINT, packd.ip4len+packd.tcplen-PIVOTPOINT, packd.dan_curr_loc+PIVOTPOINT, packd.dsn_curr_loc);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:sent second part");
+		add_msg(msg_buf);	
+
+	}
+
+	return 0;
+}
+
+int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uint32_t dan, uint32_t dsn){
+
+	if(!sfl){
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_send_data:null sfl");
+		add_msg(msg_buf);
+		return -1;
+	}
+	Send(sfl->sockfd, buf, len, 0);
+	insert_dsn_map(&(sfl->dss_map_list.list), dan, dsn, sfl->highest_sn_loc);
+	sfl->highest_sn_loc += len;
+
+	return 0;
+}
+
+int insert_dsn_map(struct list_head* head,uint32_t dan, uint32_t dsn, uint32_t tsn){
+
+	if(!head){
+		snprintf(msg_buf,MAX_MSG_LENGTH, "insert_dsn_map:null head");
+		add_msg(msg_buf);
+		return -1;
+	}
+	
+	struct dss_mapping* new_node = (struct dss_mapping*)malloc(sizeof(struct dss_mapping));
+	new_node->dsn = dsn;
+	new_node->dan = dan;
+	new_node->tsn = tsn;
+	list_add_tail(&(new_node->list), head);
+
+	return 0;	
+} 

@@ -36,6 +36,7 @@
 
 #include "uthash.h"
 #include <pthread.h>
+#include <linux/list.h>
 
 //Operations
 #define UPDATE_DEFAULT_ROUTE 0 //derives new /24 default route in case of mpproxy -B and mpproxy -A
@@ -90,6 +91,7 @@
 //++++new
 #define PRE_SYN_SENT 0
 #define MARK 100
+#define PIVOTPOINT 3
 
 #define SYN_SENT 1
 #define PRE_SYN_REC_1 2
@@ -156,14 +158,22 @@ int fd_fifo_dwn;
 int fd_fifo_up;
 
 //socket descriptor for raw socket and buffer fo raw socket
+#define RAWBUFLEN 4096
 extern int raw_sd;
-extern unsigned char raw_buf[4096] __attribute__ ((aligned));// = malloc( 60 * sizeof(unsigned char));
+extern unsigned char raw_buf[RAWBUFLEN] __attribute__ ((aligned));// = malloc( 60 * sizeof(unsigned char));
 
 //+++new
 struct connect_args{
 	int sockfd;
 	uint32_t ip_dst_n;
 	uint16_t port_dst_n;
+};
+
+struct dss_mapping{
+	struct list_head list;
+	uint32_t dan;
+	uint32_t dsn;
+	uint32_t tsn;
 };
 
 
@@ -253,7 +263,6 @@ struct dss_option{
 extern struct dss_option dssopt_in;//defined in sessman
 extern struct dss_option dssopt_out;//defined in sessman
 
-
 struct print_msg{
 	uint32_t index;
 	struct timeval now;
@@ -333,6 +342,7 @@ extern struct print_data prt_data;
 struct packet_data{
 	//+++new
 	int is_from_subflow;
+	int is_master;
 	//---new
 
 	struct fourtuple ft;
@@ -465,6 +475,7 @@ struct subflow{
 	//+++new
 	int sockfd;
 	uint8_t is_master;
+	struct dss_mapping dss_map_list;
 	//---new
 
 	struct fourtuple ft;//key
