@@ -408,10 +408,8 @@ void* connect_handler(void *args){
 	if (connect(p_cn->sockfd , (struct sockaddr *)&sin_rem , sizeof(sin_rem)) < 0){
 		printf("connect failed. Error");
 		pthread_exit(NULL);
-		return;
 	}
 	pthread_exit(NULL);
-	return;
 }
 
 
