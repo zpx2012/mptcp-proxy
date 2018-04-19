@@ -1283,7 +1283,7 @@ int mangle_packet_old() {
 
 int Send(int sockfd, const void *buf, size_t len, int flags){
 	int ret;
-	if(ret = send(sockfd, buf,  len, flags) < 0) {
+	if((ret = send(sockfd, buf,  len, flags)) < 0) {
 		snprintf(msg_buf,MAX_MSG_LENGTH, "Sent: send returns error");
 		add_msg(msg_buf);
 		return ret;

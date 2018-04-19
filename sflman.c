@@ -159,6 +159,7 @@ int create_new_subflow_output_slave(){
 	add_subflow_to_session(sfl1, sess);
 	sess->slav_subflow = sfl1;
 
+	return 1;
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
