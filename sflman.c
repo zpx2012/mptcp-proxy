@@ -53,11 +53,12 @@ int create_new_subflow_output_slave(){
 
 	create_socket_call_connect(&sockfd,&sfl_port);
 
-	struct fourtuple ft;
-	ft.ip_loc = packd.ft.ip_loc;
-	ft.ip_rem = packd.ft.ip_rem;
-	ft.prt_rem = packd.ft.prt_rem;
-	ft.prt_loc = sfl_port;
+	struct fourtuple ft_sfl;
+	ft_sfl.ip_loc = packd.ft.ip_loc;
+	ft_sfl.ip_rem = packd.ft.ip_rem;
+	ft_sfl.prt_rem = packd.ft.prt_rem;
+	ft_sfl.prt_loc = sfl_port;
+	struct fourtuple* ft = &ft_sfl;
 
 	//find local addrid. If not there, create it
 	unsigned i = 0;
@@ -273,6 +274,7 @@ int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned c
 		 ft,
 		 addr_id_loc,//addr id loc, the currently number of subflows in this session is sued for this purpose
 		 addr_id_rem,//addr id remote
+		 0,
 		 SYN_SENT,
 		 CANDIDATE,
 		 ISSNloc,//loc ISN
@@ -431,6 +433,7 @@ int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, un
 		 &ft,
 		 addr_id_loc,//address id loc
 		 addr_id_rem,//address id rem
+		 0,
 		 SYN_REC,
 		 CANDIDATE,
 		 ISSNloc,//loc ISN

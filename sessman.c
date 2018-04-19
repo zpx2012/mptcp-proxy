@@ -208,7 +208,7 @@ int contemplate_new_session() {
 //	set_verdict(1,0,0);	
 	return 0;
 }
-
+/*
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //contemplate new session output
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -388,7 +388,7 @@ int contemplate_new_session_output_old() {
 	
 	return 1;
 }//end contemplate_new_session_output
-
+*/
 
 void* connect_handler(void *args){
 
@@ -714,7 +714,7 @@ int session_pre_syn_sent(){
 	} else {
 		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: slave");
 		add_msg(msg_buf);
-		if(!create_MPjoin_syn(packd.mptcp_opt_buf, &packd.mptcp_opt_len, packd.sess->token_rem, packd.sfl->rand_nmb_loc,packd.sfl->addr_id_loc, 0); ) {
+		if(!create_MPjoin_syn(packd.mptcp_opt_buf, &packd.mptcp_opt_len, packd.sess->token_rem, packd.sfl->rand_nmb_loc,packd.sfl->addr_id_loc, 0) ) {
 			snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: total option len too long, len=%u", packd.mptcp_opt_len);
 			add_msg(msg_buf);	
 			return 0;
@@ -828,7 +828,7 @@ int session_pre_est() {
 
 		uint32_t mac_test[5];
 		create_mac(packd.sess->key_loc, packd.sess->key_rem, packd.sfl->rand_nmb_loc, packd.sfl->rand_nmb_rem, mac_test);
-		if(!create_MPjoin_ack(opt_buf, &opt_len, mac_test)){
+		if(!create_MPjoin_ack(packd.mptcp_opt_buf, &packd.mptcp_opt_len, mac_test)){
 			snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: create_MPjoin fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
 			add_msg(msg_buf);
 			delete_subflow(&packd.ft);

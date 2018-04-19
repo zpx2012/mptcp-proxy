@@ -1293,6 +1293,38 @@ int Send(int sockfd, const void *buf, size_t len, int flags){
 	return ret;
 }
 
+int insert_dsn_map(struct list_head* head,uint32_t dan, uint32_t dsn, uint32_t tsn){
+
+	if(!head){
+		snprintf(msg_buf,MAX_MSG_LENGTH, "insert_dsn_map:null head");
+		add_msg(msg_buf);
+		return -1;
+	}
+	
+	struct dss_mapping* new_node = (struct dss_mapping*)malloc(sizeof(struct dss_mapping));
+	new_node->dsn = dsn;
+	new_node->dan = dan;
+	new_node->tsn = tsn;
+	list_add_tail(&(new_node->list), head);
+
+	return 0;	
+} 
+
+int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uint32_t dan, uint32_t dsn){
+
+	if(!sfl){
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_send_data:null sfl");
+		add_msg(msg_buf);
+		return -1;
+	}
+	Send(sfl->sockfd, buf, len, 0);
+	insert_dsn_map(&(sfl->dss_map_list.list), dan, dsn, sfl->highest_sn_loc);
+	sfl->highest_sn_loc += len;
+
+	return 0;
+}
+
+
 int split_browser_data_send(){
 
 	if(!packd.sess->slav_subflow){
@@ -1325,34 +1357,3 @@ int split_browser_data_send(){
 
 	return 0;
 }
-
-int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uint32_t dan, uint32_t dsn){
-
-	if(!sfl){
-		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_send_data:null sfl");
-		add_msg(msg_buf);
-		return -1;
-	}
-	Send(sfl->sockfd, buf, len, 0);
-	insert_dsn_map(&(sfl->dss_map_list.list), dan, dsn, sfl->highest_sn_loc);
-	sfl->highest_sn_loc += len;
-
-	return 0;
-}
-
-int insert_dsn_map(struct list_head* head,uint32_t dan, uint32_t dsn, uint32_t tsn){
-
-	if(!head){
-		snprintf(msg_buf,MAX_MSG_LENGTH, "insert_dsn_map:null head");
-		add_msg(msg_buf);
-		return -1;
-	}
-	
-	struct dss_mapping* new_node = (struct dss_mapping*)malloc(sizeof(struct dss_mapping));
-	new_node->dsn = dsn;
-	new_node->dan = dan;
-	new_node->tsn = tsn;
-	list_add_tail(&(new_node->list), head);
-
-	return 0;	
-} 
