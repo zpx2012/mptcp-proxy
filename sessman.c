@@ -416,7 +416,7 @@ void* connect_handler(void *args){
 }
 
 
-int create_socket_call_connect(int *p_sockfd, uint16_t *p_port){
+int create_socket_call_connect(struct fourtuple* ft,int *p_sockfd){
 
 	int sockfd;
 	struct sockaddr_in sin_loc;
@@ -432,7 +432,7 @@ int create_socket_call_connect(int *p_sockfd, uint16_t *p_port){
 	//bind new port number
 	sin_loc.sin_family = AF_INET;
     sin_loc.sin_port = 0; 
-    sin_loc.sin_addr.s_addr = packd.ip4h->ip_src; 
+    sin_loc.sin_addr.s_addr = ft->ip_loc; 
     if (bind(sockfd, (const struct sockaddr *)&sin_loc, sizeof(sin_loc)) == -1) {
         snprintf(msg_buf,MAX_MSG_LENGTH, "create_socket_call_connect:Failed to bind, errno %d",errno);
 		add_msg(msg_buf);
@@ -453,8 +453,8 @@ int create_socket_call_connect(int *p_sockfd, uint16_t *p_port){
 		return -1;		
 	}
 	p_cn->sockfd = sockfd;
-	p_cn->ip_dst_n = packd.ip4h->ip_dst;
-	p_cn->port_dst_n = packd.tcph->th_dport;
+	p_cn->ip_dst_n = ft->ip_rem;
+	p_cn->port_dst_n = ft->prt_rem;
 	
 	pthread_t connect_thread;
 	if (pthread_create(&connect_thread, NULL, connect_handler, p_cn) < 0)
@@ -467,7 +467,7 @@ int create_socket_call_connect(int *p_sockfd, uint16_t *p_port){
 
 	//return
 	*p_sockfd = sockfd;
-    *p_port = ntohs(sin_loc.sin_port);
+    ft->prt_loc = ntohs(sin_loc.sin_port);
 	return 0;
 }
 
@@ -475,9 +475,14 @@ int contemplate_new_session_output() {
 
 	//create socket
 	int sockfd;
-	uint16_t sfl_port;
+	struct fourtuple ft_sfl;
+	ft_sfl.ip_loc = packd.ft.ip_loc;
+	ft_sfl.ip_rem = packd.ft.ip_rem;
+	ft_sfl.prt_rem = packd.ft.prt_rem;
+	ft_sfl.prt_loc = 0;
 
-	create_socket_call_connect(&sockfd,&sfl_port);
+	create_socket_call_connect(&ft_sfl,&sockfd);
+
 
 	unsigned char init_len = packd.tcplen-20;
 		
@@ -500,12 +505,6 @@ int contemplate_new_session_output() {
 	//create subflow
 	// set sess* = NULL since not yet existent.
 	// overwrite = 1 in case subflow already exists
-	struct fourtuple ft_sfl;
-	ft_sfl.ip_loc = packd.ft.ip_loc;
-	ft_sfl.ip_rem = packd.ft.ip_rem;
-	ft_sfl.prt_rem = packd.ft.prt_rem;
-	ft_sfl.prt_loc = sfl_port;
-
 	struct subflow  *sflx;
 	sflx = create_subflow(
 		 &ft_sfl,

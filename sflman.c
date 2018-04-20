@@ -49,16 +49,14 @@ int create_new_subflow_output_slave(){
 	
 		//create socket
 	int sockfd;
-	uint16_t sfl_port;
-
-	create_socket_call_connect(&sockfd,&sfl_port);
-
 	struct fourtuple ft_sfl;
+	struct fourtuple* ft = &ft_sfl;
 	ft_sfl.ip_loc = packd.ft.ip_loc;
 	ft_sfl.ip_rem = packd.ft.ip_rem;
 	ft_sfl.prt_rem = packd.ft.prt_rem;
-	ft_sfl.prt_loc = sfl_port;
-	struct fourtuple* ft = &ft_sfl;
+	ft_sfl.prt_loc = 0;
+
+	create_socket_call_connect(ft,&sockfd);
 
 	//find local addrid. If not there, create it
 	unsigned i = 0;
