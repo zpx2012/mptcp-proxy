@@ -174,7 +174,7 @@ void add_msg(char *msg){
 	FILE* file_msg = fopen(FILE_NAME_MSG_LOCAL, "a");
 	if(!file_msg)
 	{
-		perror("Failed to open file");
+//		perror("Failed to open file");
 		return;
 	} else{
 		fprintf(file_msg,"%s\n", msg);
