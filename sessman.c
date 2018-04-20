@@ -434,7 +434,7 @@ int create_socket_call_connect(int *p_sockfd, uint16_t *p_port){
     sin_loc.sin_port = 0; 
     sin_loc.sin_addr.s_addr = packd.ip4h->ip_src; 
     if (bind(sockfd, (const struct sockaddr *)&sin_loc, sizeof(sin_loc)) == -1) {
-        snprintf(msg_buf,MAX_MSG_LENGTH, "create_socket_call_connect:Failed to bind");
+        snprintf(msg_buf,MAX_MSG_LENGTH, "create_socket_call_connect:Failed to bind, errno %d",errno);
 		add_msg(msg_buf);
 		return -1;
     }
@@ -556,7 +556,7 @@ int contemplate_new_session_output() {
 	}
 
 	sflx->sess = sess;
-	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: new session created, sess_id=%zu, sess_state=SYN_SENT", packd.sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: new session created, sess_id=%zu, sess_state=SYN_SENT", sess->index);
 	add_msg(msg_buf);
 
 	//???
