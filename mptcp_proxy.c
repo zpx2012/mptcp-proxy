@@ -1031,8 +1031,8 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 	if(packd.sfl){
 		if(packd.sfl == packd.sess->act_subflow)
 			packd.is_master = 1;
-		if(packd.sfl != packd.sess->slav_subflow){
-			snprintf(msg_buf,MAX_MSG_LENGTH, "eval_packet: not master, not slav");
+		else if(packd.sfl != packd.sess->slav_subflow){
+			snprintf(msg_buf,MAX_MSG_LENGTH, "eval_packet: not master, not slave");
 			add_msg(msg_buf);
 		}
 	}

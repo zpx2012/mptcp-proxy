@@ -409,6 +409,9 @@ void* connect_handler(void *args){
 		printf("connect failed. Error");
 		pthread_exit(NULL);
 	}
+	
+	snprintf(msg_buf,MAX_MSG_LENGTH, "connect_handler:connect success return");
+	add_msg(msg_buf);
 	pthread_exit(NULL);
 }
 

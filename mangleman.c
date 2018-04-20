@@ -1352,8 +1352,9 @@ int split_browser_data_send(){
 		subflow_send_data(packd.sess->slav_subflow, packd.buf+packd.pos_pay+PIVOTPOINT, packd.ip4len+packd.tcplen-PIVOTPOINT, packd.dan_curr_loc+PIVOTPOINT, packd.dsn_curr_loc);
 		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:sent second part");
 		add_msg(msg_buf);	
-
 	}
-
+	
+	snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:finish");
+	add_msg(msg_buf);
 	return 0;
 }
