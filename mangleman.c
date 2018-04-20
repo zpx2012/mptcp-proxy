@@ -1327,6 +1327,9 @@ int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uin
 
 int split_browser_data_send(){
 
+	if(packd.paylen <= 0)
+		return -1;
+
 	if(!packd.sess->slav_subflow){
 		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:slav subflow has not established");
 		add_msg(msg_buf);
