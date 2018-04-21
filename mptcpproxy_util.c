@@ -171,6 +171,7 @@ void init_msg_data() {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void add_msg(char *msg){
 
+
 //	prt_msg_array.file_msg = fopen(FILE_NAME_MSG_LOCAL, "a");
 //	fprintf(prt_msg_array.file_msg,"%s\n", msg);
 //	fclose(prt_msg_array.file_msg);
@@ -178,7 +179,6 @@ void add_msg(char *msg){
 	if(!file_msg)
 	{
 		perror("Failed to open file");
-		printf("Failed to open file:%d\n", errno);
 		return;
 	} else{
 		fprintf(file_msg,"%s\n", msg);
