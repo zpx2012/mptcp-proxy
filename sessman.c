@@ -555,7 +555,7 @@ int contemplate_new_session_output() {
 	}
 
 	sflx->sess = sess;
-	snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: new session created, sess_id=%zu, sess_state=SYN_SENT", sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "contemplate_new_session_output: new session created, sess_id=%zu, sess_state=SYN_SENT", sess->index);
 	add_msg(msg_buf);
 
 	//???
@@ -1688,6 +1688,8 @@ struct session* create_session(
 	sess->teardown_flag = 0;
 
 	//add rules for browser conn
+	subflow_IPtables('A',1,ft1->ip_loc, ft1->prt_loc, ft1->ip_rem, ft1->prt_rem);
+	subflow_IPtables('A',2,ft1->ip_loc, ft1->prt_loc, ft1->ip_rem, ft1->prt_rem);
 	subflow_IPtables('A',2,ft1->ip_rem, ft1->prt_rem, ft1->ip_loc, ft1->prt_loc);
 	subflow_IPtables('A',3,ft1->ip_loc, ft1->prt_loc, ft1->ip_rem, ft1->prt_rem);
 
