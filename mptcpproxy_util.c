@@ -171,9 +171,19 @@ void init_msg_data() {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void add_msg(char *msg){
 
-	prt_msg_array.file_msg = fopen(FILE_NAME_MSG_LOCAL, "a");
-	fprintf(prt_msg_array.file_msg,"%s\n", msg);
-	fclose(prt_msg_array.file_msg);
+//	prt_msg_array.file_msg = fopen(FILE_NAME_MSG_LOCAL, "a");
+//	fprintf(prt_msg_array.file_msg,"%s\n", msg);
+//	fclose(prt_msg_array.file_msg);
+	FILE* file_msg = fopen(FILE_NAME_MSG_LOCAL, "a");
+	if(!file_msg)
+	{
+		perror("Failed to open file");
+		printf("Failed to open file:%d\n", errno);
+		return;
+	} else{
+		fprintf(file_msg,"%s\n", msg);
+	}
+	fclose(file_msg);
 
 //	printf("%s\n",msg);
 	prt_msg_array.prt_msgs[prt_msg_array.curr_msg_index]->index = prt_msg_array.nmb_msg;
