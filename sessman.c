@@ -454,6 +454,9 @@ int create_subflow_socket(struct fourtuple* ft,int *p_sockfd){
 
 int call_connect(struct subflow* sfl){
 
+	snprintf(msg_buf,MAX_MSG_LENGTH,"call_connect: %d",sfl->index);
+	add_msg(msg_buf);
+	
 	//call connect
 	struct connect_args *p_cn = malloc(sizeof(struct connect_args));
 	if(!p_cn) {
