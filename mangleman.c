@@ -972,7 +972,7 @@ int update_session_control_plane() {
 	int init_sess_state = packd.sess->sess_state;
 	int ret = 0;
 
-	switch(packd.sess->sess_state){
+	switch(packd.sfl->tcp_state){
 	case ESTABLISHED:
 		ret = session_established();
 		break;
