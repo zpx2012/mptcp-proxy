@@ -1036,7 +1036,11 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 			packd.is_master = 0;
 			packd.is_master = 0;
 			packd.is_master = 0;
-			strncpy(tmp_msg,"slave",30);		
+			strncpy(tmp_msg,"slave",30);	
+			if(packd.sfl)
+				packd.ssn_curr_loc = 0;
+			else
+				packd.ssn_curr_loc = 1;
 		}
 		else if(packd.sfl == packd.sess->act_subflow){
 			packd.is_master = 1;
