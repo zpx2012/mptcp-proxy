@@ -56,7 +56,7 @@ int create_new_subflow_output_slave(){
 	ft_sfl.prt_rem = packd.ft.prt_rem;
 	ft_sfl.prt_loc = 0;
 
-	create_socket_call_connect(ft,&sockfd);
+	create_subflow_socket(ft,&sockfd);
 
 	//find local addrid. If not there, create it
 	unsigned i = 0;
@@ -157,6 +157,7 @@ int create_new_subflow_output_slave(){
 	add_subflow_to_session(sfl1, sess);
 	sess->slav_subflow = sfl1;
 
+	call_connect(sfl1);
 	return 1;
 }
 

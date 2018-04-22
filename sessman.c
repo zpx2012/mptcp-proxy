@@ -416,7 +416,7 @@ void* connect_handler(void *args){
 }
 
 
-int create_socket_call_connect(struct fourtuple* ft,int *p_sockfd){
+int create_subflow_socket(struct fourtuple* ft,int *p_sockfd){
 
 	int sockfd;
 	struct sockaddr_in sin_loc;
@@ -444,6 +444,15 @@ int create_socket_call_connect(struct fourtuple* ft,int *p_sockfd){
 		add_msg(msg_buf);
 		return -1;
     }
+	
+	//return
+	*p_sockfd = sockfd;
+    ft->prt_loc = ntohs(sin_loc.sin_port);
+	return 0;
+
+}
+
+int call_connect(struct subflow* sfl){
 
 	//call connect
 	struct connect_args *p_cn = malloc(sizeof(struct connect_args));
@@ -452,9 +461,9 @@ int create_socket_call_connect(struct fourtuple* ft,int *p_sockfd){
 		add_msg(msg_buf);
 		return -1;		
 	}
-	p_cn->sockfd = sockfd;
-	p_cn->ip_dst_n = ft->ip_rem;
-	p_cn->port_dst_n = ft->prt_rem;
+	p_cn->sockfd = sfl->sockfd;
+	p_cn->ip_dst_n = sfl->ft.ip_rem;
+	p_cn->port_dst_n = sfl->ft.prt_rem;
 	
 	pthread_t connect_thread;
 	if (pthread_create(&connect_thread, NULL, connect_handler, p_cn) < 0)
@@ -464,12 +473,10 @@ int create_socket_call_connect(struct fourtuple* ft,int *p_sockfd){
 			set_verdict(0,0,0);
 			return -1;
 	}
-
-	//return
-	*p_sockfd = sockfd;
-    ft->prt_loc = ntohs(sin_loc.sin_port);
 	return 0;
+
 }
+
 
 int contemplate_new_session_output() {
 
@@ -481,7 +488,7 @@ int contemplate_new_session_output() {
 	ft_sfl.prt_rem = packd.ft.prt_rem;
 	ft_sfl.prt_loc = 0;
 
-	create_socket_call_connect(&ft_sfl,&sockfd);
+	create_subflow_socket(&ft_sfl,&sockfd);
 
 
 	unsigned char init_len = packd.tcplen-20;
@@ -607,6 +614,7 @@ int contemplate_new_session_output() {
 	if(sess->timestamp_flag)
 		sess->tsval = get_timestamp(packd.buf + packd.pos_thead+20, packd.tcplen-20, 0);
 
+	call_connect(sflx);
 	set_verdict(0,0,0);	
 	return 1;
 }//end contemplate_new_session_output
