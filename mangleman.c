@@ -1080,7 +1080,7 @@ int mangle_packet() {
 	if(packd.sess->timestamp_flag) update_timestamp();
 
 	//*****DATA-PLANE MANAGEMENT******
-	if(packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT) {
+	if(packd.sfl->tcp_state >= ESTABLISHED && packd.sfl->tcp_state <= TIME_WAIT) {
 
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
 
