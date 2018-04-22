@@ -139,7 +139,7 @@ int create_new_subflow_output_slave(){
 		 addr_id_loc,//addr id loc, the currently number of subflows in this session is sued for this purpose
 		 addr_id_rem,//addr id remote
 		 sockfd,
-		 SYN_SENT,
+		 PRE_SYN_SENT,
 		 CANDIDATE,
 		 0,//loc ISN
 		 0,//rem ISN
