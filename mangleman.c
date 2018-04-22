@@ -1080,17 +1080,24 @@ int mangle_packet() {
 	if(packd.sess->timestamp_flag) update_timestamp();
 
 	//*****DATA-PLANE MANAGEMENT******
-	if(packd.sfl->tcp_state >= ESTABLISHED && packd.sfl->tcp_state <= TIME_WAIT) {
+	if(!packd.is_from_subflow && packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT){//mptcp level/browser
+		
+		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
+			split_browser_data_send();
+			set_verdict(0,0,0);
+		}	
+		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
+
+		}	
+	}
+	else if(packd.is_from_subflow && packd.sfl->tcp_state >= ESTABLISHED && packd.sfl->tcp_state <= TIME_WAIT) {//subflow
 
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
-
-			if(!packd.is_from_subflow){
 			
-				split_browser_data_send();
-				set_verdict(0,0,0);
-				return 0;
-			}
-			
+			snprintf(msg_buf,MAX_MSG_LENGTH, "mangle_packet: subflow output");
+			add_msg(msg_buf);
+			set_verdict(1,0,0);
+/*			
 			update_conn_level_data();
 			determine_thruway_subflow();//sets verdict
 
@@ -1116,7 +1123,7 @@ int mangle_packet() {
 			if(packd.rst == 0) set_dss_and_prio();
 
 			update_packet_output();
-
+*/
 		} 
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
