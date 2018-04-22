@@ -1028,11 +1028,22 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 
 {
 	//new
+	char s_ip_rem[20];
+	sprintIPaddr(s_ip_rem, packd.ft.ip_rem);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "eval_packet: ip_rem %s, prt_loc %d",s_ip_rem,packd.ft.prt_loc);
+	add_msg(msg_buf);			
 	if(packd.sfl){
-		if(packd.sfl == packd.sess->act_subflow)
+		if(packd.sfl == packd.sess->act_subflow){
 			packd.is_master = 1;
+			snprintf(msg_buf,MAX_MSG_LENGTH, "eval_packet: master");
+			add_msg(msg_buf);		
+		}
 		else if(packd.sfl != packd.sess->slav_subflow){
 			snprintf(msg_buf,MAX_MSG_LENGTH, "eval_packet: not master, not slave");
+			add_msg(msg_buf);
+		}
+		else{
+			snprintf(msg_buf,MAX_MSG_LENGTH, "eval_packet:slave");
 			add_msg(msg_buf);
 		}
 	}
