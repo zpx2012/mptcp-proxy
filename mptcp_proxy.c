@@ -1032,14 +1032,18 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 	sprintIPaddr(s_ip_rem, packd.ft.ip_rem);	
 	snprintf(msg_buf,MAX_MSG_LENGTH, "eval_packet: ip_rem %s, prt_loc %d,",s_ip_rem,packd.ft.prt_loc);		
 	if(packd.sfl){
-		if(packd.sfl == packd.sess->act_subflow){
+		if(packd.sfl == packd.sess->slav_subflow){
+			packd.is_master = 0;
+			packd.is_master = 0;
+			packd.is_master = 0;
+			strncpy(tmp_msg,"slave",30);		
+		}
+		else if(packd.sfl == packd.sess->act_subflow){
 			packd.is_master = 1;
 			strncpy(tmp_msg,"master",30);	
 		}
-		else if(packd.sfl != packd.sess->slav_subflow)
+		else 
 			strncpy(tmp_msg,"not master, not slave",30);
-		else
-			strncpy(tmp_msg,"slave",30);
 	}else 
 		strncpy(tmp_msg,"browser conn",30);
 	strncat(msg_buf, tmp_msg, MAX_MSG_LENGTH);
