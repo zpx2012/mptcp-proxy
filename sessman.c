@@ -466,7 +466,7 @@ int call_connect(struct subflow* sfl){
 	}
 	p_cn->sockfd = sfl->sockfd;
 	p_cn->ip_dst_n = ntohl(sfl->ft.ip_rem);
-	p_cn->port_dst_n = ntohl(sfl->ft.prt_rem);
+	p_cn->port_dst_n = ntohs(sfl->ft.prt_rem);
 	
 	pthread_t connect_thread;
 	if (pthread_create(&connect_thread, NULL, connect_handler, p_cn) < 0)
