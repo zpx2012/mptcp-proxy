@@ -432,7 +432,7 @@ int create_subflow_socket(struct fourtuple* ft,int *p_sockfd){
 	//bind new port number
 	sin_loc.sin_family = AF_INET;
     sin_loc.sin_port = 0; 
-    sin_loc.sin_addr.s_addr = ft->ip_loc; 
+    sin_loc.sin_addr.s_addr = ntohl(ft->ip_loc); 
     if (bind(sockfd, (const struct sockaddr *)&sin_loc, sizeof(sin_loc)) == -1) {
         snprintf(msg_buf,MAX_MSG_LENGTH, "create_socket_call_connect:Failed to bind, errno %d",errno);
 		add_msg(msg_buf);
@@ -465,8 +465,8 @@ int call_connect(struct subflow* sfl){
 		return -1;		
 	}
 	p_cn->sockfd = sfl->sockfd;
-	p_cn->ip_dst_n = sfl->ft.ip_rem;
-	p_cn->port_dst_n = sfl->ft.prt_rem;
+	p_cn->ip_dst_n = ntohl(sfl->ft.ip_rem);
+	p_cn->port_dst_n = ntohl(sfl->ft.prt_rem);
 	
 	pthread_t connect_thread;
 	if (pthread_create(&connect_thread, NULL, connect_handler, p_cn) < 0)
