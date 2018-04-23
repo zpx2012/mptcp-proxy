@@ -583,7 +583,8 @@ void set_dss(){
 		dssopt_out.ssn = packd.ssn_curr_loc - packd.sfl->isn_loc;
 		dssopt_out.range = packd.paylen;
 
-		create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
+//		create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
+		create_complete_MPdss_nondssopt(packd.mptcp_opt_buf,&packd.mptcp_opt_len, dan, dsn, packd.ssn_curr_loc-packd.sfl->isn_loc,packd.sess->idsn_h_loc, packd.buf + packd.pos_pay,packd.paylen);
 		packd.mptcp_opt_appended = 1;
 	}
 

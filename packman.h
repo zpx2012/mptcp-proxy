@@ -75,7 +75,7 @@ extern int append_TCP_option(unsigned char *tcp_opt, uint16_t *plen, unsigned ch
 //	For final ACK both IDSNs are provided
 //	We currently assume that DSNs have only 4B
 //++++++++++++++++++++++++++++++++++++++++++++++++
-extern int create_MPcap(unsigned char *mpbuf, uint32_t *key_loc, uint32_t *key_rem);
+extern int create_MPcap(unsigned char *top, uint16_t *plen, uint32_t *key_loc, uint32_t *key_rem);
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -83,7 +83,7 @@ extern int create_MPcap(unsigned char *mpbuf, uint32_t *key_loc, uint32_t *key_r
 //	creates mpbuf for dummy DSS
 //      used when terminating subflows
 //++++++++++++++++++++++++++++++++++++++++++++++++
-void create_dummy_dssopt(unsigned char *mpbuf);
+int create_dummy_dssopt(unsigned char *top);
  
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //create TPJOIN option: SYN
@@ -92,7 +92,7 @@ void create_dummy_dssopt(unsigned char *mpbuf);
 //	If header to long, returns -1 without doing anything, otherwise 0
 //	We currently disregard from security material
 //++++++++++++++++++++++++++++++++++++++++++++++++
-int create_MPjoin_syn(unsigned char *top, uint16_t *len, uint32_t token, uint32_t rand_nmb, unsigned char addr_id, unsigned char backup);
+int create_MPjoin_syn(unsigned char *top, uint16_t *plen, uint32_t token, uint32_t rand_nmb, unsigned char addr_id, unsigned char backup);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //create TPJOIN option: SYNACK
@@ -101,7 +101,7 @@ int create_MPjoin_syn(unsigned char *top, uint16_t *len, uint32_t token, uint32_
 //	If header to long, returns -1 without doing anything, otherwise 0
 //	We currently disregard from security material
 //++++++++++++++++++++++++++++++++++++++++++++++++
-int create_MPjoin_synack(unsigned char *top, uint16_t *len, uint32_t *mac, uint32_t rand_nmb, unsigned char addr_id, unsigned char backup);
+int create_MPjoin_synack(unsigned char *top, uint16_t *plen, uint32_t *mac, uint32_t rand_nmb, unsigned char addr_id, unsigned char backup);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //create TPJOIN option: ACK
@@ -110,9 +110,9 @@ int create_MPjoin_synack(unsigned char *top, uint16_t *len, uint32_t *mac, uint3
 //	If header to long, returns -1 without doing anything, otherwise 0
 //	We currently disregard from security material
 //++++++++++++++++++++++++++++++++++++++++++++++++
-int create_MPjoin_ack(unsigned char *top, uint16_t *len, uint32_t *mac);
+int create_MPjoin_ack(unsigned char *top, uint16_t *plen, uint32_t *mac);
 
-int create_MPadd_addr(unsigned char *top, uint16_t *len, unsigned char addr_id_loc, uint32_t ip_loc_n);
+int create_MPadd_addr(unsigned char *top, uint16_t *plen, unsigned char addr_id_loc, uint32_t ip_loc_n);
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++

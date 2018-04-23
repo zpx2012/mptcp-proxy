@@ -720,7 +720,7 @@ int session_pre_syn_sent(){
 	if(packd.is_master){
 		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent:master");
 		add_msg(msg_buf);		
-		if(!create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, NULL) ) {
+		if(!create_MPcap(packd.mptcp_opt_buf, &packd.mptcp_opt_len, packd.sess->key_loc, NULL) ) {
 			snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: total option len too long, len=%u", packd.mptcp_opt_len);
 			add_msg(msg_buf);	
 			return 0;
@@ -827,7 +827,7 @@ int session_pre_est() {
 	if(packd.is_master){
 		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est:master");
 		add_msg(msg_buf);	
-		if( !create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, packd.sess->key_rem) ){
+		if( !create_MPcap(packd.mptcp_opt_buf, &packd.mptcp_opt_len, packd.sess->key_loc, packd.sess->key_rem) ){
 			snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: create_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
 			add_msg(msg_buf);
 			delete_subflow(&packd.ft);
@@ -890,7 +890,7 @@ int session_pre_est() {
 
 	return 1;
 }
-
+/*
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //session SYN_SENT
 //  Targe states: PRE_EST
@@ -1031,6 +1031,7 @@ int session_syn_sent_old(){
 	set_verdict(1,0,0);
 	return 0;
 }
+*/
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //session PRE_SYN_REC_1
@@ -1117,7 +1118,7 @@ int session_pre_syn_rec_1() {
 		add_msg(msg_buf);
 	}
 
-	if(!create_MPcap(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->key_loc, NULL)) {
+	if(!create_MPcap(packd.mptcp_opt_buf, &packd.mptcp_opt_len, packd.sess->key_loc, NULL)) {
 		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_rec_1: cannot create MPcap since option too long, len=%d, sess_id=%zu", packd.mptcp_opt_len, packd.sess->index);
 		add_msg(msg_buf);	
 		execute_sess_teardown(packd.sess);
