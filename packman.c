@@ -459,7 +459,7 @@ int create_complete_MPdss_nondssopt(unsigned char *mpbuf, uint16_t *mplen,
 
 	if((*mplen) + tpdss_len > 40) return 0;
 
-	unsigned char* p_start = top;
+	unsigned char* p_start = mpbuf;
 
 	*(p_start) = 30;
 	*(p_start+1) = tpdss_len;
