@@ -150,7 +150,7 @@ int send_reset_fourtuple(struct fourtuple *ft, uint32_t seq_nb) {
 
 	//append mptcp_opt_buf to packd.tcp_opt_buf; packd.tcp_opt_len is extended
 	unsigned char mptcp_opt_buf[4];
-	create_dummy_dssopt(mptcp_opt_buf,);
+	create_dummy_dssopt(mptcp_opt_buf);
 
 	create_packet(raw_buf, &pack_len, 
 		ft,
@@ -399,9 +399,8 @@ int create_MPjoin_ack(unsigned char *top, uint16_t *plen, uint32_t *mac) {
 	*(start+1) = 24;
 	*(start+2) = ( ((unsigned char) MPTCP_JOIN)<<4) ;
 	*(start+3) = 0;
-
 	memcpy(start+4, (unsigned char*) mac, 20);
-	(*len) += 24;
+
 	return 1;
 }
 
