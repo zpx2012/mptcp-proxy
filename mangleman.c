@@ -546,10 +546,45 @@ void send_side_acks() {
 	return;
 }
 
+
+void set_dss(){
+
+	//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
+	
+	int demand_dss = (packd.paylen > 0 || packd.fin == 1 || packd.sess->sess_state > ESTABLISHED || packd.ack == 1)? 20:0;
+
+	//check if enough room
+	if( demand_dss + packd.tcp_opt_len > 40 ) {
+
+		//erase some tcp options here!!!
+		//to be done later
+		//currently assume there is always enough space
+	}
+
+	packd.mptcp_opt_appended = 0;
+	if(demand_dss>0) {
+		uint32_t dsn, dan;
+		packd.ssn_curr_loc = ntohl(packd.tcph->th_seq);
+		if(find_dsn_map(&(packd.sfl->dss_map_list.list), packd.ssn_curr_loc, &dan, &dsn)){
+			snprintf(msg_buf,MAX_MSG_LENGTH, "set_dss: dsn not found");
+			add_msg(msg_buf);
+			return -1;
+		}
+		create_complete_MPdss_nondssopt(packd.mptcp_opt_buf+packd.mptcp_opt_len, dan, dsn, packd.ssn_curr_loc-packd.sfl->isn_loc,packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
+		packd.mptcp_opt_appended = 1;
+	}
+
+	//append options to buffer
+	set_verdict(1,1,0);
+
+}
+
+
+
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //set_dss_and_prio()
 //++++++++++++++++++++++++++++++++++++++++++++++++
-void set_dss_and_prio() {
+void set_dss_and_prio_old() {
 
 	//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
 	
@@ -1083,6 +1118,8 @@ int mangle_packet() {
 	if(!packd.is_from_subflow && packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT){//mptcp level/browser
 		
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
+			snprintf(msg_buf,MAX_MSG_LENGTH, "mangle_packet: browser output");
+			add_msg(msg_buf);
 			split_browser_data_send();
 			set_verdict(0,0,0);
 		}	
@@ -1096,7 +1133,12 @@ int mangle_packet() {
 			
 			snprintf(msg_buf,MAX_MSG_LENGTH, "mangle_packet: subflow output");
 			add_msg(msg_buf);
-			set_verdict(1,0,0);
+
+			if(packd.paylen > 0 && !packd.rst){
+				snprintf(msg_buf,MAX_MSG_LENGTH, "mangle_packet: data packet");
+				add_msg(msg_buf);
+				set_dss();
+			}
 /*			
 			update_conn_level_data();
 			determine_thruway_subflow();//sets verdict
@@ -1316,6 +1358,26 @@ int insert_dsn_map(struct list_head* head,uint32_t dan, uint32_t dsn, uint32_t t
 
 	return 0;	
 } 
+
+int find_dsn_map(struct list_head* head, uint32_t tsn, uint32_t* dan, uint32_t* dsn){
+
+	if(!head){
+		snprintf(msg_buf,MAX_MSG_LENGTH, "insert_dsn_map:null head");
+		add_msg(msg_buf);
+		return -1;
+	}
+	
+	struct dss_mapping * iter;
+	list_for_each_entry(iter, head, list){
+		if(iter->tsn == tsn){
+			*dan = iter->dan;
+			*dsn = iter->dsn;
+			return 0;
+		}
+	}
+	return -1;
+}
+
 
 int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uint32_t dan, uint32_t dsn){
 

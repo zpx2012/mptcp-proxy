@@ -617,9 +617,6 @@ int subflow_syn_sent_master(){
 		add_msg(msg_buf);
 		return 0;
 	}
-
-	//call connect to invoke second subflow
-	create_new_subflow_output_slave();
 }
 //---new
 
