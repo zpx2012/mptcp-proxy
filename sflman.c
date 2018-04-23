@@ -136,7 +136,7 @@ int create_new_subflow_output_slave(){
 	struct subflow  *sfl1;
 	sfl1 = create_subflow(
 		 ft,
-		 addr_id_loc,//addr id loc, the currently number of subflows in this session is sued for this purpose
+		 addr_id_loc+1,//addr id loc, the currently number of subflows in this session is sued for this purpose
 		 addr_id_rem,//addr id remote
 		 sockfd,
 		 PRE_SYN_SENT,
