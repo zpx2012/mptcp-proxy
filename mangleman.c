@@ -584,7 +584,7 @@ void set_dss(){
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //set_dss_and_prio()
 //++++++++++++++++++++++++++++++++++++++++++++++++
-void set_dss_and_prio_old() {
+void set_dss_and_prio() {
 
 	//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
 	
