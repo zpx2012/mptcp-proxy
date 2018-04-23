@@ -575,6 +575,13 @@ void set_dss(){
 	}
 
 	//append options to buffer
+	if(!output_data_mptcp()) {
+		set_verdict(1,0,0);
+		execute_sess_teardown(packd.sess);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: output_data_mptcp fails");
+		add_msg(msg_buf);
+		return 0;
+	}
 	set_verdict(1,1,0);
 
 }
