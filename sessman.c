@@ -839,9 +839,6 @@ int session_pre_est() {
 		if(!create_dan_MPdss_nondssopt(packd.mptcp_opt_buf, &packd.mptcp_opt_len, packd.sess->idsn_rem+1)){
 			snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: create_MPdss fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
 			add_msg(msg_buf);
-			delete_subflow(&packd.ft);
-			delete_session_parm(packd.sess->token_loc);
-			delete_session(&packd.sess->ft, 1);
 			set_verdict(1,0,0);
 			return 0;			
 		}

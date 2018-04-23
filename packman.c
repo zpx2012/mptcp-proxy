@@ -232,7 +232,15 @@ void parse_compact_copy_TCP_options(unsigned char *tcp_opt, uint16_t len) {
 //	If header to long, returns 0 without doing anything, otherwise 1
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int append_TCP_option(unsigned char *tcp_opt, uint16_t *plen, unsigned char *new_tcp_opt, uint16_t new_len) {
-	if(*plen + new_len > 40) return 0;
+	if(*plen + new_len > 40) {
+		if(new_len < 40){
+		//only new option
+		memmove(tcp_opt, new_tcp_opt, new_len);
+		*plen = new_len;
+		return 1;
+		}
+		else return 0;
+	}
 
 	//append new option to tcp_opt_buf
 	memmove(tcp_opt + *plen, new_tcp_opt, new_len);
