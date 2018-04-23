@@ -570,7 +570,20 @@ void set_dss(){
 			add_msg(msg_buf);
 			return -1;
 		}
-		create_complete_MPdss_nondssopt(packd.mptcp_opt_buf+packd.mptcp_opt_len,&packd.mptcp_opt_len, dan, dsn, packd.ssn_curr_loc-packd.sfl->isn_loc,packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
+		
+		dssopt_out.present = 1;
+		dssopt_out.Mflag = 1;//do we need this or only when data are present
+		dssopt_out.Aflag = packd.ack;
+		dssopt_out.Fflag = packd.fin;
+		dssopt_out.Rflag = 0;
+		dssopt_out.aflag = 0;
+		dssopt_out.mflag = 0;
+		dssopt_out.dan = dan;
+		dssopt_out.dsn = dsn;
+		dssopt_out.ssn = packd.ssn_curr_loc - packd.sfl->isn_loc;
+		dssopt_out.range = packd.paylen;
+
+		create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len,&packd.mptcp_opt_len, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
 		packd.mptcp_opt_appended = 1;
 	}
 
@@ -582,7 +595,7 @@ void set_dss(){
 		add_msg(msg_buf);
 		return 0;
 	}
-	set_verdict(1,1,0);
+	set_verdict(1,1,1);
 
 }
 

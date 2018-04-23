@@ -469,6 +469,7 @@ int create_complete_MPdss_nondssopt(unsigned char *mpbuf, uint16_t *mplen,
 	*((uint32_t*) (p_start+8))  = htonl(data_seq_next_h);
 	*((uint32_t*) (p_start+12)) = htonl(sub_seq_next_h);
 	*((uint16_t*) (p_start+16)) = htons(len_payload);
+	*((uint16_t*) (p_start+18)) = 0;
 	*((uint16_t*) (p_start+18)) = mpdsm_checksum(p_start+8,idsn_high,payload,len_payload);
 	*mplen += tpdss_len;
 	return 1;
