@@ -452,12 +452,13 @@ void create_complete_MPdss(unsigned char *mpbuf, uint32_t idsn_high, unsigned ch
 	}
 }
 
-int create_complete_MPdss_nondssopt(unsigned char *top, 
+int create_complete_MPdss_nondssopt(unsigned char *mpbuf, uint16_t *mplen, 
 		uint32_t data_ack_h, uint32_t data_seq_next_h, uint32_t sub_seq_next_h, uint32_t idsn_high, unsigned char *payload,uint16_t len_payload) {
 
 	unsigned char tpdss_len = 20;
 
-	
+	if((*mplen) + tpdss_len > 40) return 0;
+
 	unsigned char* p_start = top;
 
 	*(p_start) = 30;
@@ -469,6 +470,7 @@ int create_complete_MPdss_nondssopt(unsigned char *top,
 	*((uint32_t*) (p_start+12)) = htonl(sub_seq_next_h);
 	*((uint16_t*) (p_start+16)) = htons(len_payload);
 	*((uint16_t*) (p_start+18)) = mpdsm_checksum(p_start+8,idsn_high,payload,len_payload);
+	*mplen += tpdss_len;
 	return 1;
 }
 

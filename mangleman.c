@@ -570,7 +570,7 @@ void set_dss(){
 			add_msg(msg_buf);
 			return -1;
 		}
-		create_complete_MPdss_nondssopt(packd.mptcp_opt_buf+packd.mptcp_opt_len, dan, dsn, packd.ssn_curr_loc-packd.sfl->isn_loc,packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
+		create_complete_MPdss_nondssopt(packd.mptcp_opt_buf+packd.mptcp_opt_len,&packd.mptcp_opt_len, dan, dsn, packd.ssn_curr_loc-packd.sfl->isn_loc,packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
 		packd.mptcp_opt_appended = 1;
 	}
 
