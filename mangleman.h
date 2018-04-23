@@ -116,3 +116,5 @@ int update_session_control_plane();
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern int mangle_packet();
 
+int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uint32_t dan, uint32_t dsn);
+
