@@ -1198,7 +1198,8 @@ int mangle_packet() {
 		} 
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
-			if(packd.sfl->broken) {
+			set_verdict(1,0,0);
+/*			if(packd.sfl->broken) {
 				set_verdict(0,0,0);
 				return 0;
 			}
@@ -1219,7 +1220,7 @@ int mangle_packet() {
 
 				update_packet_input();
 			}
-
+*/
 		}//end if hook = 1/3
 	}//end if (packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT)
 
