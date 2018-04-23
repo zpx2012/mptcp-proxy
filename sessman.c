@@ -1171,7 +1171,7 @@ int session_pre_syn_rec_1() {
 }
 
 
-
+/*
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //session PRE_EST
 //  Target states: ESTABLISHED
@@ -1240,6 +1240,7 @@ int session_pre_est_old() {
 
 	return 1;
 }
+*/
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //session SYN_REC
