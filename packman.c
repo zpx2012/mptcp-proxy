@@ -371,6 +371,25 @@ int create_MPadd_addr(unsigned char *top, uint16_t *len, unsigned char addr_id_l
 	return 1;
 }
 
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//create DSS option with DAN only: used only for side ACKs
+//++++++++++++++++++++++++++++++++++++++++++++++++
+void create_dan_MPdss_nondssopt(unsigned char *mpbuf, uint16_t *mplen, uint32_t dan) {
+
+	uint16_t new_len = 8;
+
+	if((*mplen) + new_len > 40) return 0;
+
+	*(mpbuf) = MPTCP_KIND;
+	*(mpbuf+1) = 8;
+	*(mpbuf+2) = ( ((unsigned char) MPTCP_DSS)<<4) & 0xf0;
+	*(mpbuf+3) = 0;
+	*(mpbuf+3) += 1 & 0x01;
+	*((uint32_t*) (mpbuf+4)) = htonl(dan);
+	*mplen += 8;
+	return;
+}
+
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //create DSS option with DAN only: used only for side ACKs
