@@ -1163,15 +1163,6 @@ int mangle_packet() {
 			snprintf(msg_buf,MAX_MSG_LENGTH, "mangle_packet: subflow output");
 			add_msg(msg_buf);
 
-			if (packd.is_master){
-				snprintf(msg_buf,MAX_MSG_LENGTH, "master");
-				add_msg(msg_buf);
-			}
-			else{
-				snprintf(msg_buf,MAX_MSG_LENGTH, "slave");
-				add_msg(msg_buf);
-			}
-
 			set_dss();
 
 /*			
