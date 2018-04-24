@@ -563,29 +563,37 @@ void set_dss(){
 
 	packd.mptcp_opt_appended = 0;
 	if(demand_dss>0) {
-		uint32_t dsn, dan;
-		packd.ssn_curr_loc = ntohl(packd.tcph->th_seq);
-		if(find_dsn_map(&(packd.sfl->dss_map_list.list), packd.ssn_curr_loc, &dan, &dsn)){
-			snprintf(msg_buf,MAX_MSG_LENGTH, "set_dss: dsn not found");
-			add_msg(msg_buf);
-			return -1;
-		}
-		
-		dssopt_out.present = 1;
-		dssopt_out.Mflag = 1;//do we need this or only when data are present
-		dssopt_out.Aflag = packd.ack;
-		dssopt_out.Fflag = packd.fin;
-		dssopt_out.Rflag = 0;
-		dssopt_out.aflag = 0;
-		dssopt_out.mflag = 0;
-		dssopt_out.dan = dan;
-		dssopt_out.dsn = dsn;
-		dssopt_out.ssn = packd.ssn_curr_loc - packd.sfl->isn_loc;
-		dssopt_out.range = packd.paylen;
 
-//		create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
-		create_complete_MPdss_nondssopt(packd.mptcp_opt_buf,&packd.mptcp_opt_len, dan, dsn, packd.ssn_curr_loc-packd.sfl->isn_loc,packd.sess->idsn_h_loc, packd.buf + packd.pos_pay,packd.paylen);
-		packd.mptcp_opt_appended = 1;
+		if(packd.paylen > 0){
+			uint32_t dsn, dan;
+			packd.ssn_curr_loc = ntohl(packd.tcph->th_seq);
+			if(find_dsn_map(&(packd.sfl->dss_map_list.list), packd.ssn_curr_loc, &dan, &dsn)){
+				snprintf(msg_buf,MAX_MSG_LENGTH, "set_dss: dsn not found");
+				add_msg(msg_buf);
+				return -1;
+			}
+			
+			dssopt_out.present = 1;
+			dssopt_out.Mflag = 1;//do we need this or only when data are present
+			dssopt_out.Aflag = packd.ack;
+			dssopt_out.Fflag = packd.fin;
+			dssopt_out.Rflag = 0;
+			dssopt_out.aflag = 0;
+			dssopt_out.mflag = 0;
+			dssopt_out.dan = dan;
+			dssopt_out.dsn = dsn;
+			dssopt_out.ssn = packd.ssn_curr_loc - packd.sfl->isn_loc;
+			dssopt_out.range = packd.paylen;
+
+	//		create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
+			create_complete_MPdss_nondssopt(packd.mptcp_opt_buf,&packd.mptcp_opt_len, dan, dsn, packd.ssn_curr_loc-packd.sfl->isn_loc,packd.sess->idsn_h_loc, packd.buf + packd.pos_pay,packd.paylen);
+			packd.mptcp_opt_appended = 1;
+		}
+		else if(packd.ack){
+			//subflow ack
+			//Your code goes here
+			
+		}
 	}
 
 	//append options to buffer
@@ -1164,11 +1172,8 @@ int mangle_packet() {
 				add_msg(msg_buf);
 			}
 
-			if(packd.paylen > 0 && !packd.rst){
-				snprintf(msg_buf,MAX_MSG_LENGTH, "mangle_packet: data packet");
-				add_msg(msg_buf);
-				set_dss();
-			}
+			set_dss();
+
 /*			
 			update_conn_level_data();
 			determine_thruway_subflow();//sets verdict
