@@ -11,3 +11,4 @@ machineid
 mptcp-proxy.si4project/
 storage.json
 core
+*.sip_sym
