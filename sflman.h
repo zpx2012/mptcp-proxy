@@ -20,19 +20,20 @@ struct tp_event;
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int subflow_completed(struct subflow *sfl);
 
-//++++++++++++++++++++++++++++++++++++++++++++++++
-//SUFLOW: initiate_cand_subflow()
-//++++++++++++++++++++++++++++++++++++++++++++++++
-extern int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned char backup);
+int create_new_subflow_output_slave();
 
-extern int initiate_cand_subflow_sameip(struct session *sess, struct fourtuple *ft_src, unsigned char backup);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //SUFLOW: initiate_cand_subflow()
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned char backup);
 
-int send_add_addr(struct session *sess, struct fourtuple *ft, unsigned char addr_id_loc, uint32_t ip_loc_n);
+
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//SUFLOW: initiate_cand_subflow()
+//++++++++++++++++++++++++++++++++++++++++++++++++
+extern int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned char backup);
+
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //SFLMAN: int create_new_subflow_input()
@@ -40,7 +41,10 @@ int send_add_addr(struct session *sess, struct fourtuple *ft, unsigned char addr
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, unsigned char backup, uint32_t rand_nmb);
 
-int send_data_slave_subflow();
+int subflow_syn_sent_master();
+
+int subflow_syn_sent_slave();
+
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //subflow SYN_SENT
@@ -146,18 +150,6 @@ int handle_subflow_break(struct subflow *const sflx);
 //++++++++++++++++++++++++++++++++++++++++++++++++
  int send_reset_subflow(struct subflow *sfl);
 
-extern struct subflow* create_cand_subflow(struct fourtuple *ft1,
-		 unsigned char addr_id_loc,
-		 unsigned char addr_id_rem,
-		 int tcp_state,
-		 int act_state,
-		 uint32_t isn_loc,
-		 uint32_t isn_rem,
-		 uint32_t offset_loc,
-		 uint32_t offset_rem,
-		 uint32_t rand_nmb_loc,
-		 uint32_t rand_nmb_rem,
-		 size_t overwrite);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //SFLMAN:create subflow
@@ -167,6 +159,7 @@ extern struct subflow* create_cand_subflow(struct fourtuple *ft1,
 extern struct subflow* create_subflow(struct fourtuple *ft1,
 		 unsigned char addr_id_loc,
 		 unsigned char addr_id_rem,
+		 int sockfd,
 		 int tcp_state,
 		 int act_state,
 		 uint32_t isn_loc,

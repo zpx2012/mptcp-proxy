@@ -108,7 +108,7 @@ void subflow_IPtables(
 		op, str_ip_rem, str_ip_loc, 
 		(unsigned int) prt_rem, (unsigned int) prt_loc );
 		add_msg(iptables_string);
-		system(iptables_string);
+		system_safe(iptables_string);
 		break;
 	case 2:
 		sprintf(iptables_string, 
@@ -116,7 +116,7 @@ void subflow_IPtables(
 		op, str_ip_rem, str_ip_loc, 
 		(unsigned int) prt_rem, (unsigned int) prt_loc );
 		add_msg(iptables_string);
-		system(iptables_string);
+		system_safe(iptables_string);
 		break;
 	case 3:	
 		sprintf(iptables_string, 
@@ -124,7 +124,7 @@ void subflow_IPtables(
 		op, str_ip_loc, str_ip_rem, 
 		(unsigned int) prt_loc, (unsigned int) prt_rem );
 		add_msg(iptables_string);
-		system(iptables_string);
+		system_safe(iptables_string);
 		break;
 	}	
 	
@@ -425,7 +425,7 @@ void create_alias(char* ifname, size_t index, uint32_t ipaddr) {
 	
 	snprintf(msg_buf,MAX_MSG_LENGTH, "create_alias: cmd=%s", cmd);
 	add_msg(msg_buf);
-	system(cmd);
+	system_safe(cmd);
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -452,7 +452,7 @@ void delete_alias_entry(struct if_table *iftab, size_t tab_index, size_t alias_i
 	
 	snprintf(msg_buf,MAX_MSG_LENGTH, "delete_alias_entry: cmd=%s", cmd);
 	add_msg(msg_buf);
-	system(cmd);
+	system_safe(cmd);
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -526,7 +526,7 @@ int update_iftable(struct if_table *iftab, char * const ifname, const uint32_t n
 			add_msg(msg_buf);
 
 			strcat(cmd,"\n");
-			system(cmd);
+			system_safe(cmd);
 
 		}
 		if(!include_aliases) return 0;
@@ -781,7 +781,7 @@ int update_interfaces(struct if_table *iftab, char **ifname, uint32_t *old_addr,
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //Eval packet: Here the packet gets first
 //++++++++++++++++++++++++++++++++++++++++++++++++
-void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
+void eval_packet_old(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 	(void) len;
 
 	memset(&packd,0,sizeof(struct packet_data));
@@ -886,6 +886,173 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 	}
 
 
+
+	//find TPTCP options:start at tcpoptions.
+	packd.nb_mptcp_options = parse_mptcp_options(buf+(packd.pos_thead)+20, (packd.tcplen)-20, mptopt);
+	packd.mptcp_opt_len=0;//reset this value
+	packd.tcp_options_compacted = 0;//reset this value
+	packd.retransmit_flag = 0;
+	buffer_tcp_header_checksum();//compuates & buffers checksum of tcp header only
+
+	//reset dssopt_out
+	memset(&dssopt_out, 0, sizeof(struct dss_option));
+
+	//reset print_line
+	if(PRINT_FILE) memset(&packd.prt_line, 0, sizeof(struct print_line));
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//Eval packet: Here the packet gets first
+//++++++++++++++++++++++++++++++++++++++++++++++++
+void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
+	(void) len;
+
+	memset(&packd,0,sizeof(struct packet_data));
+	//hook
+	packd.id = id;
+	packd.hook = hook;
+	set_verdict(1,0,0);//init with accept: can be changed later	
+
+	//buffer
+	packd.buf = buf;
+
+	//packet headers
+	packd.pos_i4head = 0;	
+	packd.ip4h = (struct ipheader*) (packd.buf+packd.pos_i4head);
+	packd.tcph = (struct tcpheader*) (packd.buf+packd.pos_i4head+(packd.ip4h->ip_h1<<2));
+
+	//Map headers on packet
+	packd.totlen = ntohs(packd.ip4h->ip_len);
+	packd.ip4len = (uint16_t) (packd.ip4h->ip_h1<<2);
+	packd.pos_thead = packd.pos_i4head + packd.ip4len;
+	packd.tcplen = (uint16_t) packd.tcph->th_off<<2;
+	packd.pos_pay = packd.pos_thead + packd.tcplen;
+	packd.paylen = packd.totlen - packd.ip4len - packd.tcplen;
+
+	//new versions
+	packd.flags = (uint8_t)(packd.tcph->th_flags);//flags	
+	packd.syn = (packd.flags & 0x02)>>1;
+	packd.ack = (packd.flags & 0x10)>>4;
+	packd.fin = packd.flags & 0x01;
+	packd.rst = (packd.flags & 0x04)>>2;
+
+	packd.is_from_subflow = 0;
+
+
+	//set fourtuple find session or subflow
+	switch(packd.hook){
+
+	case 1:{
+
+			packd.fwd_type = M_TO_T;
+
+			packd.ft.ip_loc = ntohl(packd.ip4h->ip_dst);
+			packd.ft.ip_rem = ntohl(packd.ip4h->ip_src);
+			packd.ft.prt_loc = ntohs(packd.tcph->th_dport);
+			packd.ft.prt_rem = ntohs(packd.tcph->th_sport);
+
+			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
+			if(packd.sfl != NULL) {
+				packd.is_from_subflow = 1;
+				packd.sess = packd.sfl->sess;
+			}
+			else packd.sess = NULL;
+
+		}
+		break;
+	case 3:{//hook == 3,output
+
+			packd.fwd_type = T_TO_M;
+		
+			packd.ft.ip_loc = ntohl(packd.ip4h->ip_src);
+			packd.ft.ip_rem = ntohl(packd.ip4h->ip_dst);
+			packd.ft.prt_loc = ntohs(packd.tcph->th_sport);
+			packd.ft.prt_rem = ntohs(packd.tcph->th_dport);
+
+			//subflows?
+			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
+			if(packd.sfl != NULL) {
+				packd.sess = packd.sfl->sess;
+				packd.is_from_subflow = 1;
+			}
+			else{ //browser original packet?
+				HASH_FIND(hh, sess_hash, &packd.ft, sizeof(struct fourtuple), packd.sess);
+				//packd.sess == null or not, don't care, will be processed latter
+			}
+		}
+		break;
+	case 2:{//hook == 2
+
+			packd.fwd_type = T_TO_M;
+
+			//behaves like an output: packet arrives from TCP and is sent to subflow
+			packd.ft.ip_loc = ntohl(packd.ip4h->ip_src);
+			packd.ft.ip_rem = ntohl(packd.ip4h->ip_dst);
+			packd.ft.prt_loc = ntohs(packd.tcph->th_sport);
+			packd.ft.prt_rem = ntohs(packd.tcph->th_dport);
+
+			//incoming TCP packet
+			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
+			if(packd.sfl != NULL) {//found: output sfl
+				packd.is_from_subflow = 1;
+				packd.sess = packd.sfl->sess;
+				break;
+			}
+			else {
+				HASH_FIND(hh, sess_hash, &packd.ft, sizeof(struct fourtuple), packd.sess);
+				if(packd.sess != NULL)//found: output kernel original packet
+					break;
+			}
+
+
+			packd.fwd_type = M_TO_T;
+
+			packd.ft.ip_loc = ntohl(packd.ip4h->ip_dst);
+			packd.ft.ip_rem = ntohl(packd.ip4h->ip_src);
+			packd.ft.prt_loc = ntohs(packd.tcph->th_dport);
+			packd.ft.prt_rem = ntohs(packd.tcph->th_sport);
+
+			//incoming MPTCP packet
+			HASH_FIND(hh, sfl_hash, &packd.ft, sizeof(struct fourtuple), packd.sfl);
+			if(packd.sfl != NULL) {
+				packd.is_from_subflow = 1;
+				packd.sess = packd.sfl->sess;
+			}
+			else {
+				HASH_FIND(hh, sess_hash, &packd.ft, sizeof(struct fourtuple), packd.sess);
+			}
+			break;
+		}
+		printf("sess =%lu\n", (long unsigned) packd.sess);
+	}
+
+{
+	//new
+	char s_ip_rem[20], tmp_msg[30];
+	sprintIPaddr(s_ip_rem, packd.ft.ip_rem);	
+	snprintf(msg_buf,MAX_MSG_LENGTH, "eval_packet: ip_rem %s, prt_loc %d,",s_ip_rem,packd.ft.prt_loc);		
+	if(packd.sfl){
+		if(packd.sfl == packd.sess->slav_subflow){
+			packd.is_master = 0;
+			packd.is_master = 0;
+			packd.is_master = 0;
+			strncpy(tmp_msg,"slave",30);	
+			if(packd.sfl)
+				packd.ssn_curr_loc = 0;
+			else
+				packd.ssn_curr_loc = 1;
+		}
+		else if(packd.sfl == packd.sess->act_subflow){
+			packd.is_master = 1;
+			strncpy(tmp_msg,"master",30);	
+		}
+		else 
+			strncpy(tmp_msg,"not master, not slave",30);
+	}else 
+		strncpy(tmp_msg,"browser conn",30);
+	strncat(msg_buf, tmp_msg, MAX_MSG_LENGTH);
+	add_msg(msg_buf);
+}
 
 	//find TPTCP options:start at tcpoptions.
 	packd.nb_mptcp_options = parse_mptcp_options(buf+(packd.pos_thead)+20, (packd.tcplen)-20, mptopt);
@@ -1093,10 +1260,10 @@ int main() {
 //	init_dummy_iface();
 
 	//start of iptables
-	system("iptables -F");
-	system("iptables -A INPUT -p tcp --tcp-flags SYN SYN -j QUEUE");
-	system("iptables -A OUTPUT -p tcp --tcp-flags SYN SYN -j QUEUE");
-	system("iptables -A FORWARD -p tcp --tcp-flags SYN SYN -j QUEUE");
+	system_safe("iptables -F");
+	system_safe("iptables -A INPUT -p tcp --tcp-flags SYN SYN -j QUEUE");
+	system_safe("iptables -A OUTPUT -p tcp --tcp-flags SYN SYN -j QUEUE");
+	system_safe("iptables -A FORWARD -p tcp --tcp-flags SYN SYN -j QUEUE");
 	
 	//setup of raw socket to send packets
 	add_msg("setting up raw socket");
@@ -1106,6 +1273,15 @@ int main() {
 		exit(1);
 	}
 
+/*	//+++new
+	// setting socket option to use MARK value 
+    int mark = MARK;
+    if (setsockopt(raw_sd, SOL_SOCKET, SO_MARK, &mark, sizeof(mark)) < 0)
+    {
+        log_error("failed to set mark on raw socket.");
+        exit(1);
+    } 
+*/
 	//setup or raw socket for NETLINK to report interface changes
 	struct sockaddr_nl addr;
 	nl_sd = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
@@ -1190,7 +1366,7 @@ int main() {
 #endif
  
  	//flush iptables
-	 system("iptables -F");
+	 system_safe("iptables -F");
 
 	//destroying all alias interfaces
 	 snprintf(msg_buf,MAX_MSG_LENGTH,"deleting all alias interfaces\n");

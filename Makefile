@@ -1,6 +1,6 @@
 CC?=gcc
 CFLAGS?=-Wall -Wextra -O2 -g -std=gnu11 -fno-strict-aliasing
-LDLIBS=-lnetfilter_queue -lnfnetlink
+LDLIBS=-lnetfilter_queue -lnfnetlink -pthread       
 
 all: mpproxy mptcp_proxy
 

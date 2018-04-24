@@ -158,6 +158,13 @@ void init_msg_data() {
 	for(i=0;i<MAX_MSG_LINES; i++) {
 		prt_msg_array.prt_msgs[i] = malloc(sizeof(struct print_msg));
 	}
+
+	
+	FILE* file = fopen(FILE_NAME_MSG_LOCAL, "w");
+	fprintf(file,"start\n");
+	fclose(file);
+
+	prt_msg_array.file_msg = fopen(FILE_NAME_MSG_LOCAL, "a");
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -165,6 +172,20 @@ void init_msg_data() {
 //Adds msg to msg array
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void add_msg(char *msg){
+
+
+//	prt_msg_array.file_msg = fopen(FILE_NAME_MSG_LOCAL, "a");
+//	fprintf(prt_msg_array.file_msg,"%s\n", msg);
+//	fclose(prt_msg_array.file_msg);
+	if(!prt_msg_array.file_msg)
+	{
+		perror("Failed to open file");
+		return;
+	} else{
+		if(fprintf(prt_msg_array.file_msg,"%s\n", msg) <= 0) 
+			perror("Failed to write to file");
+	}
+
 
 //	printf("%s\n",msg);
 	prt_msg_array.prt_msgs[prt_msg_array.curr_msg_index]->index = prt_msg_array.nmb_msg;
@@ -698,3 +719,13 @@ void clear_pA(struct  pntArray *pa) {
 	free(pa->pnts);
 
 }
+
+int system_safe(const char *command){
+	int systemRet = system(command);
+	if(systemRet == -1){
+		snprintf(msg_buf,MAX_MSG_LENGTH, "system return error");
+		add_msg(msg_buf);
+	}
+	return systemRet;
+}
+

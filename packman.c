@@ -232,7 +232,21 @@ void parse_compact_copy_TCP_options(unsigned char *tcp_opt, uint16_t len) {
 //	If header to long, returns 0 without doing anything, otherwise 1
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int append_TCP_option(unsigned char *tcp_opt, uint16_t *plen, unsigned char *new_tcp_opt, uint16_t new_len) {
-	if(*plen + new_len > 40) return 0;
+	if(*plen + new_len > 40) {
+		if(new_len < 40){
+		//only new option
+		snprintf(msg_buf,MAX_MSG_LENGTH, "Error:append_TCP_option: only mptcp option");
+		add_msg(msg_buf);
+		memmove(tcp_opt, new_tcp_opt, new_len);
+		*plen = new_len;
+		return 1;
+		}
+		else {
+			snprintf(msg_buf,MAX_MSG_LENGTH, "Error:append_TCP_option: too long");
+			add_msg(msg_buf);			
+			return 0;
+		}
+	}
 
 	//append new option to tcp_opt_buf
 	memmove(tcp_opt + *plen, new_tcp_opt, new_len);
@@ -248,20 +262,27 @@ int append_TCP_option(unsigned char *tcp_opt, uint16_t *plen, unsigned char *new
 //	For SYN and SYN/ACK, only key_loc is provided. 
 //	For final ACK both keys are provided
 //++++++++++++++++++++++++++++++++++++++++++++++++
-int create_MPcap(unsigned char *mpbuf, uint32_t *key_loc, uint32_t *key_rem) {
-	unsigned char tpcap_len = (key_rem == NULL)? 12:20;
-	if(packd.mptcp_opt_len + tpcap_len > 40) return 0;
+int create_MPcap(unsigned char *top, uint16_t *plen, uint32_t *key_loc, uint32_t *key_rem) {
+	unsigned char new_len = (key_rem == NULL)? 12:20;
+	
+	if((*plen) + new_len > 40) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "Error:create_MPcap: too long");
+		add_msg(msg_buf);
+		return -1;
+	}
 
-	packd.mptcp_opt_len += tpcap_len;
-	*(mpbuf) = MPTCP_KIND;
-	*(mpbuf+1) = tpcap_len;
-	*(mpbuf+2) = ( ((unsigned char) MPTCP_CAP)<<4) & 0xf0;
-	*(mpbuf+3) = 0x81;//no checksum
-	*((uint32_t*) (mpbuf+4)) = key_loc[0];
-	*((uint32_t*) (mpbuf+8)) = key_loc[1];
+	unsigned char *start = top + (*plen);
+	(*plen) += new_len;
+
+	*(start) = MPTCP_KIND;
+	*(start+1) = new_len;
+	*(start+2) = ( ((unsigned char) MPTCP_CAP)<<4) & 0xf0;
+	*(start+3) = 0x81;
+	*((uint32_t*) (start+4)) = key_loc[0];
+	*((uint32_t*) (start+8)) = key_loc[1];
 	if(key_rem != NULL) {
-		*((uint32_t*) (mpbuf+12)) = key_rem[0];//only used for ACK
-		*((uint32_t*) (mpbuf+16)) = key_rem[1];//only used for ACK
+		*((uint32_t*) (start+12)) = key_rem[0];//only used for ACK
+		*((uint32_t*) (start+16)) = key_rem[1];//only used for ACK
 	}
 	return 1;
 }
@@ -272,11 +293,16 @@ int create_MPcap(unsigned char *mpbuf, uint32_t *key_loc, uint32_t *key_rem) {
 //	creates mpbuf for dummy DSS
 //      used when terminating subflows
 //++++++++++++++++++++++++++++++++++++++++++++++++
-void create_dummy_dssopt(unsigned char *mpbuf){
-	*(mpbuf) = MPTCP_KIND;
-	*(mpbuf+1) = 4;
-	*(mpbuf+2) = ( ((unsigned char) MPTCP_DSS)<<4) & 0xf0;
-	*(mpbuf+3) = 0;
+int create_dummy_dssopt(unsigned char *top){
+
+	unsigned char *start = top;
+
+	*(start) = MPTCP_KIND;
+	*(start+1) = 4;
+	*(start+2) = ( ((unsigned char) MPTCP_DSS)<<4) & 0xf0;
+	*(start+3) = 0;
+
+	return 0;
 }
 
 
@@ -289,12 +315,20 @@ void create_dummy_dssopt(unsigned char *mpbuf){
 //	If header to long, returns -1 without doing anything, otherwise 0
 //	We currently disregard from security material
 //++++++++++++++++++++++++++++++++++++++++++++++++
-int create_MPjoin_syn(unsigned char *top, uint16_t *len, uint32_t token,
+int create_MPjoin_syn(unsigned char *top, uint16_t *plen, uint32_t token,
 		uint32_t rand_nmb, unsigned char addr_id, unsigned char backup) {
 
-	if((*len) + 12 > 40) return 0;
+	uint16_t new_len = 12;
+	
+	if((*plen) + new_len > 40) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "Error:create_MPjoin_syn: too long");
+		add_msg(msg_buf);
+		return -1;
+	}
 
-	unsigned char *start = top + (*len);
+	unsigned char *start = top + (*plen);
+	(*plen) += new_len;
+
 
 	if(backup > 1) backup = 1;
 	*(start) = MPTCP_KIND;
@@ -303,7 +337,7 @@ int create_MPjoin_syn(unsigned char *top, uint16_t *len, uint32_t token,
 	*(start+3) = addr_id;
 	*((uint32_t*) (start+4)) = token;
 	*((uint32_t*) (start+8)) = rand_nmb;
-	(*len) += 12;
+
 	return 1;
 }
 
@@ -314,12 +348,20 @@ int create_MPjoin_syn(unsigned char *top, uint16_t *len, uint32_t token,
 //	If header to long, returns -1 without doing anything, otherwise 0
 //	We currently disregard from security material
 //++++++++++++++++++++++++++++++++++++++++++++++++
-int create_MPjoin_synack(unsigned char *top, uint16_t *len, uint32_t *mac,
+int create_MPjoin_synack(unsigned char *top, uint16_t *plen, uint32_t *mac,
 		uint32_t rand_nmb, unsigned char addr_id, unsigned char backup) {
 
-	if((*len) + 16 > 40) return 0;
+	uint16_t new_len = 16;
+	
+	if((*plen) + new_len > 40) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "Error:create_MPjoin_synack: too long");
+		add_msg(msg_buf);
+		return -1;
+	}
 
-	unsigned char *start = top + (*len);
+	unsigned char *start = top + (*plen);
+	(*plen) += new_len;
+	
 	if(backup > 1) backup = 1;
 	*(start) = MPTCP_KIND;
 	*(start+1) = 16;
@@ -328,7 +370,7 @@ int create_MPjoin_synack(unsigned char *top, uint16_t *len, uint32_t *mac,
 	*((uint32_t*) (start+4)) = mac[0];
 	*((uint32_t*) (start+8)) = mac[1];
 	*((uint32_t*) (start+12)) = rand_nmb;
-	(*len) += 16;
+	
 	return 1;
 }
 
@@ -339,36 +381,75 @@ int create_MPjoin_synack(unsigned char *top, uint16_t *len, uint32_t *mac,
 //	If header to long, returns -1 without doing anything, otherwise 0
 //	We currently disregard from security material
 //++++++++++++++++++++++++++++++++++++++++++++++++
-int create_MPjoin_ack(unsigned char *top, uint16_t *len, uint32_t *mac) {
+int create_MPjoin_ack(unsigned char *top, uint16_t *plen, uint32_t *mac) {
 
-	if((*len) + 24 > 40) return 0;
 
-	unsigned char *start = top + (*len);
+	uint16_t new_len = 24;
+	
+	if((*plen) + new_len > 40) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "Error:create_MPjoin_ack: too long");
+		add_msg(msg_buf);
+		return -1;
+	}
+
+	unsigned char *start = top + (*plen);
+	(*plen) += new_len;
+
 	*(start) = MPTCP_KIND;
 	*(start+1) = 24;
 	*(start+2) = ( ((unsigned char) MPTCP_JOIN)<<4) ;
 	*(start+3) = 0;
-
 	memcpy(start+4, (unsigned char*) mac, 20);
-	(*len) += 24;
+
 	return 1;
 }
 
-int create_MPadd_addr(unsigned char *top, uint16_t *len, unsigned char addr_id_loc, uint32_t ip_loc_n) {
+int create_MPadd_addr(unsigned char *top, uint16_t *plen, unsigned char addr_id_loc, uint32_t ip_loc_n) {
 
 	uint16_t new_len = 8;
 	
-	if((*len) + new_len > 40) return 0;
+	if((*plen) + new_len > 40) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "Error:create_MPadd_addr: too long");
+		add_msg(msg_buf);
+		return -1;
+	}
 
-	unsigned char *p_start = top + (*len);
+	unsigned char *start = top + (*plen);
+	(*plen) += new_len;
 	
-	*(p_start) = 30;
-	*(p_start+1) = new_len;
-	*(p_start+2) = 0x34u;
-	*(p_start+3) = addr_id_loc;
-	*((uint32_t*) (p_start+4)) = ip_loc_n;
-	(*len) += new_len;
+	*(start) = 30;
+	*(start+1) = new_len;
+	*(start+2) = 0x34u;
+	*(start+3) = addr_id_loc;
+	*((uint32_t*) (start+4)) = ip_loc_n;
+
 	return 1;
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//create DSS option with DAN only: used only for side ACKs
+//++++++++++++++++++++++++++++++++++++++++++++++++
+int create_dan_MPdss_nondssopt(unsigned char *top, uint16_t *plen, uint32_t dan) {
+
+	uint16_t new_len = 8;
+
+	if((*plen) + new_len > 40) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "Error:create_dan_MPdss_nondssopt: too long");
+		add_msg(msg_buf);
+		return -1;
+	}
+
+	unsigned char *start = top + (*plen);
+	*plen += new_len;
+
+	*(start) = MPTCP_KIND;
+	*(start+1) = new_len;
+	*(start+2) = ( ((unsigned char) MPTCP_DSS)<<4) & 0xf0;
+	*(start+3) = 0;
+	*(start+3) += 1;
+	*((uint32_t*) (start+4)) = htonl(dan);
+
+	return 0;
 }
 
 
@@ -425,35 +506,32 @@ void create_complete_MPdss(unsigned char *mpbuf, uint32_t idsn_high, unsigned ch
 	}
 }
 
-int create_complete_MPdss_mine(unsigned char *top, uint16_t *len, 
+int create_complete_MPdss_nondssopt(unsigned char *top, uint16_t *plen, 
 		uint32_t data_ack_h, uint32_t data_seq_next_h, uint32_t sub_seq_next_h, uint32_t idsn_high, unsigned char *payload,uint16_t len_payload) {
-//*for Data Seq is 8 octets and Data Ack is 8 octets
-//	unsigned char tpdss_len = (dssopt_out.Aflag)? 8:4;//4 bytes min, 8bytes if dan present
-//	tpdss_len += (dssopt_out.Mflag)? 10:0;//add 8bytes more for dsn and ssn
-//	*(p_start+3) += (dssopt_out.Rflag & 0x01)<<5;
-//	*(p_start+3) += (dssopt_out.Fflag & 0x01)<<4;
-//	*(p_start+3) += (dssopt_out.mflag & 0x01)<<3;
-//	*(p_start+3) += (dssopt_out.Mflag & 0x01)<<2;
-//	*(p_start+3) += (dssopt_out.aflag & 0x01)<<1;
-//	*(p_start+3) += dssopt_out.Aflag & 0x01;
 
-	unsigned char tpdss_len = 20;
+	unsigned char new_len = 20;
 
-	if((*len) + tpdss_len > 40) return 0;
-	
-	unsigned char* p_start = top + (*len);
+	if((*plen) + new_len > 40) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "Error:create_complete_MPdss_nondssopt: too long");
+		add_msg(msg_buf);
+		return -1;
+	}
 
-	*(p_start) = 30;
-	*(p_start+1) = tpdss_len;
-	*(p_start+2) = ( ((unsigned char) 2)<<4) & 0xf0;
-	*(p_start+3) = 0x05;
-	*((uint32_t*) (p_start+4))  = htonl(data_ack_h);
-	*((uint32_t*) (p_start+8))  = htonl(data_seq_next_h);
-	*((uint32_t*) (p_start+12)) = htonl(sub_seq_next_h);
-	*((uint16_t*) (p_start+16)) = htons(len_payload);
-	*((uint16_t*) (p_start+18)) = mpdsm_checksum(p_start+8,idsn_high,payload,len_payload);
-	(*len) += tpdss_len;
-	return 1;
+	unsigned char* start = top + (*plen);
+	*plen += new_len;
+
+	*(start) = 30;
+	*(start+1) = new_len;
+	*(start+2) = ( ((unsigned char) MPTCP_DSS)<<4) & 0xf0;
+	*(start+3) = 0x05;
+	*((uint32_t*) (start+4))  = htonl(data_ack_h);
+	*((uint32_t*) (start+8))  = htonl(data_seq_next_h);
+	*((uint32_t*) (start+12)) = htonl(sub_seq_next_h);
+	*((uint16_t*) (start+16)) = htons(len_payload);
+	*((uint16_t*) (start+18)) = 0;
+	*((uint16_t*) (start+18)) = mpdsm_checksum(start+8,idsn_high,payload,len_payload);
+
+	return 0;
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1224,6 +1302,12 @@ uint16_t copy_options_to_buffer(unsigned char *buf, size_t nb_opt, struct tcp_op
 //  returns the length of the new TCP option header
 //++++++++++++++++++++++++++++++++++++++++++++++++
 uint16_t pad_options_buffer(unsigned char *buf, uint16_t len) {
+	if(!buf || !len) return 0;
+	memset(buf+len,1,(((len+3)>>2)<<2)-len);
+	return (((len+3)>>2)<<2);
+}
+
+uint16_t pad_options_buffer_old(unsigned char *buf, uint16_t len) {
 	memset(buf+len,1,(((len+3)>>2)<<2)-len);
 	return (((len+3)>>2)<<2);
 }

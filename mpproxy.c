@@ -76,7 +76,11 @@ int main(int argc, char **argv)
 		strcat(incmd,argv[i]);
 	}
 
-	if(argc > 1 && strcmp(argv[1], "start")==0) system("mptcp_proxy &");
+	if(argc > 1 && strcmp(argv[1], "start")==0) {
+		int ret = system("mptcp_proxy &");
+		if(ret == -1)
+			printf("system return error\n");
+	}
 
 	//make down FIFO
 	mkfifo(FIFO_NAME_DOWN, (mode_t) 0666);

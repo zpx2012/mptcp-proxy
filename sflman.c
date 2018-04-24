@@ -6,6 +6,14 @@
 //
 //*****************************************************
 //*****************************************************
+//*****************************************************
+//*****************************************************
+//
+// sflman.c 
+// Project: mptcp_proxy
+//
+//*****************************************************
+//*****************************************************
 //
 // GEORG HAMPEL - Bell Labs/NJ/USA: All Rights Reserved
 //
@@ -37,52 +45,119 @@ inline int subflow_completed(struct subflow *sfl) {
 	return sn_smaller(sfl->highest_sn_loc, sfl->highest_an_loc);
 }
 
+int create_new_subflow_output_slave(){
+	
+		//create socket
+	int sockfd;
+	struct fourtuple ft_sfl;
+	struct fourtuple* ft = &ft_sfl;
+	ft_sfl.ip_loc = packd.ft.ip_loc;
+	ft_sfl.ip_rem = packd.ft.ip_rem;
+	ft_sfl.prt_rem = packd.ft.prt_rem;
+	ft_sfl.prt_loc = 0;
 
-int send_add_addr(struct session *sess, struct fourtuple *ft, unsigned char addr_id_loc, uint32_t ip_loc_n){
+	create_subflow_socket(ft,&sockfd);
 
-	//create tcp option: option sent during initial subflow + TP_JOIN
-	unsigned char opt_buf[60];
-	uint16_t opt_len = sess->init_top_len;
-	memmove(opt_buf, sess->init_top_data, opt_len);
+	//find local addrid. If not there, create it
+	unsigned i = 0;
+	unsigned char addr_id_loc;
+	struct session* sess = packd.sess;
+	while(i < sess->pA_addrid_loc.number && ((struct addrid*) get_pnt_pA(&sess->pA_addrid_loc, i))->addr != ft->ip_loc) i++;
 
-	if(sess->timestamp_flag) set_timestamps(opt_buf, opt_len, sess->tsval, 0, 1);
+	if( i == sess->pA_addrid_loc.number || ((struct addrid*) get_pnt_pA(&sess->pA_addrid_loc, i))->addr != ft->ip_loc) {
 
-	//attach TP_JOIN + pad
-	create_MPadd_addr(opt_buf, &opt_len, addr_id_loc, ip_loc_n);
-
-
-	uint16_t npad = pad_options_buffer(opt_buf, opt_len);
-	opt_len = npad;
-
-	//check if length is ok:
-	if(opt_len > 40) {
-		snprintf(msg_buf,MAX_MSG_LENGTH, "send_add_addr: option length=%u is too long - ABORT", opt_len);
-		add_msg(msg_buf);
-		return 0;
+		struct addrid *addrid_loc = malloc(sizeof(struct addrid));
+		addrid_loc->addr = ft->ip_loc;
+		sess->largest_addr_id_loc++;
+		addrid_loc->id = sess->largest_addr_id_loc;
+		add_pnt_pA(&sess->pA_addrid_loc, addrid_loc);
+		addr_id_loc = addrid_loc->id;
+	} else {
+		addr_id_loc = ((struct addrid*) get_pnt_pA(&sess->pA_addrid_loc, i))->id;
 	}
 
-	uint16_t pack_len = 0;
-	memset(raw_buf, 0, sizeof(raw_buf));
-	create_packet(raw_buf, &pack_len, 
-		ft, 
-		htonl(sess->act_subflow->highest_sn_loc),//ISSN src 
-		htonl(sess->act_subflow->highest_an_rem),//ISSN rem
-		2,//SYN
-		htons(sess->curr_window_loc), 
-		opt_buf, 
-		opt_len);
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "send_add_addr: sending ADD_ADDR packet, sess->act_subflow->highest_sn_loc=%zu, sess->act_subflow->highest_an_rem=%zu,packd.ssn_curr_loc=%zu,packd.san_curr_rem=%zu,sess_id=%zu", sess->act_subflow->highest_sn_loc, sess->act_subflow->highest_an_rem, packd.ssn_curr_loc, packd.san_curr_rem, sess->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: finding local addrid=%u", addr_id_loc );
 	add_msg(msg_buf);
 
-	//send syn packet
-	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(ft->ip_rem))<0) {
-		
-		delete_subflow(ft);
-		snprintf(msg_buf,MAX_MSG_LENGTH, "send_add_addr: send_raw_packet returns error, sfl_id=%zu, sess_id=%zu", sess->act_subflow->index, sess->index);
+	//find remote addrid. Must be there.
+	i = 0;
+	while(i < sess->pA_addrid_rem.number && ((struct addrid*) get_pnt_pA(&sess->pA_addrid_rem, i))->addr != ft->ip_rem) i++;
+	unsigned char addr_id_rem = ((struct addrid*) get_pnt_pA(&sess->pA_addrid_rem, i))->id;
+
+	snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: finding remote addrid=%u", addr_id_rem );
+	add_msg(msg_buf);
+	
+	//Check if ft->ip_loc is supported (if not return 0)
+	int found = 0;
+	for(unsigned i=0; i<if_tab1.nb_if; ++i) {
+		if(ft->ip_loc == if_tab1.ipaddr[i]) {
+			found = 1;
+			break;
+		}
+	}
+	if(found==0){
+		char buf_ip[34];
+		sprintIPaddr(buf_ip, ft->ip_loc);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: local IP=%s not found - ABORT", buf_ip);
 		add_msg(msg_buf);
 		return 0;
 	}
+
+	//Scan all subflows of sess:
+	//      Check if subflow has at least one different value in loc IP, rem IP, loc PRT or rem PRT
+	//      Check if (remIP, remPort) is contained in at least one subflow.
+	//           If not, check if (rem IP, rem PRT) is contained in ADD_ADDR list
+	//      	If not, return 0
+
+	struct subflow *curr_sfl;
+	int same = 0;
+	int dst_known = 0;
+	for(unsigned i=0; i < sess->pA_sflows.number; i++) {
+		curr_sfl = (struct subflow*) get_pnt_pA(&sess->pA_sflows, i); 
+
+		if( memcmp( &curr_sfl->ft, &ft, sizeof(struct fourtuple)) == 0) same = 1;
+		if( (curr_sfl->ft.ip_rem == ft->ip_rem) &&  (curr_sfl->ft.prt_rem == ft->prt_rem) ) dst_known = 1;
+	}
+
+ 	if(same == 1) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: fourtuple already exists - ABORT");
+		add_msg(msg_buf);
+		return 0;
+	}
+ 	if(dst_known == 0) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: ip_rem or prt_rem not known - ABORT");
+		add_msg(msg_buf);
+		return 0;
+	}
+
+
+	//create subflow, add to session
+	struct subflow  *sfl1;
+	sfl1 = create_subflow(
+		 ft,
+		 addr_id_loc+1,//addr id loc, the currently number of subflows in this session is sued for this purpose
+		 addr_id_rem,//addr id remote
+		 sockfd,
+		 PRE_SYN_SENT,
+		 CANDIDATE,
+		 0,//loc ISN
+		 0,//rem ISN
+		 0,//loc offset
+		 0,//remote offset
+		 get_rand(),
+		 0,//rand number rem: comes later	
+		 0);
+	if(sfl1 == NULL) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: returns NULL when creating subflow");
+		add_msg(msg_buf);
+		return 0;
+	}
+
+	add_subflow_to_session(sfl1, sess);
+	sess->slav_subflow = sfl1;
+
+	call_connect(sfl1);
 	return 1;
 }
 
@@ -110,7 +185,6 @@ int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned c
 		addr_id_loc = ((struct addrid*) get_pnt_pA(&sess->pA_addrid_loc, i))->id;
 	}
 
-//	send_add_addr(sess,&sess->ft,addr_id_loc, ft->ip_loc);
 
 	snprintf(msg_buf,MAX_MSG_LENGTH, "initiate_cand_subflow: finding local addrid=%u", addr_id_loc );
 	add_msg(msg_buf);
@@ -195,11 +269,12 @@ int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned c
 	// overwrite = 1 in case subflow already exists
 	uint32_t ISSNloc = create_issn();
 
-	struct subflow  *sfl1 = NULL;
-	sfl1 = create_cand_subflow(
+	struct subflow  *sfl1;
+	sfl1 = create_subflow(
 		 ft,
 		 addr_id_loc,//addr id loc, the currently number of subflows in this session is sued for this purpose
 		 addr_id_rem,//addr id remote
+		 0,
 		 SYN_SENT,
 		 CANDIDATE,
 		 ISSNloc,//loc ISN
@@ -222,15 +297,11 @@ int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, unsigned c
 
 	//check subflow sack support based on copied header
 	sfl1->sack_flag = find_tcp_option(opt_buf, opt_len, 4);
+	
 
-	if(sess->slav_subflow){
-		printf("more than 1 sfl in initiate_cand_subflow");
-	}
-	add_slave_subflow_to_session(sfl1,sess);//The command to add subflow must be removed
-//	add_subflow_to_session(sfl1, sess);
+	add_subflow_to_session(sfl1, sess);
 
-	uint16_t pack_len = 0;
-	memset(raw_buf, 0, sizeof(raw_buf));
+	uint16_t pack_len;
 	create_packet(raw_buf, &pack_len, 
 		ft, 
 		htonl(ISSNloc),//ISSN src 
@@ -362,6 +433,7 @@ int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, un
 		 &ft,
 		 addr_id_loc,//address id loc
 		 addr_id_rem,//address id rem
+		 0,
 		 SYN_REC,
 		 CANDIDATE,
 		 ISSNloc,//loc ISN
@@ -377,14 +449,8 @@ int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, un
 		return 0;
 	}
 
-//+++++++new
-	if(sess->slav_subflow){
-		printf("more than 1 sfl in initiate_cand_subflow");
-	}
-	add_slave_subflow_to_session(sfl1,sess);
-//	add_subflow_to_session(sfl1, sess);
+	add_subflow_to_session(sfl1, sess);
 	if(sess->timestamp_flag) sfl1->tsecr = tsecr;
-//-------new
 
 	//create syn/ack packet
 	uint16_t pack_len;
@@ -426,6 +492,171 @@ int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, un
 	create_rex_event(&ft, sfl1->tcp_state, raw_buf, pack_len);
 
 	return 1;
+
+}
+
+int subflow_syn_sent_master(){
+
+	//get rem IDSN from MPTCP CAP option
+	uint32_t key_rem[2];
+	uint32_t key_loc[2];
+	if(!analyze_MPcap(mptopt, packd.nb_mptcp_options, key_loc, key_rem)) {
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: analyze_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+		add_msg(msg_buf);
+		delete_subflow(&packd.ft);
+		delete_session_parm(packd.sess->token_loc);
+		delete_session(&packd.sess->ft, 1);
+		set_verdict(1,0,0);
+		return 0;
+	}
+
+	//add or eliminate SACK based on DO_SACK
+	int adjust_packet = 0;
+
+	//check sack support for subflow
+	unsigned char len = packd.tcplen-20;
+	if(DO_SACK) {
+
+		if(find_tcp_option(packd.buf+packd.pos_thead+20, len, 4)) {
+		
+			//everything fine; in case sess->sack_flag == 0, simply keep the sack_flag rolling
+		} else{
+
+			packd.sfl->sack_flag = 0;//no sfl sack support
+			if( packd.sess->sack_flag) {
+
+				//furnish with sack flag for subflow sack support
+				if(append_sack(packd.buf+packd.pos_thead+20, &len)){
+					packd.tcplen += 2;
+					packd.pos_pay += 2;
+					packd.totlen += 2;
+					adjust_packet = 1;
+				}
+			}
+		}
+	} else {
+		if(find_tcp_option(packd.buf+packd.pos_thead+20, len, 4)) {
+			//ensure no sess->sack support
+			if(eliminate_tcp_option(packd.buf+packd.pos_thead+20, &len, 4)){
+				packd.tcplen -= 2;
+				packd.pos_pay -= 2;
+				packd.totlen -= 2;
+				adjust_packet = 1;
+			}
+		} else {
+			//everthing fine
+		}
+	}
+
+
+	unsigned char init_len = packd.tcplen-20;
+	unsigned char scaling_factor = find_window_scaling(packd.buf+packd.pos_thead+20, &init_len);
+	packd.sess->init_window_rem = ntohs(packd.tcph->th_win);
+	packd.sess->scaling_factor_rem = scaling_factor;
+	packd.sess->curr_window_rem = (packd.sess->init_window_loc)>>scaling_factor;
+
+
+	packd.sess->key_rem[0] = key_rem[0];
+	packd.sess->key_rem[1] = key_rem[1];
+
+	create_idsn_token(packd.sess->key_rem, &packd.sess->idsn_rem, &packd.sess->token_rem,NULL);
+
+
+	packd.sess->highest_dsn_rem = packd.sess->idsn_rem+1;
+	packd.sess->highest_dan_rem = packd.sess->idsn_rem+1;
+
+	packd.sfl->isn_rem = ntohl(packd.tcph->th_seq); 
+	packd.sess->offset_rem = packd.sfl->isn_rem - packd.sess->idsn_rem; 	
+
+	packd.sfl->highest_sn_loc += 1;
+	packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;		
+
+	packd.sfl->tcp_state = PRE_EST;
+	packd.sess->sess_state = PRE_EST;
+
+	if(adjust_packet) {
+		packd.mptcp_opt_len = 0;//since option is already attached
+		if(!output_data_mptcp()) {
+			set_verdict(1,0,0);
+			execute_sess_teardown(packd.sess);
+			snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: output_data_mptcp fails for sfl_id=%zu, sess_id=%zu", packd.sfl->index, packd.sess->index);
+			add_msg(msg_buf);
+
+			return 0;
+		}
+		set_verdict(1,1,1);
+	}
+	else set_verdict(1,1,0);
+
+//+++send syn/ack to browser, call connect to invoke second subflow
+{
+	uint16_t pack_len = packd.tcplen + packd.ip4len;
+	memcpy(raw_buf, packd.buf, pack_len);
+
+	//change dst
+	struct ipheader* ip4h = (struct ipheader*)(raw_buf+packd.pos_i4head);
+	struct tcpheader* tcph = (struct tcpheader*)(raw_buf+packd.pos_thead);
+	ip4h->ip_dst = htonl(packd.sess->ft.ip_loc);
+	tcph->th_dport = htons(packd.sess->ft.prt_loc);
+	tcph->th_ack = htonl(packd.sess->idsn_loc + packd.sess->offset_loc+1);
+
+	//change timestamp
+	if(packd.sess->timestamp_flag) 
+		set_timestamps(raw_buf+packd.pos_thead+20 , packd.pos_pay-packd.pos_thead-20, packd.sess->tsval, 0, 1);
+	
+	//update of both checksums
+	compute_checksums(raw_buf, packd.ip4len, pack_len);
+
+	snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: sending SYN/ACK packet to browser");
+	add_msg(msg_buf);
+
+	//send syn/ack packet
+	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.ft.ip_rem))<0) {
+		delete_subflow(&packd.sess->ft);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: send_raw_packet returns error");
+		add_msg(msg_buf);
+		return 0;
+	}
+}
+//---new
+
+	return 0;
+}
+
+int subflow_syn_sent_slave(){
+
+	unsigned char backup;
+	unsigned char addr_id_rem;
+	uint32_t rand_nmb_rem;
+	uint32_t mac[2];
+	if(!analyze_MPjoin_synack(mptopt, packd.nb_mptcp_options, mac, &rand_nmb_rem,  &addr_id_rem, &backup))
+		return 0;
+	
+	//test if hmac is correct
+	uint32_t mac_test[5];
+	create_mac(packd.sess->key_rem, packd.sess->key_loc, rand_nmb_rem, packd.sfl->rand_nmb_loc, mac_test);
+	if(memcmp(mac_test, mac, 8) != 0) {
+
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: MAC on SYN/ACK packet for sess id=%zu, sfl id=%zu is incorrect!",
+				packd.sess->index, packd.sfl->index);
+		add_msg(msg_buf);
+		set_verdict(1,0,0);
+		return 0; 
+
+	}
+
+	packd.sfl->isn_rem = ntohl(packd.tcph->th_seq);
+	packd.sfl->offset_rem = packd.sess->idsn_rem - packd.sfl->isn_rem;
+	packd.sfl->highest_sn_rem = packd.sfl->isn_rem + 1;
+	packd.sfl->highest_an_rem = packd.sfl->isn_rem + 1;
+	packd.sfl->highest_sn_loc += 1;
+	packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;
+	packd.sfl->addr_id_rem = addr_id_rem;
+	packd.sfl->rand_nmb_rem = rand_nmb_rem;
+	packd.sfl->sack_flag = find_tcp_option(packd.buf+packd.pos_thead+20, packd.tcplen-20, 4) && DO_SACK;
+	packd.sfl->tcp_state = PRE_EST;
+
+	return 0;
 
 }
 
@@ -520,10 +751,7 @@ int subflow_syn_sent() {
 		return 0;
 	}
 
-	//send cand_data
-	//dsn is initialized in master subflow
-	send_data_slave_subflow();
-	
+
 	if(PRINT_FILE) load_print_line(packd.id, 3, packd.sess->index, packd.sfl->index, 
 			0, 0, 16, 
 			1, 1, 
@@ -552,11 +780,6 @@ int subflow_syn_sent() {
 	}
 	return 1;
 }
-
-//new++++++++++++++++++++++++++++
-
-//new---------------------------
-
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //subflow SYN_RECEIVED
@@ -1165,89 +1388,7 @@ int handle_subflow_break(struct subflow *const sflx) {
 
 
 
-struct subflow* create_cand_subflow(struct fourtuple *ft1,
-		 unsigned char addr_id_loc,
-		 unsigned char addr_id_rem,
-		 int tcp_state,
-		 int act_state,
-		 uint32_t isn_loc,
-		 uint32_t isn_rem,
-		 uint32_t offset_loc,
-		 uint32_t offset_rem,
-		 uint32_t rand_nmb_loc,
-		 uint32_t rand_nmb_rem,
-		 size_t overwrite) {
-		
-	static unsigned int index = 0;
 
-	struct subflow *sflx;
-	HASH_FIND(hh, sfl_hash, ft1, sizeof(struct fourtuple), sflx);
-
-	if(overwrite == 0 && sflx!=NULL) return NULL;
-
-	char ifname_loc[10];
-	if(find_interface(&if_tab1, ifname_loc, ft1->ip_loc) == 0) {
-		snprintf(msg_buf,MAX_MSG_LENGTH, "create_subflow: interface \"%s\" not found", ifname_loc);
-		add_msg(msg_buf);	
-	}
-
-	if(sflx==NULL) {
-		sflx = malloc( sizeof(struct subflow));//create new subflow
-		sflx->ft = *ft1;
-		HASH_ADD(hh, sfl_hash, ft, sizeof(struct fourtuple), sflx);
-	
-		struct subflow_pnt *sfl_pnt;
-		HASH_FIND(hh, sfl_pnt_hash, &sflx, sizeof(struct subflow*), sfl_pnt);
-
-		if(sfl_pnt == NULL){
-
-			sfl_pnt = (struct subflow_pnt*) malloc( sizeof(struct subflow_pnt));
-			sfl_pnt->sfl = sflx;
-			HASH_ADD(hh, sfl_pnt_hash, sfl, sizeof(struct subflow*), sfl_pnt);
-		}
-	}
-
-	sflx->index = index;
-	index++;
-
-	strcpy(sflx->ifname_loc, ifname_loc);
-
-	sflx->tcp_state = tcp_state;
-	sflx->act_state = act_state;
-	sflx->broken = 0;
-	sflx->ack_state = 0;
-	sflx->sack_flag = DO_SACK;
-
-	sflx->addr_id_loc = addr_id_loc;
-	sflx->addr_id_rem = addr_id_rem;
-
-	sflx->isn_loc = isn_loc;
-	sflx->isn_rem = isn_rem;
-	sflx->csn_loc = isn_loc;
-	sflx->csn_rem = isn_rem;
-	sflx->highest_sn_loc = isn_loc;
-	sflx->highest_sn_rem = isn_rem;
-
-	sflx->offset_loc = offset_loc;
-	sflx->offset_rem = offset_rem;
-
-	sflx->map_recv = malloc(sizeof(struct map_table));
-	init_map(sflx->map_recv);
-
-	sflx->map_send = malloc(sizeof(struct map_table));
-	init_map(sflx->map_send);
-
-
-	sflx->rand_nmb_loc = rand_nmb_loc;
-	sflx->rand_nmb_rem = rand_nmb_rem;
-
-	subflow_IPtables('A',1,ft1->ip_loc, ft1->prt_loc, ft1->ip_rem, ft1->prt_rem);
-	subflow_IPtables('A',2,ft1->ip_loc, ft1->prt_loc, ft1->ip_rem, ft1->prt_rem);
-//	subflow_IPtables('A',2,ft1->ip_rem, ft1->prt_rem, ft1->ip_loc, ft1->prt_loc);
-//	subflow_IPtables('A',3,ft1->ip_loc, ft1->prt_loc, ft1->ip_rem, ft1->prt_rem);
-
-	return sflx;
-}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //create subflow
@@ -1258,6 +1399,7 @@ struct subflow* create_cand_subflow(struct fourtuple *ft1,
 struct subflow* create_subflow(struct fourtuple *ft1,
 		 unsigned char addr_id_loc,
 		 unsigned char addr_id_rem,
+		 int sockfd,
 		 int tcp_state,
 		 int act_state,
 		 uint32_t isn_loc,
@@ -1283,6 +1425,7 @@ struct subflow* create_subflow(struct fourtuple *ft1,
 
 	if(sflx==NULL) {
 		sflx = malloc( sizeof(struct subflow));//create new subflow
+		memset(sflx, 0, sizeof(struct subflow));
 		sflx->ft = *ft1;
 		HASH_ADD(hh, sfl_hash, ft, sizeof(struct fourtuple), sflx);
 	
@@ -1296,7 +1439,12 @@ struct subflow* create_subflow(struct fourtuple *ft1,
 			HASH_ADD(hh, sfl_pnt_hash, sfl, sizeof(struct subflow*), sfl_pnt);
 		}
 	}
-
+	//+++new
+{	
+	INIT_LIST_HEAD(&sflx->dss_map_list.list);
+	sflx->sockfd = sockfd;
+}	
+	
 	sflx->index = index;
 	index++;
 
@@ -1317,7 +1465,7 @@ struct subflow* create_subflow(struct fourtuple *ft1,
 	sflx->csn_rem = isn_rem;
 	sflx->highest_sn_loc = isn_loc;
 	sflx->highest_sn_rem = isn_rem;
-	
+
 	sflx->offset_loc = offset_loc;
 	sflx->offset_rem = offset_rem;
 

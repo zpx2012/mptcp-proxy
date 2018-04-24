@@ -35,6 +35,9 @@
 #include <fcntl.h>
 
 #include "uthash.h"
+#include <pthread.h>
+#include "list.h"
+#include <errno.h>
 
 //Operations
 #define UPDATE_DEFAULT_ROUTE 0 //derives new /24 default route in case of mpproxy -B and mpproxy -A
@@ -83,8 +86,14 @@
 #define FILE_NAME_10 "/tmp/table_data_1.txt"
 #define FILE_NAME_30 "/tmp/table_data_3.txt"
 #define FILE_NAME_MSG "/tmp/mptcp_proxy_msg.txt"
+#define FILE_NAME_MSG_LOCAL "/tmp/log.txt"
 
 //session and subflow states: order very important
+//++++new
+#define PRE_SYN_SENT 0
+#define MARK 100
+#define PIVOTPOINT 3
+
 #define SYN_SENT 1
 #define PRE_SYN_REC_1 2
 #define PRE_SYN_REC_2 3
@@ -150,9 +159,23 @@ int fd_fifo_dwn;
 int fd_fifo_up;
 
 //socket descriptor for raw socket and buffer fo raw socket
+#define RAWBUFLEN 4096
 extern int raw_sd;
-extern unsigned char raw_buf[4096] __attribute__ ((aligned));// = malloc( 60 * sizeof(unsigned char));
+extern unsigned char raw_buf[RAWBUFLEN] __attribute__ ((aligned));// = malloc( 60 * sizeof(unsigned char));
 
+//+++new
+struct connect_args{
+	int sockfd;
+	uint32_t ip_dst_n;
+	uint16_t port_dst_n;
+};
+
+struct dss_mapping{
+	struct list_head list;
+	uint32_t dan;
+	uint32_t dsn;
+	uint32_t tsn;
+};
 
 
 struct pntArray{
@@ -241,7 +264,6 @@ struct dss_option{
 extern struct dss_option dssopt_in;//defined in sessman
 extern struct dss_option dssopt_out;//defined in sessman
 
-
 struct print_msg{
 	uint32_t index;
 	struct timeval now;
@@ -319,6 +341,29 @@ struct print_data{
 extern struct print_data prt_data;
 
 struct packet_data{
+	//+++new
+	int is_from_subflow;
+	int is_master;
+	//---new
+
+	struct fourtuple ft;
+	struct session *sess;
+	struct subflow *sfl;
+
+	//for output
+	uint32_t dsn_curr_loc;
+	uint32_t dan_curr_rem;
+
+	uint16_t paylen_curr;//if paylen of packet has to be reduced
+	uint32_t ssn_curr_loc;
+	uint32_t san_curr_rem;
+	
+	//for input
+	uint32_t dsn_curr_rem;
+	uint32_t dan_curr_loc;
+	uint32_t ssn_curr_rem;
+	uint32_t san_curr_loc;
+
 	uint32_t id;
 
 	size_t hook;
@@ -380,23 +425,6 @@ struct packet_data{
 	unsigned char nb_sack_in;
 	unsigned char nb_sack_tcp;
 
-	struct fourtuple ft;
-	struct session *sess;
-	struct subflow *sfl;
-
-	//for output
-	uint32_t dsn_curr_loc;
-	uint32_t dan_curr_rem;
-
-	uint16_t paylen_curr;//if paylen of packet has to be reduced
-	uint32_t ssn_curr_loc;
-	uint32_t san_curr_rem;
-	
-	//for input
-	uint32_t dsn_curr_rem;
-	uint32_t dan_curr_loc;
-	uint32_t ssn_curr_rem;
-	uint32_t san_curr_loc;
 
 	//uint32_t ssn_curr_loc;
 
@@ -418,15 +446,6 @@ struct packet_data{
 	struct print_table prt_table;
 };
 extern struct packet_data packd;//defined in filter05
-
-//++++++++++new
-struct rex_entry{
-	struct subflow *sfl;//in case origin sfl is closed
-	uint32_t dsn;
-	uint32_t ssn;//new tcp packet seq num
-
-	uint32_t osn;//origin tcp packet seq num, index
-};
 
 
 //struct for mapping entries
@@ -460,6 +479,11 @@ struct map_list{
 struct session;
 
 struct subflow{
+	//+++new
+	int sockfd;
+	uint8_t is_master;
+	struct dss_mapping dss_map_list;
+	//---new
 
 	struct fourtuple ft;//key
 	size_t index;//index in subflow table: do we need this?
@@ -534,11 +558,6 @@ struct addrid{
 struct session{
 	//++++new
 	uint32_t idsn_h_loc;
-	unsigned char candsfl_snd_buf[4096]; //why not in sfl? 2 sfls, 1 sess. more memory waste
-	uint16_t candsfl_snd_len;
-	struct pntArray pA_rex_entry;
-	unsigned char candsfl_rev_buf[3];
-	uint16_t candsfl_rev_len;
 	//----new
 
 	struct fourtuple ft;//key, this is the ft used by the TCP control block
@@ -549,6 +568,8 @@ struct session{
 
 	uint32_t key_loc[2];
 	uint32_t key_rem[2];
+
+
 
 	uint32_t token_loc;
 	uint32_t token_rem;
@@ -929,3 +950,5 @@ void del_pnt_pA(struct pntArray *pa, void *pnt);
 void clear_pA(struct  pntArray *pa);
 
 void sprintFourtuple(char* buf, struct fourtuple *ft);
+
+int system_safe(const char *command);

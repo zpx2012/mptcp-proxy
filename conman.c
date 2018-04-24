@@ -361,10 +361,6 @@ int do_fifo_cmd() {
 	}
 }
 
-//++++++++++++++++++++++++++++++++++++++++++++++++
-//CONMAN: do_add(struct session *sess)
-//++++++++++++++++++++++++++++++++++++++++++++++++
-
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //CONMAN: do_add(struct session *sess)
@@ -820,32 +816,6 @@ void delete_remove_addr_event(struct tp_event *evt) {
 	free( evt );
 }
 
-//++++++++++++++++++++++++++++++++++++++++++++++++
-//determine fourtuple: We assume that act_subflow != NULL
-//++++++++++++++++++++++++++++++++++++++++++++++++
-int determine_fourtuple_mine(struct session *sess, struct fourtuple *ft) {
-	ft->ip_loc = sess->act_subflow->ft.ip_loc;
-	ft->ip_rem = sess->act_subflow->ft.ip_rem;
-	ft->prt_rem = sess->act_subflow->ft.prt_rem;
-
-
-	struct subflow *sflx;
-	do{ 
-		ft->prt_loc = toss_port_number();
-		HASH_FIND(hh, sfl_hash, ft, sizeof(struct fourtuple), sflx);
-		
-	}while(ft->prt_loc == sess->act_subflow->ft.prt_loc || sflx);
-	
-	char buf_ft[100];
-	sprintFourtuple(buf_ft, ft);
-	snprintf(msg_buf,MAX_MSG_LENGTH, "determine_fourtuple: 4tuple for new sfl is %s", buf_ft);
-	add_msg(msg_buf);
-
-	return 1;
-}
-
-
-
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //determine fourtuple: We assume that act_subflow != NULL
@@ -933,8 +903,8 @@ void update_default_route(uint32_t ip) {
 	snprintf(msg_buf,MAX_MSG_LENGTH, "update_default_route: new route = %s", str);		
 	add_msg(msg_buf);
 
-	system("route del default");
-	system(str);
+	system_safe("route del default");
+	system_safe(str);
 }
 
 
