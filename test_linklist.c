@@ -110,12 +110,27 @@ int find_dss_map_list(struct dss_map_list_node *head, uint32_t tsn, struct dss_m
 	list_for_each_entry(iter, &head->list, list) {
 		if (iter->tsn == tsn) {
 			*result = iter;
+			printf("found: tsn: %d, dsn: %d, dan %d\n", iter->tsn, iter->dsn, iter->dan);
 			return 0;
 		}
 	}
 	return -1;
 }
 
+int print_dss_map_list(struct dss_map_list_node *head){
+
+	if (!head) {
+		add_err_msg("print_dss_map_list:null head");
+		return -1;
+	}
+	
+	struct dss_map_list_node *iter;
+	printf("dss map list:\ntsn dan dsn\n");
+	list_for_each_entry(iter, &head->list, list) {
+		printf("%d %d %d\n",iter->tsn,iter->dan,iter->dsn);
+	}
+	return 0;
+}
 
 int del_dss_map_list(struct dss_map_list_node *head, uint32_t index) {
 
@@ -129,6 +144,7 @@ int del_dss_map_list(struct dss_map_list_node *head, uint32_t index) {
 	if (result) {
 		list_del(&result->list);
 		free(result);
+		printf("delete node: tsn = %d\n",result->tsn);
 		return 0;
 	}
 	else {
@@ -176,6 +192,22 @@ uint32_t find_data_ack(struct rcv_data_list_node *head) {
 	return iter->dsn + iter->len;
 }
 
+int print_rcv_payload_list(struct rcv_data_list_node* head){
+	
+	if (!head) {
+		add_err_msg("print_dss_map_list:null head");
+		return -1;
+	}
+	
+	struct rcv_data_list_node *iter;
+	printf("rcv data list:\ndsn len data\n");
+	list_for_each_entry(iter, &head->list, list) {
+		printf("%d %d %s\n",iter->dsn,iter->len,iter->payload);
+	}
+	return 0;
+}
+
+
 int del_below_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan) {
 
 	if (!head) {
@@ -189,6 +221,7 @@ int del_below_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan) {
 			list_del(&iter->list);
 			free(iter->payload);
 			free(iter);
+			printf("delete node: dsn = %d\n",iter->dsn);
 		}
 	}
 	return 0;
@@ -205,10 +238,11 @@ int main()
 	insert_dsn_map_list(&head,1400,2400,3400);
 	insert_dsn_map_list(&head,1300,2300,3300);
 
-	struct dss_map_list_node* rslt = find_dss_map_list(&head,1300);
-	printf("dsn: %d, dan %d\n",rslt->dsn, rslt->dan);
+	struct dss_map_list_node* rslt = NULL;
+	find_dss_map_list(&head,1300,&rslt);
 
-	rslt = find_dss_map_list(&head,1000);
+
+	find_dss_map_list(&head,1000,&rslt);
 	printf("dsn: %d, dan %d\n",rslt->dsn, rslt->dan);
 
 	del_dss_map_list(&head,1200);
