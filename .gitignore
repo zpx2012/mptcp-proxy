@@ -17,3 +17,5 @@ core
 *.xml
 *.sip_sym
 *.sip_xab
+*.sip_sym
+*.sip_xm
