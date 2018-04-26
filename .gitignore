@@ -9,6 +9,11 @@ Cookies-journal
 Preferences
 machineid
 mptcp-proxy.si4project/
+mptcp.si4project/
 storage.json
 core
 
+*.sisc
+*.xml
+*.sip_sym
+*.sip_xab
