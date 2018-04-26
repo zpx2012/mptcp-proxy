@@ -30,6 +30,27 @@ void add_err_msg(char* msg) {
 	printf("[Error] %s\n", msg);
 }
 
+int list_node_add_ordered(struct list_head *head, struct list_head *new_node, uint32_t index) {
+
+	if (!head) {
+		add_err_msg("list_node_insert_ordered:null head");
+		return -1;
+	}
+
+	struct list_index_helper *iter;
+	list_for_each_entry(iter, head, list) {
+		if (iter->index > index) {
+			break;
+		}
+		else if (iter->index == index) {
+			add_err_msg("list_node_insert_ordered:iter->index == index");
+			return -1;
+		}
+	}
+	//insert before iter
+	__list_add(new_node, iter->list.prev, &iter->list);
+	return 0;
+}
 
 int init_head_dsn_map_list(struct dss_map_list_node *head) {
 
@@ -76,29 +97,24 @@ int insert_dsn_map_list(struct dss_map_list_node* head, uint32_t tsn, uint32_t d
 	return 0;
 }
 
-int list_node_add_ordered(struct list_head *head, struct list_head *new_node, uint32_t index) {
+
+
+struct dss_map_list_node* find_dss_map_list(struct dss_map_list_node *head, uint32_t tsn) {
 
 	if (!head) {
-		add_err_msg("list_node_insert_ordered:null head");
-		return -1;
+		add_err_msg("list_node_find:null head");
+		return NULL;
 	}
 
-	struct list_index_helper *lih;
-	struct list_head *iter;
-	list_for_each(iter, head) {
-		lih = list_entry(iter, struct list_index_finder, list);
-		if (lih->index > index) {
-			break;
-		}
-		else if (lih->index == index) {
-			add_err_msg("list_node_insert_ordered:iter->index == index");
-			return -1;
+	struct dss_map_list_node *iter;
+	list_for_each_entry(iter, &head->list, list) {
+		if (iter->tsn == tsn) {
+			return iter;
 		}
 	}
-	//insert before iter
-	__list_add(new_node, iter->prev, iter);
-	return 0;
+	return NULL;
 }
+
 
 int del_dss_map_list(struct dss_map_list_node *head, uint32_t index) {
 
@@ -107,7 +123,7 @@ int del_dss_map_list(struct dss_map_list_node *head, uint32_t index) {
 		return -1;
 	}
 
-	struct dss_map_list_node *result = find_dss_map_list(head, index);
+	struct dss_map_list_node* result = find_dss_map_list(head, index);
 	if (result) {
 		list_del(&result->list);
 		free(result);
@@ -119,21 +135,6 @@ int del_dss_map_list(struct dss_map_list_node *head, uint32_t index) {
 	}
 }
 
-struct dss_map_list_node* find_dss_map_list(struct dss_map_list_node *head, uint32_t tsn) {
-
-	if (!head) {
-		add_err_msg("list_node_find:null head");
-		return -1;
-	}
-
-	struct dss_map_list_node *iter;
-	list_for_each_entry(iter, &head->list, list) {
-		if (iter->tsn == tsn) {
-			return iter;
-		}
-	}
-	return NULL;
-}
 
 
 int insert_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dsn, const char *payload, uint16_t paylen) {
@@ -193,6 +194,22 @@ int del_below_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan) {
 
 int main()
 {
+	//Test dss_map
+	struct dss_map_list_node head;
+	init_head_dsn_map_list(&head);
+	insert_dsn_map_list(&head,1200,2200,3200);
+	insert_dsn_map_list(&head,1000,2000,3000);
+	insert_dsn_map_list(&head,1400,2400,3400);
+	insert_dsn_map_list(&head,1300,2300,3300);
+
+	struct dss_map_list_node* rslt = find_dss_map_list(&head,1300);
+	printf("dsn: %d, dan %d\n",rslt->dsn, rslt->dan);
+
+	rslt = find_dss_map_list(&head,1000);
+	printf("dsn: %d, dan %d\n",rslt->dsn, rslt->dan);
+
+	del_dss_map_list(&head,1200);
+
     return 0;
 }
 
