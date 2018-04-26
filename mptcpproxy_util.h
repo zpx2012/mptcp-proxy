@@ -170,11 +170,31 @@ struct connect_args{
 	uint16_t port_dst_n;
 };
 
-struct dss_mapping{
+/*
+struct list_node{
 	struct list_head list;
+	uint32_t index;
+	void *data;
+};//generic linked list
+*/
+
+struct dss_map_list_node{//index = tsn
+	struct list_head list;
+	uint32_t tsn;
 	uint32_t dan;
 	uint32_t dsn;
-	uint32_t tsn;
+};
+
+struct rcv_data_list_node{//index = dsn
+	struct list_head list;
+	uint32_t dsn;
+	uint16_t len;
+	unsigned char *payload;	
+};
+
+struct list_index_helper{
+	struct list_head list;
+	uint32_t index;
 };
 
 
