@@ -237,7 +237,7 @@ int main()
 	insert_dsn_map_list(&head,1000,2000,3000);
 	insert_dsn_map_list(&head,1400,2400,3400);
 	insert_dsn_map_list(&head,1300,2300,3300);
-
+//test
 	struct dss_map_list_node* rslt = NULL;
 	find_dss_map_list(&head,1300,&rslt);
 
