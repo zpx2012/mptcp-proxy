@@ -496,8 +496,8 @@ struct subflow{
 	//+++new
 	int sockfd;
 	uint8_t is_master;
-	struct dss_map_list_node dss_map_list_head;
-	struct rcv_data_list_node rcv_data_list_head;
+	struct dss_map_list_node  *dss_map_list_head;
+	struct rcv_data_list_node *rcv_data_list_head;
 	//---new
 
 	struct fourtuple ft;//key
