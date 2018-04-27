@@ -1328,7 +1328,7 @@ void set_dss() {
 		if (packd.paylen > 0) {
 			packd.ssn_curr_loc = ntohl(packd.tcph->th_seq);
 			struct dss_map_list_node *rlst = NULL;
-			if (find_dsn_map(&(packd.sfl->dss_map_list_head), packd.ssn_curr_loc, &rlst)) {
+			if (find_dsn_map(packd.sfl->dss_map_list_head, packd.ssn_curr_loc, &rlst)) {
 				snprintf(msg_buf, MAX_MSG_LENGTH, "set_dss: dsn not found");
 				add_msg(msg_buf);
 				return -1;
@@ -1346,8 +1346,8 @@ void set_dss() {
 			dssopt_out.ssn = packd.ssn_curr_loc - packd.sfl->isn_loc;
 			dssopt_out.range = packd.paylen;
 
-			//		create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
-			create_complete_MPdss_nondssopt(packd.mptcp_opt_buf, &packd.mptcp_opt_len, dan, dsn, packd.ssn_curr_loc - packd.sfl->isn_loc, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
+			create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
+//			create_complete_MPdss_nondssopt(packd.mptcp_opt_buf, &packd.mptcp_opt_len, rlst->dan, rlst->dsn, packd.ssn_curr_loc - packd.sfl->isn_loc, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
 			packd.mptcp_opt_appended = 1;
 		}
 		else if (packd.ack) {
@@ -1382,7 +1382,7 @@ int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uin
 		return -1;
 	}
 	Send(sfl->sockfd, buf, len, 0);
-	insert_dsn_map_list(&(sfl->dss_map_list_head), dan, dsn, sfl->highest_sn_loc);
+	insert_dsn_map_list(sfl->dss_map_list_head, dan, dsn, sfl->highest_sn_loc);
 	sfl->highest_sn_loc += len;
 	
 	return 0;
@@ -1495,17 +1495,18 @@ int insert_dsn_map_list(struct dss_map_list_node* head, uint32_t tsn, uint32_t d
 
 
 
-int find_dss_map_list(struct dss_map_list_node *head, uint32_t tsn, struct dss_map_list_node **result) {
+int find_dss_map_list(struct dss_map_list_node *head, uint32_t tsn, struct dss_map_list_node **p_result) {
 
-	if (!head) {
-		add_err_msg("find_dss_map_list:null head");
+	if (!head || list_empty(&head->list)) {
+		add_err_msg("find_dss_map_list:null head or empty list");
+		*p_result = NULL;
 		return -1;
 	}
 
 	struct dss_map_list_node *iter;
 	list_for_each_entry(iter, &head->list, list) {
 		if (iter->tsn == tsn) {
-			*result = iter;
+			*p_result = iter;
 			printf("found: tsn: %d, dsn: %d, dan %d\n", iter->tsn, iter->dsn, iter->dan);
 			return 0;
 		}
@@ -1530,7 +1531,7 @@ int print_dss_map_list(struct dss_map_list_node *head) {
 
 int del_dss_map_list(struct dss_map_list_node *head, uint32_t index) {
 
-	if (!head) {
+	if (!head || list_empty(&head->list)) {
 		add_err_msg("del_dss_map_list:null head");
 		return -1;
 	}
@@ -1573,18 +1574,17 @@ int insert_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dsn, const
 //find the maximum consecutive dsn in rcv_payload list 
 uint32_t find_data_ack(struct rcv_data_list_node *head) {
 
-	if (!head) {
-		add_err_msg("find_data_ack:null head");
-		return -1;
+	if (!head || list_empty(&head->list)) {
+		add_err_msg("find_data_ack:null head or empty list");
+		return 0;
 	}
 
 	struct rcv_data_list_node *iter, *next;
-	list_for_each_entry(iter, &head->list, list) {
-		next = list_entry(iter->list.next, struct rcv_data_list_node, list);
+	list_for_each_entry_safe(iter, next, &head->list, list) {
 		if ((iter->dsn + iter->len) != next->dsn)
 			break;
-		printf("find_data_ack: dsn:%d, len:%d\n", iter->dsn, iter->len);
 	}
+	printf("find_data_ack: dan:%d\n", iter->dsn + iter->len);
 	return iter->dsn + iter->len;
 }
 
@@ -1606,13 +1606,13 @@ int print_rcv_payload_list(struct rcv_data_list_node* head) {
 
 int del_below_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan) {
 
-	if (!head) {
-		add_err_msg("del_below_rcv_payload:null head");
+	if (!head || list_empty(&head->list)) {
+		add_err_msg("del_below_rcv_payload:null head or empty list");
 		return -1;
 	}
 
 	struct rcv_data_list_node *iter, *next;
-	list_for_each_entry(iter, &head->list, list) {
+	list_for_each_entry_safe(iter, next, &head->list, list) {
 		if (iter->dsn < dan) {
 			list_del(&iter->list);
 			free(iter->payload);

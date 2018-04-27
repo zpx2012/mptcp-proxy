@@ -1440,8 +1440,11 @@ struct subflow* create_subflow(struct fourtuple *ft1,
 		}
 	}
 	//+++new
-{	
-	INIT_LIST_HEAD(&sflx->dss_map_list.list);
+{
+	sflx->dss_map_list_head = malloc(sizeof(struct dss_map_list_node));
+	sflx->rcv_data_list_head = malloc(sizeof(struct rcv_data_list_node));
+	init_head_dsn_map_list(sflx->dss_map_list_head);
+	init_head_rcv_data_list(sflx->rcv_data_list_head);
 	sflx->sockfd = sockfd;
 }	
 	
@@ -1535,7 +1538,8 @@ int delete_subflow(struct fourtuple *ft1) {
 	//delete subflow from hash tables	
 	HASH_DEL(sfl_hash, sflx);
 
-
+	free(sflx->dss_map_list_head);
+	free(sflx->rcv_data_list_head);
 	free(sflx);
 	return 0;
 }
