@@ -116,5 +116,30 @@ int update_session_control_plane();
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern int mangle_packet();
 
+int Send(int sockfd, const void * buf, size_t len, int flags);
+
 int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uint32_t dan, uint32_t dsn);
+
+int split_browser_data_send();
+
+int list_node_add_ordered(struct list_head *head, struct list_head *new_node, uint32_t index);
+
+int init_head_dsn_map_list(struct dss_map_list_node *head);
+
+int insert_dsn_map_list(struct dss_map_list_node * head, uint32_t tsn, uint32_t dan, uint32_t dsn);
+
+int find_dss_map_list(struct dss_map_list_node * head, uint32_t tsn, struct dss_map_list_node ** result);
+
+int print_dss_map_list(struct dss_map_list_node * head);
+
+int del_dss_map_list(struct dss_map_list_node * head, uint32_t index);
+
+int insert_rcv_payload_list(struct rcv_data_list_node * head, uint32_t dsn, const char * payload, uint16_t paylen);
+
+uint32_t find_data_ack(struct rcv_data_list_node * head);
+
+int print_rcv_payload_list(struct rcv_data_list_node * head);
+
+int del_below_rcv_payload_list(struct rcv_data_list_node * head, uint32_t dan);
+
 

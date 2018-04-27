@@ -13,3 +13,5 @@ storage.json
 core
 log
 test_linklist
+*.sln
+*.vcxproj

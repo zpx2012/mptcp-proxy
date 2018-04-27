@@ -167,6 +167,7 @@ void init_msg_data() {
 	prt_msg_array.file_msg = fopen(FILE_NAME_MSG_LOCAL, "a");
 }
 
+
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //void add_msg(char* msg);
 //Adds msg to msg array
@@ -203,6 +204,11 @@ void add_msg(char *msg){
 	prt_msg_array.nmb_msg++;//with natural overflow
 	prt_msg_array.curr_msg_index++;
 	prt_msg_array.curr_msg_index %= MAX_MSG_LINES;//loops around
+}
+
+void add_err_msg(char* msg) {
+	snprintf(msg_buf, MAX_MSG_LENGTH, "[Error] %s", msg);
+	add_msg(msg_buf);
 }
 
 

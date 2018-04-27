@@ -547,66 +547,6 @@ void send_side_acks() {
 }
 
 
-void set_dss(){
-
-	//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
-	
-	int demand_dss = (packd.paylen > 0 || packd.fin == 1 || packd.sess->sess_state > ESTABLISHED || packd.ack == 1)? 20:0;
-
-	//check if enough room
-	if( demand_dss + packd.tcp_opt_len > 40 ) {
-
-		//erase some tcp options here!!!
-		//to be done later
-		//currently assume there is always enough space
-	}
-
-	packd.mptcp_opt_appended = 0;
-	if(demand_dss>0) {
-
-		if(packd.paylen > 0){
-			uint32_t dsn, dan;
-			packd.ssn_curr_loc = ntohl(packd.tcph->th_seq);
-			if(find_dsn_map(&(packd.sfl->dss_map_list.list), packd.ssn_curr_loc, &dan, &dsn)){
-				snprintf(msg_buf,MAX_MSG_LENGTH, "set_dss: dsn not found");
-				add_msg(msg_buf);
-				return -1;
-			}
-			
-			dssopt_out.present = 1;
-			dssopt_out.Mflag = 1;//do we need this or only when data are present
-			dssopt_out.Aflag = packd.ack;
-			dssopt_out.Fflag = packd.fin;
-			dssopt_out.Rflag = 0;
-			dssopt_out.aflag = 0;
-			dssopt_out.mflag = 0;
-			dssopt_out.dan = dan;
-			dssopt_out.dsn = dsn;
-			dssopt_out.ssn = packd.ssn_curr_loc - packd.sfl->isn_loc;
-			dssopt_out.range = packd.paylen;
-
-	//		create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
-			create_complete_MPdss_nondssopt(packd.mptcp_opt_buf,&packd.mptcp_opt_len, dan, dsn, packd.ssn_curr_loc-packd.sfl->isn_loc,packd.sess->idsn_h_loc, packd.buf + packd.pos_pay,packd.paylen);
-			packd.mptcp_opt_appended = 1;
-		}
-		else if(packd.ack){
-			//subflow ack
-			//Your code goes here
-			
-		}
-	}
-
-	//append options to buffer
-	if(!output_data_mptcp()) {
-		set_verdict(1,0,0);
-		execute_sess_teardown(packd.sess);
-		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_syn_sent: output_data_mptcp fails");
-		add_msg(msg_buf);
-		return 0;
-	}
-	set_verdict(1,1,1);
-
-}
 
 
 
@@ -1368,16 +1308,71 @@ int Send(int sockfd, const void *buf, size_t len, int flags){
 }
 
 
+void set_dss() {
+
+	//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
+
+	int demand_dss = (packd.paylen > 0 || packd.fin == 1 || packd.sess->sess_state > ESTABLISHED || packd.ack == 1) ? 20 : 0;
+
+	//check if enough room
+	if (demand_dss + packd.tcp_opt_len > 40) {
+
+		//erase some tcp options here!!!
+		//to be done later
+		//currently assume there is always enough space
+	}
+
+	packd.mptcp_opt_appended = 0;
+	if (demand_dss>0) {
+
+		if (packd.paylen > 0) {
+			packd.ssn_curr_loc = ntohl(packd.tcph->th_seq);
+			struct dss_map_list_node *rlst = NULL;
+			if (find_dsn_map(&(packd.sfl->dss_map_list_head), packd.ssn_curr_loc, &rlst)) {
+				snprintf(msg_buf, MAX_MSG_LENGTH, "set_dss: dsn not found");
+				add_msg(msg_buf);
+				return -1;
+			}
+
+			dssopt_out.present = 1;
+			dssopt_out.Mflag = 1;//do we need this or only when data are present
+			dssopt_out.Aflag = packd.ack;
+			dssopt_out.Fflag = packd.fin;
+			dssopt_out.Rflag = 0;
+			dssopt_out.aflag = 0;
+			dssopt_out.mflag = 0;
+			dssopt_out.dan = rlst->dan;
+			dssopt_out.dsn = rlst->dsn;
+			dssopt_out.ssn = packd.ssn_curr_loc - packd.sfl->isn_loc;
+			dssopt_out.range = packd.paylen;
+
+			//		create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
+			create_complete_MPdss_nondssopt(packd.mptcp_opt_buf, &packd.mptcp_opt_len, dan, dsn, packd.ssn_curr_loc - packd.sfl->isn_loc, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
+			packd.mptcp_opt_appended = 1;
+		}
+		else if (packd.ack) {
+			//subflow ack
+			//Your code goes here
+
+		}
+	}
+
+	//append options to buffer
+	if (!output_data_mptcp()) {
+		set_verdict(1, 0, 0);
+		execute_sess_teardown(packd.sess);
+		snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_syn_sent: output_data_mptcp fails");
+		add_msg(msg_buf);
+		return 0;
+	}
+	set_verdict(1, 1, 1);
+
+}
 
 // 2 list empty functions
 
 //int ship_rcv_to_browser
 //find consecutive parts, create packet, decrement the window size
-
-void add_err_msg(char* msg){
-	snprintf(msg_buf,MAX_MSG_LENGTH, "[Error] %s", msg);
-	add_msg(msg_buf);
-}
 
 
 int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uint32_t dan, uint32_t dsn){
@@ -1387,9 +1382,9 @@ int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uin
 		return -1;
 	}
 	Send(sfl->sockfd, buf, len, 0);
-	insert_dsn_map(&(sfl->dss_map_list.list), dan, dsn, sfl->highest_sn_loc);
+	insert_dsn_map_list(&(sfl->dss_map_list_head), dan, dsn, sfl->highest_sn_loc);
 	sfl->highest_sn_loc += len;
-
+	
 	return 0;
 }
 
@@ -1428,5 +1423,202 @@ int split_browser_data_send(){
 	
 	snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:finish");
 	add_msg(msg_buf);
+	return 0;
+}
+
+int list_node_add_ordered(struct list_head *head, struct list_head *new_node, uint32_t index) {
+
+	if (!head) {
+		add_err_msg("list_node_add_ordered:null head");
+		return -1;
+	}
+
+	struct list_index_helper *iter;
+	list_for_each_entry(iter, head, list) {
+		if (iter->index > index) {
+			break;
+		}
+		else if (iter->index == index) {
+			add_err_msg("list_node_add_ordered:iter->index == index");
+			return -1;
+		}
+	}
+	//insert before iter
+	__list_add(new_node, iter->list.prev, &iter->list);
+	return 0;
+}
+
+int init_head_dsn_map_list(struct dss_map_list_node *head) {
+
+	if (!head) {
+		add_err_msg("init_head_dsn_map_list:null head");
+		return -1;
+	}
+
+	head->tsn = 0;
+	head->dsn = 0;
+	head->dan = 0;
+	INIT_LIST_HEAD(&head->list);
+	return 0;
+}
+
+int init_head_rcv_data_list(struct rcv_data_list_node *head) {
+
+	if (!head) {
+		add_err_msg("init_head_rcv_data_list:null head");
+		return -1;
+	}
+
+	head->dsn = 0;
+	head->len = 0;
+	head->payload = NULL;
+	INIT_LIST_HEAD(&head->list);
+	return 0;
+}
+
+
+int insert_dsn_map_list(struct dss_map_list_node* head, uint32_t tsn, uint32_t dan, uint32_t dsn) {
+
+	if (!head) {
+		add_err_msg("insert_dsn_map_list:null head");
+		return -1;
+	}
+
+	struct dss_map_list_node* new_node = malloc(sizeof(struct dss_map_list_node));
+	new_node->tsn = tsn;
+	new_node->dsn = dsn;
+	new_node->dan = dan;
+	list_node_add_ordered(&head->list, &new_node->list, tsn);
+
+	return 0;
+}
+
+
+
+int find_dss_map_list(struct dss_map_list_node *head, uint32_t tsn, struct dss_map_list_node **result) {
+
+	if (!head) {
+		add_err_msg("find_dss_map_list:null head");
+		return -1;
+	}
+
+	struct dss_map_list_node *iter;
+	list_for_each_entry(iter, &head->list, list) {
+		if (iter->tsn == tsn) {
+			*result = iter;
+			printf("found: tsn: %d, dsn: %d, dan %d\n", iter->tsn, iter->dsn, iter->dan);
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int print_dss_map_list(struct dss_map_list_node *head) {
+
+	if (!head) {
+		add_err_msg("print_dss_map_list:null head");
+		return -1;
+	}
+
+	struct dss_map_list_node *iter;
+	printf("dss map list:\ntsn dan dsn\n");
+	list_for_each_entry(iter, &head->list, list) {
+		printf("%d %d %d\n", iter->tsn, iter->dan, iter->dsn);
+	}
+	return 0;
+}
+
+int del_dss_map_list(struct dss_map_list_node *head, uint32_t index) {
+
+	if (!head) {
+		add_err_msg("del_dss_map_list:null head");
+		return -1;
+	}
+
+	struct dss_map_list_node* result = NULL;
+	find_dss_map_list(head, index, &result);
+	if (result) {
+		list_del(&result->list);
+		free(result);
+		printf("delete node: tsn = %d\n", result->tsn);
+		return 0;
+	}
+	else {
+		add_err_msg("del_dss_map_list: not found");
+		return -1;
+	}
+}
+
+
+
+int insert_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dsn, const char *payload, uint16_t paylen) {
+
+	if (!head) {
+		add_err_msg("insert_rcv_payload_list:null head");
+		return -1;
+	}
+
+	struct rcv_data_list_node* new_node = (struct rcv_data_list_node*)malloc(sizeof(struct rcv_data_list_node));
+	new_node->dsn = dsn;
+	new_node->len = paylen;
+	new_node->payload = (char *)malloc(paylen);
+	strncpy(new_node->payload, payload, paylen);
+
+	list_node_add_ordered(&head->list, &new_node->list, dsn);
+
+	return 0;
+}
+
+
+//find the maximum consecutive dsn in rcv_payload list 
+uint32_t find_data_ack(struct rcv_data_list_node *head) {
+
+	if (!head) {
+		add_err_msg("find_data_ack:null head");
+		return -1;
+	}
+
+	struct rcv_data_list_node *iter, *next;
+	list_for_each_entry(iter, &head->list, list) {
+		next = list_entry(iter->list.next, struct rcv_data_list_node, list);
+		if ((iter->dsn + iter->len) != next->dsn)
+			break;
+		printf("find_data_ack: dsn:%d, len:%d\n", iter->dsn, iter->len);
+	}
+	return iter->dsn + iter->len;
+}
+
+int print_rcv_payload_list(struct rcv_data_list_node* head) {
+
+	if (!head) {
+		add_err_msg("print_dss_map_list:null head");
+		return -1;
+	}
+
+	struct rcv_data_list_node *iter;
+	printf("rcv data list:\ndsn len data\n");
+	list_for_each_entry(iter, &head->list, list) {
+		printf("%d %d %s\n", iter->dsn, iter->len, iter->payload);
+	}
+	return 0;
+}
+
+
+int del_below_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan) {
+
+	if (!head) {
+		add_err_msg("del_below_rcv_payload:null head");
+		return -1;
+	}
+
+	struct rcv_data_list_node *iter, *next;
+	list_for_each_entry(iter, &head->list, list) {
+		if (iter->dsn < dan) {
+			list_del(&iter->list);
+			free(iter->payload);
+			free(iter);
+			printf("delete node: dsn = %d\n", iter->dsn);
+		}
+	}
 	return 0;
 }
