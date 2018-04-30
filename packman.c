@@ -136,8 +136,8 @@ int send_raw_packet(size_t sd, unsigned char *buf, uint16_t len, uint32_t ip_dst
 	sin.sin_addr.s_addr = ip_dst;
 	
 	int ret = sendto(sd, buf, len,0,(struct sockaddr*) &sin, sizeof(sin));
-	if(ret < 0)
-		add_err_msg("send_raw_packet returns error")
+	if (ret < 0)
+		add_err_msg("send_raw_packet returns error");
 	
 	return ret;
 }

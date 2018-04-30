@@ -1376,7 +1376,7 @@ int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uin
 //int ship_rcv_to_browser
 //find consecutive parts, create packet, decrement the window size
 //session send data
-int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn, char* payload, int paylen) {
+int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsigned char* payload, int paylen) {
 //int ship_data_to_browser(uint32_t seq, uint32_t ack, char* payload, int paylen){
 	
 	if (!sess) {
