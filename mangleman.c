@@ -1296,7 +1296,7 @@ int Send(int sockfd, const void *buf, size_t len, int flags){
 }
 
 
-void set_dss() {
+int set_dss() {
 
 	//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
 
@@ -1316,7 +1316,7 @@ void set_dss() {
 		if (packd.paylen > 0) {
 			packd.ssn_curr_loc = ntohl(packd.tcph->th_seq);
 			struct dss_map_list_node *rlst = NULL;
-			if (find_dsn_map(packd.sfl->dss_map_list_head, packd.ssn_curr_loc, &rlst)) {
+			if (find_dss_map_list(packd.sfl->dss_map_list_head, packd.ssn_curr_loc, &rlst)) {
 				snprintf(msg_buf, MAX_MSG_LENGTH, "set_dss: dsn not found");
 				add_msg(msg_buf);
 				return -1;
@@ -1397,7 +1397,7 @@ int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn, char*
 
 	uint16_t pack_len = 0;
 	create_packet_payload(raw_buf, &pack_len,
-		&(sess->ft),
+		&reverse_sess_ft,
 		htonl(packd.sess->offset_loc + dsn),
 		htonl(packd.sess->offset_rem + dan),
 		16,//ACK
@@ -1588,7 +1588,7 @@ int insert_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan,uint32
 	new_node->dan = dan;
 	new_node->dsn = dsn;
 	new_node->len = paylen;
-	new_node->payload = (char *)malloc(paylen);
+	new_node->payload = (unsigned char *)malloc(paylen);
 	strncpy(new_node->payload, payload, paylen);
 
 	list_node_add_ordered(&head->list, &new_node->list, dsn);

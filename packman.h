@@ -116,6 +116,8 @@ int create_MPjoin_ack(unsigned char *top, uint16_t *plen, uint32_t *mac);
 
 int create_MPadd_addr(unsigned char *top, uint16_t *plen, unsigned char addr_id_loc, uint32_t ip_loc_n);
 
+int create_dan_MPdss_nondssopt(unsigned char * top, uint16_t * plen, uint32_t dan);
+
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //create DSS option with DAN only: uses dssopt_out as input
