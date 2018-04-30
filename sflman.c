@@ -566,7 +566,8 @@ int subflow_syn_sent_master(){
 	packd.sess->highest_dan_rem = packd.sess->idsn_rem+1;
 
 	packd.sfl->isn_rem = ntohl(packd.tcph->th_seq); 
-	packd.sess->offset_rem = packd.sfl->isn_rem - packd.sess->idsn_rem; 	
+	packd.sfl->offset_rem = packd.sfl->isn_rem;
+	packd.sess->offset_rem = 0;//sess seq_rem = idsn_rem 	
 
 	packd.sfl->highest_sn_loc += 1;
 	packd.sfl->highest_an_loc = packd.sfl->highest_sn_loc;		
@@ -590,6 +591,22 @@ int subflow_syn_sent_master(){
 
 //+++send syn/ack to browser, call connect to invoke second subflow
 {
+	struct fourtuple reverse_sess_ft;
+	reverse_sess_ft.ip_loc = packd.sess->ft.ip_rem;
+	reverse_sess_ft.prt_loc = packd.sess->ft.prt_rem;
+	reverse_sess_ft.ip_rem = packd.sess->ft.ip_loc;
+	reverse_sess_ft.prt_rem = packd.sess->ft.prt_loc;
+
+	uint16_t pack_len = 0;
+	create_packet(raw_buf, &pack_len, 
+		&reverse_sess_ft, 
+		htonl(packd.sess->idsn_rem), 
+		htonl(packd.sess->idsn_loc + packd.sess->offset_loc + 1),
+		18,//SYN/ACK
+		htons(packd.sess->init_window_rem), 
+		NULL, 
+		0);
+/*
 	uint16_t pack_len = packd.tcplen + packd.ip4len;
 	memcpy(raw_buf, packd.buf, pack_len);
 
@@ -602,16 +619,16 @@ int subflow_syn_sent_master(){
 
 	//change timestamp
 	if(packd.sess->timestamp_flag) 
-		set_timestamps(raw_buf+packd.pos_thead+20 , packd.pos_pay-packd.pos_thead-20, packd.sess->tsval, 0, 1);
+		set_timestamps(raw_buf+packd.pos_thead+20 , packd.pos_pay-packd.pos_thead-20, packd.sfl->tsecr, packd.sess->tsval, 1);
 	
 	//update of both checksums
 	compute_checksums(raw_buf, packd.ip4len, pack_len);
-
+*/
 	snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: sending SYN/ACK packet to browser");
 	add_msg(msg_buf);
 
-	//send syn/ack packet
-	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.ft.ip_rem))<0) {
+	//send syn/ack packet to browser(loc)
+	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.sess->ft.ip_loc))<0) {
 		delete_subflow(&packd.sess->ft);
 		snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: send_raw_packet returns error");
 		add_msg(msg_buf);
@@ -646,7 +663,6 @@ int subflow_syn_sent_slave(){
 	}
 
 	packd.sfl->isn_rem = ntohl(packd.tcph->th_seq);
-	packd.sfl->offset_rem = packd.sess->idsn_rem - packd.sfl->isn_rem;
 	packd.sfl->highest_sn_rem = packd.sfl->isn_rem + 1;
 	packd.sfl->highest_an_rem = packd.sfl->isn_rem + 1;
 	packd.sfl->highest_sn_loc += 1;
@@ -1440,8 +1456,9 @@ struct subflow* create_subflow(struct fourtuple *ft1,
 		}
 	}
 	//+++new
-{	
-	INIT_LIST_HEAD(&sflx->dss_map_list.list);
+{
+	sflx->dss_map_list_head = malloc(sizeof(struct dss_map_list_node));
+	init_head_dsn_map_list(sflx->dss_map_list_head);
 	sflx->sockfd = sockfd;
 }	
 	
@@ -1535,7 +1552,8 @@ int delete_subflow(struct fourtuple *ft1) {
 	//delete subflow from hash tables	
 	HASH_DEL(sfl_hash, sflx);
 
-
+	free(sflx->dss_map_list_head);
+	free(sflx->rcv_data_list_head);
 	free(sflx);
 	return 0;
 }

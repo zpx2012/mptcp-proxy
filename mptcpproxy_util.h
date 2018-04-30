@@ -187,6 +187,7 @@ struct dss_map_list_node{//index = tsn
 
 struct rcv_data_list_node{//index = dsn
 	struct list_head list;
+	uint32_t dan;
 	uint32_t dsn;
 	uint16_t len;
 	unsigned char *payload;	
@@ -496,7 +497,7 @@ struct subflow{
 	//+++new
 	int sockfd;
 	uint8_t is_master;
-	struct dss_map_list_node dss_map_list;
+	struct dss_map_list_node  *dss_map_list_head;
 	//---new
 
 	struct fourtuple ft;//key
@@ -572,6 +573,7 @@ struct addrid{
 struct session{
 	//++++new
 	uint32_t idsn_h_loc;
+	struct rcv_data_list_node *rcv_data_list_head;
 	//----new
 
 	struct fourtuple ft;//key, this is the ft used by the TCP control block
@@ -805,6 +807,8 @@ void init_msg_data();
 //Adds msg to msg array
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void add_msg(char* msg);
+
+void add_err_msg(char * msg);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //void terminate_msg_data();

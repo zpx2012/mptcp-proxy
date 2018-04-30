@@ -47,8 +47,9 @@ void create_packet(unsigned char *buf, uint16_t *plen,
 	memset(buf, 0, *plen);
 
 
-	//enter options 
-	memcpy(buf+iplen+tcplen, buf_opt, len_opt);
+	//enter options
+	if(buf_opt)
+		memcpy(buf+iplen+tcplen, buf_opt, len_opt);
 
 	//tcp header
 	*((uint16_t*)(buf + iplen)) = htons(pft->prt_loc);
@@ -96,8 +97,9 @@ void create_packet_payload(unsigned char *buf, uint16_t *plen,
 	//enter payload
 	memcpy(buf+iplen+tcplen+len_opt, buf_pay, len_pay);
 	
-	//enter options 
-	memcpy(buf+iplen+tcplen, buf_opt, len_opt);
+	//enter options
+	if(buf_opt)
+		memcpy(buf+iplen+tcplen, buf_opt, len_opt);
 
 	//tcp header
 	*((uint16_t*)(buf + iplen)) = htons(pft->prt_loc);
@@ -134,6 +136,8 @@ int send_raw_packet(size_t sd, unsigned char *buf, uint16_t len, uint32_t ip_dst
 	sin.sin_addr.s_addr = ip_dst;
 	
 	int ret = sendto(sd, buf, len,0,(struct sockaddr*) &sin, sizeof(sin));
+	if(ret < 0)
+		add_err_msg("send_raw_packet returns error")
 	
 	return ret;
 }
