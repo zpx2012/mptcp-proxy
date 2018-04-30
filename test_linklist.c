@@ -183,12 +183,11 @@ uint32_t find_data_ack(struct rcv_data_list_node *head) {
 	}
 
 	struct rcv_data_list_node *iter, *next;
-	list_for_each_entry(iter, &head->list, list) {
-		next = list_entry(iter->list.next, struct rcv_data_list_node, list);
+	list_for_each_entry_safe(iter, next, &head->list, list) {
 		if ((iter->dsn + iter->len) != next->dsn)
 			break;
-		printf("find_data_ack: dsn:%d, len:%d\n", iter->dsn, iter->len);
 	}
+	printf("find_data_ack: dan %d", iter->dsn + iter->len);
 	return iter->dsn + iter->len;
 }
 
@@ -216,13 +215,15 @@ int del_below_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan) {
 	}
 
 	struct rcv_data_list_node *iter, *next;
-	list_for_each_entry(iter, &head->list, list) {
+	list_for_each_entry_safe(iter, next, &head->list, list) {
 		if (iter->dsn < dan) {
 			list_del(&iter->list);
 			free(iter->payload);
 			free(iter);
 			printf("delete node: dsn = %d\n",iter->dsn);
 		}
+		else 
+			break;
 	}
 	return 0;
 }
@@ -253,26 +254,42 @@ int main()
 	struct rcv_data_list_node head;
 	init_head_rcv_data_list(&head);
 
-	char* s = "test string 1";
+	char* s;
+	s = "test string 1";
 	int dsn = 220, len = strlen(s);
-	insert_rcv_payload_list(&head, dsn, s, len);
+	insert_rcv_payload_list(&head, 220, s, len);
+
+	s = "this is the 3rd test string";
+	dsn += len;
+	len = strlen(s);
+	insert_rcv_payload_list(&head, 259, s, len);
+
+	find_data_ack(&head);
+	printf("\n");
 
 	s = "this is second test string";
 	dsn += len;
 	len = strlen(s);
-	insert_rcv_payload_list(&head, dsn, s, len);
+	insert_rcv_payload_list(&head, 233, s, len);
 	
-	s = "this is the 3rd test string";
-	dsn += len;
-	len = strlen(s);
-	insert_rcv_payload_list(&head, dsn, s, len);
+	find_data_ack(&head);
+	printf("\n");
 
 	s = "turn down 4 what";
 	dsn += len;
 	len = strlen(s);
-	insert_rcv_payload_list(&head, dsn, s, len);
+	insert_rcv_payload_list(&head, 286, s, len);
 
 	find_data_ack(&head);
+	printf("\n");
+	
+	print_rcv_payload_list(&head);
+	printf("\n");
+
+	del_below_rcv_payload_list(&head,259);
+
+	print_rcv_payload_list(&head);
+	printf("\n");
 
     return 0;
 }
