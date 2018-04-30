@@ -454,7 +454,7 @@ int create_subflow_socket(struct fourtuple* ft,int *p_sockfd){
 
 int call_connect(struct subflow* sfl){
 
-	snprintf(msg_buf,MAX_MSG_LENGTH,"call_connect: %d",sfl->index);
+	snprintf(msg_buf,MAX_MSG_LENGTH,"call_connect: %zu",sfl->index);
 	add_msg(msg_buf);
 	
 	//call connect
@@ -1776,7 +1776,10 @@ int delete_session(struct fourtuple *ft1, int rst_sess) {
 
 	HASH_DEL(sess_hash, sess);
 
-	if(sess != NULL) free(sess);
+	if (sess != NULL) {
+		free(sess->rcv_data_list_head);
+		free(sess);
+	}
 
 	clean_aliases(&if_tab1);
 	return 0;

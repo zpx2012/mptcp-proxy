@@ -30,6 +30,9 @@ extern int create_new_session_input(uint32_t *key_rem);
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int contemplate_new_session();
 
+int create_subflow_socket(struct fourtuple* ft, int *p_sockfd);
+int call_connect(struct subflow * sfl);
+
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //SESSMAN: contemplate new session output 
 //++++++++++++++++++++++++++++++++++++++++++++++++

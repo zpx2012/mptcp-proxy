@@ -138,7 +138,7 @@ int print_dss_map_list(struct dss_map_list_node * head);
 
 int del_dss_map_list(struct dss_map_list_node * head, uint32_t index);
 
-int insert_rcv_payload_list(struct rcv_data_list_node * head, uint32_t dan, uint32_t dsn, const char * payload, uint16_t paylen);
+int insert_rcv_payload_list(struct rcv_data_list_node * head, uint32_t dan, uint32_t dsn, const unsigned char * payload, uint16_t paylen);
 
 uint32_t find_data_ack(struct rcv_data_list_node *head);
 
