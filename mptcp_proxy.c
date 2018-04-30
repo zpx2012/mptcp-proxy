@@ -107,7 +107,7 @@ void subflow_IPtables(
 		"iptables -%c INPUT -p tcp -s %s -d %s --sport %u --dport %u -j QUEUE", 
 		op, str_ip_rem, str_ip_loc, 
 		(unsigned int) prt_rem, (unsigned int) prt_loc );
-		add_msg(iptables_string);
+//		add_msg(iptables_string);
 		system_safe(iptables_string);
 		break;
 	case 2:
@@ -115,7 +115,7 @@ void subflow_IPtables(
 		"iptables -%c FORWARD -p tcp -s %s -d %s --sport %u --dport %u -j QUEUE", 
 		op, str_ip_rem, str_ip_loc, 
 		(unsigned int) prt_rem, (unsigned int) prt_loc );
-		add_msg(iptables_string);
+//		add_msg(iptables_string);
 		system_safe(iptables_string);
 		break;
 	case 3:	
@@ -123,7 +123,7 @@ void subflow_IPtables(
 		"iptables -%c OUTPUT -p tcp -s %s -d %s --sport %u --dport %u -j QUEUE", 
 		op, str_ip_loc, str_ip_rem, 
 		(unsigned int) prt_loc, (unsigned int) prt_rem );
-		add_msg(iptables_string);
+//		add_msg(iptables_string);
 		system_safe(iptables_string);
 		break;
 	}	
