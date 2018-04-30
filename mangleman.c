@@ -1316,9 +1316,9 @@ int set_dss() {
 		if (packd.paylen > 0) {
 			packd.ssn_curr_loc = ntohl(packd.tcph->th_seq);
 			struct dss_map_list_node *rlst = NULL;
-			if (find_dss_map_list(packd.sfl->dss_map_list_head, packd.ssn_curr_loc, &rlst)) {
-				snprintf(msg_buf, MAX_MSG_LENGTH, "set_dss: dsn not found");
-				add_msg(msg_buf);
+			if (find_dss_map_list(packd.sfl->dss_map_list_head, packd.ssn_curr_loc, &rlst) || !rlst) {
+				snprintf(msg_buf, MAX_MSG_LENGTH, "set_dss: dsn not found, tsn %d", packd.ssn_curr_loc);
+				add_err_msg(msg_buf);
 				return -1;
 			}
 
@@ -1367,7 +1367,7 @@ int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uin
 	}
 
 	Send(sfl->sockfd, buf, len, 0);
-	insert_dsn_map_list(sfl->dss_map_list_head, dan, dsn, sfl->highest_sn_loc);
+	insert_dsn_map_list(sfl->dss_map_list_head, sfl->highest_sn_loc, dan, dsn);
 	sfl->highest_sn_loc += len;
 	
 	return 0;
@@ -1515,6 +1515,8 @@ int insert_dsn_map_list(struct dss_map_list_node* head, uint32_t tsn, uint32_t d
 	new_node->dan = dan;
 	list_node_add_ordered(&head->list, &new_node->list, tsn);
 
+	snprintf(msg_buf,MAX_MSG_LENGTH, "insert_dsn_map_list:tsn %d, dan %d, dsn %d", tsn, dan, dsn);
+	add_msg(msg_buf);
 	return 0;
 }
 
