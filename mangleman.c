@@ -1088,32 +1088,38 @@ int mangle_packet() {
 		
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
 			
-			snprintf(msg_buf,MAX_MSG_LENGTH, "mangle_packet: browser output");
-			add_msg(msg_buf);
+			add_msg("mangle_packet: browser output");
 
 			if(packd.paylen > 0) //data packet
 				split_browser_data_send();
 			else if(packd.ack){	//ack packet
 				packd.dan_curr_loc = ntohl(packd.tcph->th_ack) + packd.sess->offset_rem;
+				snprintf(msg_buf, MAX_MSG_LENGTH, "mangle_packet: rcv browser ack %x", packd.dan_curr_loc);
+				add_err_msg(msg_buf);
+
 				del_below_rcv_payload_list(packd.sess->rcv_data_list_head, packd.dan_curr_loc);
 			}
 			set_verdict(0,0,0);
 		}	
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
+			add_msg("mangle_packet: browser input");
+			set_verdict(1,0,0);
+			
 		}	
 	}
 	else if(packd.is_from_subflow && packd.sfl->tcp_state >= ESTABLISHED && packd.sfl->tcp_state <= TIME_WAIT) {//subflow
 
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
 			
-			snprintf(msg_buf,MAX_MSG_LENGTH, "mangle_packet: subflow output");
-			add_msg(msg_buf);
+			add_msg("mangle_packet: subflow output");
 
 			set_dss();
 
 		} 
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
+
+			add_msg("mangle_packet: subflow input");
 
 			if (packd.nb_mptcp_options > 0) {
 
@@ -1317,7 +1323,7 @@ int set_dss() {
 			packd.ssn_curr_loc = ntohl(packd.tcph->th_seq);
 			struct dss_map_list_node *rlst = NULL;
 			if (find_dss_map_list(packd.sfl->dss_map_list_head, packd.ssn_curr_loc, &rlst) || !rlst) {
-				snprintf(msg_buf, MAX_MSG_LENGTH, "set_dss: dsn not found, tsn %d", packd.ssn_curr_loc);
+				snprintf(msg_buf, MAX_MSG_LENGTH, "set_dss: dsn not found, tsn %x", packd.ssn_curr_loc);
 				add_err_msg(msg_buf);
 				return -1;
 			}
@@ -1409,7 +1415,7 @@ int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsign
 
 	send_raw_packet(raw_sd, raw_buf, pack_len, sess->ft.ip_loc);
 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "ship_data_to_browser:dan %d, dsn %d, len %d", dan, dsn, paylen);
+	snprintf(msg_buf, MAX_MSG_LENGTH, "ship_data_to_browser:dan %x, dsn %x, len %d", dan, dsn, paylen);
 	add_msg(msg_buf);
 	return 0;
 }
@@ -1515,7 +1521,7 @@ int insert_dsn_map_list(struct dss_map_list_node* head, uint32_t tsn, uint32_t d
 	new_node->dan = dan;
 	list_node_add_ordered(&head->list, &new_node->list, tsn);
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "insert_dsn_map_list:tsn %d, dan %d, dsn %d", tsn, dan, dsn);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "insert_dsn_map_list:dan %x, dsn %x, tsn %x", dan, dsn, tsn);
 	add_msg(msg_buf);
 	return 0;
 }
@@ -1534,7 +1540,8 @@ int find_dss_map_list(struct dss_map_list_node *head, uint32_t tsn, struct dss_m
 	list_for_each_entry(iter, &head->list, list) {
 		if (iter->tsn == tsn) {
 			*p_result = iter;
-			printf("found: tsn: %d, dsn: %d, dan %d\n", iter->tsn, iter->dsn, iter->dan);
+			snprintf(msg_buf,MAX_MSG_LENGTH, "find_dss_map_list： found dan %x, dsn %x, tsn %x\n", iter->dan, iter->dsn, iter->tsn);
+			add_msg(msg_buf);
 			return 0;
 		}
 	}
@@ -1568,7 +1575,7 @@ int del_dss_map_list(struct dss_map_list_node *head, uint32_t index) {
 	if (result) {
 		list_del(&result->list);
 		free(result);
-		printf("delete node: tsn = %d\n", result->tsn);
+		printf("delete node: tsn = %x\n", result->tsn);
 		return 0;
 	}
 	else {
@@ -1595,6 +1602,9 @@ int insert_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan,uint32
 
 	list_node_add_ordered(&head->list, &new_node->list, dsn);
 
+	snprintf(msg_buf,MAX_MSG_LENGTH, "insert_dsn_map_list:dan %x, dsn %x, len %d", dan, dsn, paylen);
+	add_msg(msg_buf);
+
 	return 0;
 }
 
@@ -1612,7 +1622,8 @@ uint32_t find_data_ack(struct rcv_data_list_node *head) {
 		if ((iter->dsn + iter->len) != next->dsn)
 			break;
 	}
-	printf("find_data_ack: dan:%d\n", iter->dsn + iter->len);
+	snprintf(msg_buf,MAX_MSG_LENGTH,"find_data_ack: dan:%x\n", iter->dsn + iter->len);
+	add_msg(msg_buf);
 	return iter->dsn + iter->len;
 }
 
@@ -1645,7 +1656,8 @@ int del_below_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dsn) {
 			list_del(&iter->list);
 			free(iter->payload);
 			free(iter);
-			printf("delete node: dsn = %d\n", iter->dsn);
+			snprintf(msg_buf,MAX_MSG_LENGTH,"delete node: dsn = %x\n", iter->dsn);
+			add_msg(msg_buf);
 		}
 	}
 	return 0;
