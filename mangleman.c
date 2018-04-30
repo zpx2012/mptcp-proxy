@@ -1087,9 +1087,16 @@ int mangle_packet() {
 	if(!packd.is_from_subflow && packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT){//mptcp level/browser
 		
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
+			
 			snprintf(msg_buf,MAX_MSG_LENGTH, "mangle_packet: browser output");
 			add_msg(msg_buf);
-			split_browser_data_send();
+
+			if(packd.paylen > 0) //data packet
+				split_browser_data_send();
+			else if(packd.ack){	//ack packet
+				packd.dan_curr_loc = ntohl(packd.tcph->th_ack) + packd.sess->offset_rem;
+				del_below_rcv_payload_list(packd.sess->rcv_data_list_head, packd.dan_curr_loc);
+			}
 			set_verdict(0,0,0);
 		}	
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
@@ -1105,59 +1112,40 @@ int mangle_packet() {
 
 			set_dss();
 
-/*			
-			update_conn_level_data();
-			determine_thruway_subflow();//sets verdict
-
-			//*****SIDE ACK MANAGEMENT******
-			//packet is sent on packd.sfl, which may be last or active
-			if(packd.ack == 1) {
-			
-				//determine side acks and update SANs for them
-				find_side_acks();
-
-				//update thruway for ACKs, i.e. no payload
-				if(packd.verdict == 0) update_thruway_subflow();//updates verdict
-		
-				if(packd.verdict == 0) return 0;//packet terminates here
-
-				//prepare DAN and send side ACKS
-				if( packd.sess->pA_sflows_data.number > 0) send_side_acks();
-
-			}//end if packd.ACK == 1
-
-
-			//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
-			if(packd.rst == 0) set_dss_and_prio();
-
-			update_packet_output();
-*/
 		} 
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
-			set_verdict(1,0,0);
-/*			if(packd.sfl->broken) {
-				set_verdict(0,0,0);
-				return 0;
+			if (packd.nb_mptcp_options > 0) {
+
+				dssopt_in.present = analyze_MPdss(mptopt, packd.nb_mptcp_options);
+
+				packd.dan_curr_loc = 0;
+				if (dssopt_in.present) {
+					//data packet
+					if ((dssopt_in.Mflag == 1 && packd.paylen > 0) || dssopt_in.Fflag) {
+
+						if (dssopt_in.Fflag) {
+							packd.sess->ack_inf_flag = 0;
+						}
+
+						//enter payload into rcv_data_list
+						struct rcv_data_list_node *iter, *next, *head = packd.sess->rcv_data_list_head;
+						insert_rcv_payload_list(head, dssopt_in.dan, dssopt_in.dsn, packd.buf + packd.pos_pay, packd.paylen);
+
+						//search for all in order packets, ship it to browser
+						list_for_each_entry_safe(iter, next, &head->list, list) {
+							ship_data_to_browser(packd.sess, iter->dan, iter->dsn, iter->payload, iter->len);
+							if ((iter->dsn + iter->len) != next->dsn)
+								break;
+						}
+					}
+
+					//ack packet from server subflow?
+					if (dssopt_in.Aflag == 1) {
+					}
+				}
 			}
-
-			packd.verdict = 0;
-			if(packd.sfl->tcp_state >= ESTABLISHED) {
-				update_subflow_level_data();
-				packd.verdict = 1;//packd.sess->sent_state;
-			
-
-				if( packd.nb_mptcp_options > 0 ) {
-
-					process_dss();
-					process_remove_addr();
-					process_prio();
-	
-				}//end if packd.nb_mptcp_options
-
-				update_packet_input();
-			}
-*/
+			set_verdict(1, 0, 0);
 		}//end if hook = 1/3
 	}//end if (packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT)
 
@@ -1353,7 +1341,8 @@ void set_dss() {
 		else if (packd.ack) {
 			//subflow ack
 			//Your code goes here
-			create_dan_MPdss_nondssopt(packd.mptcp_opt_buf, &packd.mptcp_opt_len, find_data_ack(&(packd.sfl->rcv_data_list_head));
+			create_dan_MPdss_nondssopt(packd.mptcp_opt_buf, &packd.mptcp_opt_len, find_data_ack(packd.sess->rcv_data_list_head));
+			packd.mptcp_opt_appended = 1;
 		}
 	}
 
@@ -1370,17 +1359,13 @@ void set_dss() {
 }
 
 // 2 list empty functions
-
-//int ship_rcv_to_browser
-//find consecutive parts, create packet, decrement the window size
-
-
 int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uint32_t dan, uint32_t dsn){
 
 	if(!sfl){
 		add_err_msg("subflow_send_data:null sfl");
 		return -1;
 	}
+
 	Send(sfl->sockfd, buf, len, 0);
 	insert_dsn_map_list(sfl->dss_map_list_head, dan, dsn, sfl->highest_sn_loc);
 	sfl->highest_sn_loc += len;
@@ -1388,6 +1373,46 @@ int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uin
 	return 0;
 }
 
+//int ship_rcv_to_browser
+//find consecutive parts, create packet, decrement the window size
+//session send data
+int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn, char* payload, int paylen) {
+//int ship_data_to_browser(uint32_t seq, uint32_t ack, char* payload, int paylen){
+	
+	if (!sess) {
+		add_err_msg("null session");
+		return -1;
+	}
+
+	if (!payload || !paylen) {
+		add_err_msg("null payload");
+		return -1;
+	}
+
+	struct fourtuple reverse_sess_ft;
+	reverse_sess_ft.ip_loc = packd.sess->ft.ip_rem;
+	reverse_sess_ft.prt_loc = packd.sess->ft.prt_rem;
+	reverse_sess_ft.ip_rem = packd.sess->ft.ip_loc;
+	reverse_sess_ft.prt_rem = packd.sess->ft.prt_loc;
+
+	uint16_t pack_len = 0;
+	create_packet_payload(raw_buf, &pack_len,
+		&(sess->ft),
+		htonl(packd.sess->offset_loc + dsn),
+		htonl(packd.sess->offset_rem + dan),
+		16,//ACK
+		htons(packd.sess->curr_window_loc),
+		NULL,
+		0,
+		payload,
+		paylen);
+
+	send_raw_packet(raw_sd, raw_buf, pack_len, sess->ft.ip_loc);
+
+	snprintf(msg_buf, MAX_MSG_LENGTH, "ship_data_to_browser:dan %d, dsn %d, len %d", dan, dsn, paylen);
+	add_msg(msg_buf);
+	return 0;
+}
 
 int split_browser_data_send(){
 
@@ -1552,7 +1577,7 @@ int del_dss_map_list(struct dss_map_list_node *head, uint32_t index) {
 
 
 
-int insert_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dsn, const char *payload, uint16_t paylen) {
+int insert_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan,uint32_t dsn, const char *payload, uint16_t paylen) {
 
 	if (!head) {
 		add_err_msg("insert_rcv_payload_list:null head");
@@ -1560,6 +1585,7 @@ int insert_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dsn, const
 	}
 
 	struct rcv_data_list_node* new_node = (struct rcv_data_list_node*)malloc(sizeof(struct rcv_data_list_node));
+	new_node->dan = dan;
 	new_node->dsn = dsn;
 	new_node->len = paylen;
 	new_node->payload = (char *)malloc(paylen);
@@ -1604,7 +1630,7 @@ int print_rcv_payload_list(struct rcv_data_list_node* head) {
 }
 
 
-int del_below_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan) {
+int del_below_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dsn) {
 
 	if (!head || list_empty(&head->list)) {
 		add_err_msg("del_below_rcv_payload:null head or empty list");
@@ -1613,7 +1639,7 @@ int del_below_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan) {
 
 	struct rcv_data_list_node *iter, *next;
 	list_for_each_entry_safe(iter, next, &head->list, list) {
-		if (iter->dsn < dan) {
+		if (iter->dsn < dsn) {
 			list_del(&iter->list);
 			free(iter->payload);
 			free(iter);

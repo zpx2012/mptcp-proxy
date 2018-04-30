@@ -1647,6 +1647,10 @@ struct session* create_session(
 		HASH_ADD(hh, sess_hash, ft, sizeof(struct fourtuple), sess);
 	}
 	
+	//+++new
+	sess->rcv_data_list_head = malloc(sizeof(struct rcv_data_list_node));
+	init_head_rcv_data_list(sess->rcv_data_list_head);
+
 	if(key_loc != NULL) memcpy(sess->key_loc, key_loc, 8);
 	else memset(sess->key_loc, 0, 8);
 
