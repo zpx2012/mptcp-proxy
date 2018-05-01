@@ -1629,7 +1629,7 @@ int insert_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan,uint32
 	new_node->dsn = dsn;
 	new_node->len = paylen;
 	new_node->payload = (unsigned char *)malloc(paylen);
-	strncpy(new_node->payload, payload, paylen);
+	strncpy((char*)new_node->payload, (char*)payload, paylen);
 
 	list_node_add_ordered(&head->list, &new_node->list, dsn);
 
