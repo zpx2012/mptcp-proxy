@@ -1174,7 +1174,7 @@ int mangle_packet() {
 						NULL,
 						0);
 					
-					send_raw_packet(raw_sd, raw_buf, pack_len, reverse_sess_ft.ip_rem);
+					send_raw_packet(raw_sd, raw_buf, pack_len, htonl(reverse_sess_ft.ip_rem));
 					}
 				}
 			}
@@ -1441,7 +1441,7 @@ int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsign
 		payload,
 		paylen);
 
-	send_raw_packet(raw_sd, raw_buf, pack_len, sess->ft.ip_loc);
+	send_raw_packet(raw_sd, raw_buf, pack_len, htonl(sess->ft.ip_loc));
 
 	snprintf(msg_buf, MAX_MSG_LENGTH, "ship_data_to_browser:dan %x, dsn %x, len %d", dan, dsn, paylen);
 	add_msg(msg_buf);
