@@ -167,7 +167,7 @@ void create_packet_payload(unsigned char *buf, uint16_t *plen,
     add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP checksum: %04x\n", ntohs(tcphdr->th_sum));
     add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Urgent pointer: %04x\n", ntohs(tcphdr->th_urp));
 	add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Payload len: %d\n", len_pay);
-	add_msg(msg_buf)；
+	add_msg(msg_buf);
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
