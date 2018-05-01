@@ -1128,9 +1128,9 @@ int mangle_packet() {
 				packd.dan_curr_loc = 0;
 				if (dssopt_in.present) {
 					//data packet
-					add_msg("data pack");
 					if ((dssopt_in.Mflag == 1 && packd.paylen > 0) || dssopt_in.Fflag) {
 
+						add_msg("data pack");
 						if (dssopt_in.Fflag) {
 							packd.sess->ack_inf_flag = 0;
 						}
@@ -1145,6 +1145,10 @@ int mangle_packet() {
 							if ((iter->dsn + iter->len) != next->dsn)
 								break;
 						}
+
+						//update highest_dsn_rem
+						if( sn_smaller(packd.sess->highest_dsn_rem, dssopt_in.dsn) )
+							packd.sess->highest_dsn_rem = dssopt_in.dsn;
 					}
 					//ack packet from server subflow?
 					else if (dssopt_in.Aflag == 1) {
@@ -1160,8 +1164,8 @@ int mangle_packet() {
 						uint16_t pack_len = 0;
 					create_packet(raw_buf, &pack_len,
 						&reverse_sess_ft,
-						htonl(packd.sess->offset_rem + dssopt_out.dsn),
-						htonl(packd.sess->offset_loc + dssopt_out.dan),
+						htonl(packd.sess->offset_rem + packd.sess->highest_dsn_rem),
+						htonl(packd.sess->offset_loc + dssopt_in.dan),
 						16,//ACK
 						htons(packd.sess->curr_window_loc),
 						NULL,
