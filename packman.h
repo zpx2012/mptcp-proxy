@@ -30,6 +30,10 @@ extern void create_packet(unsigned char *buf, uint16_t *plen,
 
 void create_packet_payload(unsigned char * buf, uint16_t * plen, struct fourtuple * pft, uint32_t sn, uint32_t an, unsigned char flags, uint16_t win, unsigned char * buf_opt, uint16_t len_opt, unsigned char * buf_pay, uint16_t len_pay);
 
+char * tcp_flags(u_int8_t flags);
+
+void print_packet(unsigned char * buf);
+
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //PACKMAN: send_raw_packet over IP
 //++++++++++++++++++++++++++++++++++++++++++++++++

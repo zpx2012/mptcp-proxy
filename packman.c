@@ -162,8 +162,8 @@ void print_packet(unsigned char *buf) {
 	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ DPort: %d", ntohs(tcphdr->th_dport));			add_msg(msg_buf); 
 	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Seq num: %08x", ntohl(tcphdr->th_seq));			add_msg(msg_buf); 
 	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Ack num: %08x", ntohl(tcphdr->th_ack));			add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Data offset: %s", tcphdr->th_off);				add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ TCP flags: %d", tcp_flags(tcphdr->th_flags));	add_msg(msg_buf); 
+	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Data offset: %d", tcphdr->th_off);				add_msg(msg_buf); 
+	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ TCP flags: %s", tcp_flags(tcphdr->th_flags));	add_msg(msg_buf); 
 	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Window: %d", ntohs(tcphdr->th_win));				add_msg(msg_buf); 
 	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ TCP checksum: %04x", ntohs(tcphdr->th_sum));		add_msg(msg_buf); 
 	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Urgent pointer: %04x", ntohs(tcphdr->th_urp));	add_msg(msg_buf); 
