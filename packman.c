@@ -81,7 +81,7 @@ void create_packet(unsigned char *buf, uint16_t *plen,
     printf("+ Source: %s\n", sip);
     printf("+ Destination: %s\n", dip);
 
-	struct tcpheader* tcphdr = buf + iplen;
+	struct tcpheader* tcphdr = (struct tcpheader*)(buf + iplen);
     printf("-------------------------------------\n");
     printf("\tTCP Header:\n");
     printf("\t+ SPort: %d\n", ntohs(tcphdr->th_sport));
@@ -153,7 +153,7 @@ void create_packet_payload(unsigned char *buf, uint16_t *plen,
     printf("+ Source: %s\n", sip);
     printf("+ Destination: %s\n", dip);
 
-	struct tcpheader* tcphdr = buf + iplen;
+	struct tcpheader* tcphdr = (struct tcpheader*)(buf + iplen);
     printf("-------------------------------------\n");
     printf("\tTCP Header:\n");
     printf("\t+ SPort: %d\n", ntohs(tcphdr->th_sport));
