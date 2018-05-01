@@ -1151,7 +1151,7 @@ int mangle_packet() {
 							packd.sess->highest_dsn_rem = dssopt_in.dsn;
 					}
 					//ack packet from server subflow?
-					else if (dssopt_in.Aflag == 1) {
+					else if (dssopt_in.Aflag == 1 && (dssopt_in.dan != packd.sess->idsn_loc) {
 
 						add_msg("ack pack");
 						//send ack packet to browser
