@@ -32,7 +32,7 @@ void create_packet_payload(unsigned char * buf, uint16_t * plen, struct fourtupl
 
 char * tcp_flags(u_int8_t flags);
 
-void print_packet(unsigned char * buf);
+void print_tcp_packet(unsigned char * buf);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //PACKMAN: send_raw_packet over IP

@@ -1054,7 +1054,7 @@ void eval_packet(uint32_t id, size_t hook, unsigned char *buf, u_int16_t len) {
 	strncat(msg_buf, tmp_msg, MAX_MSG_LENGTH);
 	add_msg(msg_buf);
 }
-	print_packet(buf);
+	print_tcp_packet(buf);
 	
 	//find TPTCP options:start at tcpoptions.
 	packd.nb_mptcp_options = parse_mptcp_options(buf+(packd.pos_thead)+20, (packd.tcplen)-20, mptopt);

@@ -124,7 +124,7 @@ void create_packet_payload(unsigned char *buf, uint16_t *plen,
 	//update of both checksums
 	compute_checksums(buf, iplen, *plen);
 
-	print_packet(buf);
+	print_tcp_packet(buf);
 }
 
 char* tcp_flags(u_int8_t flags)
@@ -144,7 +144,7 @@ char* tcp_flags(u_int8_t flags)
 	return flag_str;
 }
 
-void print_packet(unsigned char *buf) {
+void print_tcp_packet(unsigned char *buf) {
 
 	char sip[16], dip[16];
 	struct ipheader* iphdr = (struct ipheader*)buf;
