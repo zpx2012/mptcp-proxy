@@ -598,13 +598,15 @@ int subflow_syn_sent_master(){
 	reverse_sess_ft.prt_rem = packd.sess->ft.prt_loc;
 
 	uint16_t pack_len = 0;
-	create_packet(raw_buf, &pack_len, 
+	create_packet_payload(raw_buf, &pack_len, 
 		&reverse_sess_ft, 
 		htonl(packd.sess->idsn_rem), 
 		htonl(packd.sess->idsn_loc + packd.sess->offset_loc + 1),
 		18,//SYN/ACK
 		htons(packd.sess->init_window_rem), 
 		NULL, 
+		0,
+		NULL,
 		0);
 /*
 	uint16_t pack_len = packd.tcplen + packd.ip4len;

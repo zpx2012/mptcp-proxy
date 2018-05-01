@@ -1162,12 +1162,14 @@ int mangle_packet() {
 						reverse_sess_ft.prt_rem = packd.sess->ft.prt_loc;
 					
 						uint16_t pack_len = 0;
-					create_packet(raw_buf, &pack_len,
+					create_packet_payload(raw_buf, &pack_len,
 						&reverse_sess_ft,
 						htonl(packd.sess->offset_rem + packd.sess->highest_dsn_rem),
 						htonl(packd.sess->offset_loc + dssopt_in.dan),
 						16,//ACK
 						htons(packd.sess->curr_window_loc),
+						NULL,
+						0,
 						NULL,
 						0);
 					
