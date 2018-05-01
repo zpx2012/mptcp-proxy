@@ -89,7 +89,7 @@ void create_packet(unsigned char *buf, uint16_t *plen,
     printf("\t+ Seq num: %08x\n", ntohl(tcphdr->th_seq));
     printf("\t+ Ack num: %08x\n", ntohl(tcphdr->th_sport));
     printf("\t+ Data offset: %d\n", tcphdr->th_off);
-    printf("\t+ TCP flags: %s\n", tcp_flags(tcphdr->th_flags));
+    printf("\t+ TCP flags: %d\n", tcphdr->th_flags);
     printf("\t+ Window: %d\n", ntohs(tcphdr->th_win));
     printf("\t+ TCP checksum: %04x\n", ntohs(tcphdr->th_sum));
     printf("\t+ Urgent pointer: %04x\n", ntohs(tcphdr->th_urp));	
@@ -161,7 +161,7 @@ void create_packet_payload(unsigned char *buf, uint16_t *plen,
     printf("\t+ Seq num: %08x\n", ntohl(tcphdr->th_seq));
     printf("\t+ Ack num: %08x\n", ntohl(tcphdr->th_sport));
     printf("\t+ Data offset: %d\n", tcphdr->th_off);
-    printf("\t+ TCP flags: %s\n", tcp_flags(tcphdr->th_flags));
+    printf("\t+ TCP flags: %d\n", tcphdr->th_flags);
     printf("\t+ Window: %d\n", ntohs(tcphdr->th_win));
     printf("\t+ TCP checksum: %04x\n", ntohs(tcphdr->th_sum));
     printf("\t+ Urgent pointer: %04x\n", ntohs(tcphdr->th_urp));

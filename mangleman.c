@@ -1425,8 +1425,8 @@ int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsign
 	uint16_t pack_len = 0;
 	create_packet_payload(raw_buf, &pack_len,
 		&reverse_sess_ft,
-		htonl(packd.sess->offset_rem + dan),
-		htonl(packd.sess->offset_loc + dsn),
+		htonl(packd.sess->offset_rem + dsn),
+		htonl(packd.sess->offset_loc + dan),
 		16,//ACK
 		htons(packd.sess->curr_window_loc),
 		NULL,
