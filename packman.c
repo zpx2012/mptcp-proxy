@@ -76,23 +76,24 @@ void create_packet(unsigned char *buf, uint16_t *plen,
 	char sip[16], dip[16];
 	sprintIPaddr(sip, pft->ip_loc);
 	sprintIPaddr(dip, pft->ip_rem);	
-    printf("-------------------------------------\n");
-    printf("IP Header:\n");
-    printf("+ Source: %s\n", sip);
-    printf("+ Destination: %s\n", dip);
+    snprintf(msg_buf, MAX_MSG_LENGTH,"-------------------------------------\n");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"IP Header:\n");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"+ Source: %s\n", sip);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"+ Destination: %s\n", dip);
 
 	struct tcpheader* tcphdr = (struct tcpheader*)(buf + iplen);
-    printf("-------------------------------------\n");
-    printf("\tTCP Header:\n");
-    printf("\t+ SPort: %d\n", ntohs(tcphdr->th_sport));
-    printf("\t+ DPort: %d\n", ntohs(tcphdr->th_dport));
-    printf("\t+ Seq num: %08x\n", ntohl(tcphdr->th_seq));
-    printf("\t+ Ack num: %08x\n", ntohl(tcphdr->th_sport));
-    printf("\t+ Data offset: %d\n", tcphdr->th_off);
-    printf("\t+ TCP flags: %d\n", tcphdr->th_flags);
-    printf("\t+ Window: %d\n", ntohs(tcphdr->th_win));
-    printf("\t+ TCP checksum: %04x\n", ntohs(tcphdr->th_sum));
-    printf("\t+ Urgent pointer: %04x\n", ntohs(tcphdr->th_urp));	
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"-------------------------------------\n");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\tTCP Header:\n");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ SPort: %d\n", ntohs(tcphdr->th_sport));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ DPort: %d\n", ntohs(tcphdr->th_dport));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Seq num: %08x\n", ntohl(tcphdr->th_seq));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Ack num: %08x\n", ntohl(tcphdr->th_sport));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Data offset: %d\n", tcphdr->th_off);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP flags: %d\n", tcphdr->th_flags);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Window: %d\n", ntohs(tcphdr->th_win));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP checksum: %04x\n", ntohs(tcphdr->th_sum));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Urgent pointer: %04x\n", ntohs(tcphdr->th_urp));
+	add_msg(msg_buf);
 }
 
 void create_packet_payload(unsigned char *buf, uint16_t *plen, 
@@ -148,23 +149,25 @@ void create_packet_payload(unsigned char *buf, uint16_t *plen,
 	char sip[16], dip[16];
 	sprintIPaddr(sip, pft->ip_loc);
 	sprintIPaddr(dip, pft->ip_rem);	
-    printf("-------------------------------------\n");
-    printf("IP Header:\n");
-    printf("+ Source: %s\n", sip);
-    printf("+ Destination: %s\n", dip);
+    snprintf(msg_buf, MAX_MSG_LENGTH,"-------------------------------------\n");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"IP Header:\n");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"+ Source: %s\n", sip);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"+ Destination: %s\n", dip);
 
 	struct tcpheader* tcphdr = (struct tcpheader*)(buf + iplen);
-    printf("-------------------------------------\n");
-    printf("\tTCP Header:\n");
-    printf("\t+ SPort: %d\n", ntohs(tcphdr->th_sport));
-    printf("\t+ DPort: %d\n", ntohs(tcphdr->th_dport));
-    printf("\t+ Seq num: %08x\n", ntohl(tcphdr->th_seq));
-    printf("\t+ Ack num: %08x\n", ntohl(tcphdr->th_sport));
-    printf("\t+ Data offset: %d\n", tcphdr->th_off);
-    printf("\t+ TCP flags: %d\n", tcphdr->th_flags);
-    printf("\t+ Window: %d\n", ntohs(tcphdr->th_win));
-    printf("\t+ TCP checksum: %04x\n", ntohs(tcphdr->th_sum));
-    printf("\t+ Urgent pointer: %04x\n", ntohs(tcphdr->th_urp));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"-------------------------------------\n");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\tTCP Header:\n");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ SPort: %d\n", ntohs(tcphdr->th_sport));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ DPort: %d\n", ntohs(tcphdr->th_dport));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Seq num: %08x\n", ntohl(tcphdr->th_seq));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Ack num: %08x\n", ntohl(tcphdr->th_sport));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Data offset: %d\n", tcphdr->th_off);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP flags: %d\n", tcphdr->th_flags);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Window: %d\n", ntohs(tcphdr->th_win));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP checksum: %04x\n", ntohs(tcphdr->th_sum));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Urgent pointer: %04x\n", ntohs(tcphdr->th_urp));
+	add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Payload len: %d\n", len_pay);
+	add_msg(msg_buf)；
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
