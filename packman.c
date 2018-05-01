@@ -76,23 +76,23 @@ void create_packet(unsigned char *buf, uint16_t *plen,
 	char sip[16], dip[16];
 	sprintIPaddr(sip, pft->ip_loc);
 	sprintIPaddr(dip, pft->ip_rem);	
-    snprintf(msg_buf, MAX_MSG_LENGTH,"-------------------------------------\n");
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"IP Header:\n");
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"+ Source: %s\n", sip);
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"+ Destination: %s\n", dip);
+    snprintf(msg_buf, MAX_MSG_LENGTH,"-------------------------------------");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"IP Header:");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"+ Source: %s", sip);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"+ Destination: %s", dip);
 
 	struct tcpheader* tcphdr = (struct tcpheader*)(buf + iplen);
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"-------------------------------------\n");
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\tTCP Header:\n");
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ SPort: %d\n", ntohs(tcphdr->th_sport));
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ DPort: %d\n", ntohs(tcphdr->th_dport));
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Seq num: %08x\n", ntohl(tcphdr->th_seq));
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Ack num: %08x\n", ntohl(tcphdr->th_sport));
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Data offset: %d\n", tcphdr->th_off);
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP flags: %d\n", tcphdr->th_flags);
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Window: %d\n", ntohs(tcphdr->th_win));
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP checksum: %04x\n", ntohs(tcphdr->th_sum));
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Urgent pointer: %04x\n", ntohs(tcphdr->th_urp));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"-------------------------------------");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\tTCP Header:");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ SPort: %d", ntohs(tcphdr->th_sport));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ DPort: %d", ntohs(tcphdr->th_dport));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Seq num: %08x", ntohl(tcphdr->th_seq));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Ack num: %08x", ntohl(tcphdr->th_ack));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Data offset: %d", tcphdr->th_off);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP flags: %d", tcphdr->th_flags);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Window: %d", ntohs(tcphdr->th_win));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP checksum: %04x", ntohs(tcphdr->th_sum));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Urgent pointer: %04x", ntohs(tcphdr->th_urp));
 	add_msg(msg_buf);
 }
 
@@ -149,24 +149,24 @@ void create_packet_payload(unsigned char *buf, uint16_t *plen,
 	char sip[16], dip[16];
 	sprintIPaddr(sip, pft->ip_loc);
 	sprintIPaddr(dip, pft->ip_rem);	
-    snprintf(msg_buf, MAX_MSG_LENGTH,"-------------------------------------\n");
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"IP Header:\n");
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"+ Source: %s\n", sip);
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"+ Destination: %s\n", dip);
+    snprintf(msg_buf, MAX_MSG_LENGTH,"-------------------------------------");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"IP Header:");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"+ Source: %s", sip);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"+ Destination: %s", dip);
 
 	struct tcpheader* tcphdr = (struct tcpheader*)(buf + iplen);
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"-------------------------------------\n");
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\tTCP Header:\n");
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ SPort: %d\n", ntohs(tcphdr->th_sport));
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ DPort: %d\n", ntohs(tcphdr->th_dport));
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Seq num: %08x\n", ntohl(tcphdr->th_seq));
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Ack num: %08x\n", ntohl(tcphdr->th_sport));
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Data offset: %d\n", tcphdr->th_off);
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP flags: %d\n", tcphdr->th_flags);
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Window: %d\n", ntohs(tcphdr->th_win));
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP checksum: %04x\n", ntohs(tcphdr->th_sum));
-    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Urgent pointer: %04x\n", ntohs(tcphdr->th_urp));
-	add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Payload len: %d\n", len_pay);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"-------------------------------------");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\tTCP Header:");
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ SPort: %d", ntohs(tcphdr->th_sport));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ DPort: %d", ntohs(tcphdr->th_dport));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Seq num: %08x", ntohl(tcphdr->th_seq));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Ack num: %08x", ntohl(tcphdr->th_ack));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Data offset: %d", tcphdr->th_off);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP flags: %d", tcphdr->th_flags);
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Window: %d", ntohs(tcphdr->th_win));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ TCP checksum: %04x", ntohs(tcphdr->th_sum));
+    add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Urgent pointer: %04x", ntohs(tcphdr->th_urp));
+	add_msg(msg_buf); snprintf(msg_buf, MAX_MSG_LENGTH,"\t+ Payload len: %d", len_pay);
 	add_msg(msg_buf);
 }
 
