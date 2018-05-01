@@ -1596,6 +1596,7 @@ int print_dss_map_list(struct dss_map_list_node *head) {
 	add_msg("dss map list:\n---------------------------\ntsn      dan      dsn");
 	list_for_each_entry(iter, &head->list, list) {
 		snprintf(msg_buf, MAX_MSG_LENGTH, "%-8x %-8x %x\n", iter->tsn, iter->dan, iter->dsn);
+		add_msg(msg_buf);
 	}
 	add_msg("---------------------------");
 	return 0;
@@ -1614,7 +1615,8 @@ int del_dss_map_list(struct dss_map_list_node *head, uint32_t index) {
 	if (result) {
 		list_del(&result->list);
 		free(result);
-		printf("delete node: tsn %x, dan %x, dsn %x\n", result->tsn,result->dan,result->dsn);
+		snprintf(msg_buf, MAX_MSG_LENGTH,"delete node: tsn %x, dan %x, dsn %x\n", result->tsn,result->dan,result->dsn);
+		add_msg(msg_buf);
 		print_dss_map_list(head);
 		return 0;
 	}
@@ -1624,7 +1626,7 @@ int del_dss_map_list(struct dss_map_list_node *head, uint32_t index) {
 	}
 }
 
-
+//#define snprintf_msg(msg) snprintf(msg_buf, MAX_MSG_LENGTH,msg); add_msg(msg_buf);
 
 int insert_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan,uint32_t dsn, const unsigned char *payload, uint16_t paylen) {
 
@@ -1680,7 +1682,7 @@ int print_rcv_payload_list(struct rcv_data_list_node* head) {
 	struct rcv_data_list_node *iter;
 	add_msg("rcv data list:\n-----------------------\ndsn      len      ack");
 	list_for_each_entry(iter, &head->list, list) {
-		snprintf(msg_buf, MAX_MSG_LENGTH, "%-8x %-8d %x\n", iter->dsn, iter->len, iter->dsn+iter->len);
+		snprintf(msg_buf, MAX_MSG_LENGTH, "%-8x %-8d %x", iter->dsn, iter->len, iter->dsn+iter->len);
 		add_msg(msg_buf);
 	}
 	add_msg("-----------------------");
