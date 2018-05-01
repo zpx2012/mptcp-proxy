@@ -1095,7 +1095,7 @@ int mangle_packet() {
 			else if(packd.ack){	//ack packet
 				packd.dan_curr_loc = ntohl(packd.tcph->th_ack) + packd.sess->offset_rem;
 				snprintf(msg_buf, MAX_MSG_LENGTH, "mangle_packet: rcv browser ack %x", packd.dan_curr_loc);
-				add_err_msg(msg_buf);
+				add_msg(msg_buf);
 
 				del_below_rcv_payload_list(packd.sess->rcv_data_list_head, packd.dan_curr_loc);
 			}
@@ -1128,6 +1128,7 @@ int mangle_packet() {
 				packd.dan_curr_loc = 0;
 				if (dssopt_in.present) {
 					//data packet
+					add_msg("data pack");
 					if ((dssopt_in.Mflag == 1 && packd.paylen > 0) || dssopt_in.Fflag) {
 
 						if (dssopt_in.Fflag) {
@@ -1145,9 +1146,28 @@ int mangle_packet() {
 								break;
 						}
 					}
-
 					//ack packet from server subflow?
-					if (dssopt_in.Aflag == 1) {
+					else if (dssopt_in.Aflag == 1) {
+
+						add_msg("ack pack");
+						//send ack packet to browser
+						struct fourtuple reverse_sess_ft;
+						reverse_sess_ft.ip_loc = packd.sess->ft.ip_rem;
+						reverse_sess_ft.prt_loc = packd.sess->ft.prt_rem;
+						reverse_sess_ft.ip_rem = packd.sess->ft.ip_loc;
+						reverse_sess_ft.prt_rem = packd.sess->ft.prt_loc;
+					
+						uint16_t pack_len = 0;
+					create_packet(raw_buf, &pack_len,
+						&reverse_sess_ft,
+						htonl(packd.sess->offset_rem + dssopt_out.dsn),
+						htonl(packd.sess->offset_loc + dssopt_out.dan),
+						16,//ACK
+						htons(packd.sess->curr_window_loc),
+						NULL,
+						0);
+					
+					send_raw_packet(raw_sd, raw_buf, pack_len, sess->ft.ip_loc);
 					}
 				}
 			}
@@ -1372,11 +1392,12 @@ int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uin
 		return -1;
 	}
 
-	Send(sfl->sockfd, buf, len, 0);
-	insert_dsn_map_list(sfl->dss_map_list_head, sfl->highest_sn_loc, dan, dsn);
+	int ret = 0;
+	ret += Send(sfl->sockfd, buf, len, 0);
+	ret += insert_dsn_map_list(sfl->dss_map_list_head, sfl->highest_sn_loc, dan, dsn);
 	sfl->highest_sn_loc += len;
 	
-	return 0;
+	return ret;
 }
 
 //int ship_rcv_to_browser
@@ -1404,8 +1425,8 @@ int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsign
 	uint16_t pack_len = 0;
 	create_packet_payload(raw_buf, &pack_len,
 		&reverse_sess_ft,
-		htonl(packd.sess->offset_loc + dsn),
 		htonl(packd.sess->offset_rem + dan),
+		htonl(packd.sess->offset_loc + dsn),
 		16,//ACK
 		htons(packd.sess->curr_window_loc),
 		NULL,
@@ -1435,23 +1456,26 @@ int split_browser_data_send(){
 	packd.dan_curr_loc = ntohl(packd.tcph->th_ack) - packd.sess->offset_rem;
 
 	//get Mflag
-
+	int ret = 0;
 	if(packd.paylen <= PIVOTPOINT){
-		subflow_send_data(packd.sess->act_subflow, packd.buf+packd.pos_pay, packd.paylen, packd.dan_curr_loc, packd.dsn_curr_loc);
+		ret += subflow_send_data(packd.sess->act_subflow, packd.buf+packd.pos_pay, packd.paylen, packd.dan_curr_loc, packd.dsn_curr_loc);
 		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:sent packd.paylen <= PIVOTPOINT: %d",packd.paylen);
 		add_msg(msg_buf);
 	} else {	
 		//first part
-		subflow_send_data(packd.sess->act_subflow, packd.buf+packd.pos_pay, PIVOTPOINT, packd.dan_curr_loc, packd.dsn_curr_loc);
+		ret += subflow_send_data(packd.sess->act_subflow, packd.buf+packd.pos_pay, PIVOTPOINT, packd.dan_curr_loc, packd.dsn_curr_loc);
 		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:sent first part");
 		add_msg(msg_buf);	
 		
 		//second part
-		subflow_send_data(packd.sess->slav_subflow, packd.buf+packd.pos_pay+PIVOTPOINT, packd.paylen-PIVOTPOINT, packd.dan_curr_loc, packd.dsn_curr_loc+PIVOTPOINT);
+		ret += subflow_send_data(packd.sess->slav_subflow, packd.buf+packd.pos_pay+PIVOTPOINT, packd.paylen-PIVOTPOINT, packd.dan_curr_loc, packd.dsn_curr_loc+PIVOTPOINT);
 		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:sent second part:%d", packd.paylen-PIVOTPOINT);
 		add_msg(msg_buf);	
 	}
-	
+
+	if(!ret){//all success
+
+	}
 	snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:finish");
 	add_msg(msg_buf);
 	return 0;
@@ -1662,3 +1686,4 @@ int del_below_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dsn) {
 	}
 	return 0;
 }
+

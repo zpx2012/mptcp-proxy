@@ -72,6 +72,27 @@ void create_packet(unsigned char *buf, uint16_t *plen,
 
 	//update of both checksums
 	compute_checksums(buf, iplen, *plen);
+
+	char sip[16], dip[16];
+	sprintIPaddr(sip, pft->ip_loc);
+	sprintIPaddr(dip, pft->ip_rem);	
+    printf("-------------------------------------\n");
+    printf("IP Header:\n");
+    printf("+ Source: %s\n", sip);
+    printf("+ Destination: %s\n", dip);
+
+	struct tcpheader* tcphdr = buf + iplen;
+    printf("-------------------------------------\n");
+    printf("\tTCP Header:\n");
+    printf("\t+ SPort: %d\n", ntohs(tcphdr->th_sport));
+    printf("\t+ DPort: %d\n", ntohs(tcphdr->th_dport));
+    printf("\t+ Seq num: %08x\n", ntohl(tcphdr->th_seq));
+    printf("\t+ Ack num: %08x\n", ntohl(tcphdr->th_sport));
+    printf("\t+ Data offset: %d\n", tcphdr->th_off);
+    printf("\t+ TCP flags: %s\n", tcp_flags(tcphdr->th_flags));
+    printf("\t+ Window: %d\n", ntohs(tcphdr->th_win));
+    printf("\t+ TCP checksum: %04x\n", ntohs(tcphdr->th_sum));
+    printf("\t+ Urgent pointer: %04x\n", ntohs(tcphdr->th_urp));	
 }
 
 void create_packet_payload(unsigned char *buf, uint16_t *plen, 
@@ -95,10 +116,11 @@ void create_packet_payload(unsigned char *buf, uint16_t *plen,
 	memset(buf, 0, *plen);
 
 	//enter payload
-	memcpy(buf+iplen+tcplen+len_opt, buf_pay, len_pay);
+	if(buf_pay && len_pay)
+		memcpy(buf+iplen+tcplen+len_opt, buf_pay, len_pay);
 	
 	//enter options
-	if(buf_opt)
+	if(buf_opt && len_opt)
 		memcpy(buf+iplen+tcplen, buf_opt, len_opt);
 
 	//tcp header
@@ -122,6 +144,27 @@ void create_packet_payload(unsigned char *buf, uint16_t *plen,
 
 	//update of both checksums
 	compute_checksums(buf, iplen, *plen);
+
+	char sip[16], dip[16];
+	sprintIPaddr(sip, pft->ip_loc);
+	sprintIPaddr(dip, pft->ip_rem);	
+    printf("-------------------------------------\n");
+    printf("IP Header:\n");
+    printf("+ Source: %s\n", sip);
+    printf("+ Destination: %s\n", dip);
+
+	struct tcpheader* tcphdr = buf + iplen;
+    printf("-------------------------------------\n");
+    printf("\tTCP Header:\n");
+    printf("\t+ SPort: %d\n", ntohs(tcphdr->th_sport));
+    printf("\t+ DPort: %d\n", ntohs(tcphdr->th_dport));
+    printf("\t+ Seq num: %08x\n", ntohl(tcphdr->th_seq));
+    printf("\t+ Ack num: %08x\n", ntohl(tcphdr->th_sport));
+    printf("\t+ Data offset: %d\n", tcphdr->th_off);
+    printf("\t+ TCP flags: %s\n", tcp_flags(tcphdr->th_flags));
+    printf("\t+ Window: %d\n", ntohs(tcphdr->th_win));
+    printf("\t+ TCP checksum: %04x\n", ntohs(tcphdr->th_sum));
+    printf("\t+ Urgent pointer: %04x\n", ntohs(tcphdr->th_urp));
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
