@@ -149,9 +149,14 @@ void print_tcp_packet(unsigned char *buf) {
 	char sip[16], dip[16];
 	struct ipheader* iphdr = (struct ipheader*)buf;
 	struct tcpheader* tcphdr = (struct tcpheader*)(buf + 20);
+
+	u_int32_t target_ip = 0x8268e62d;
+	if( htonl(iphdr->ip_dst)!=target_ip && htonl(iphdr->ip_src)!=target_ip )
+		return; 
+
 	uint16_t len_pay = ntohs(iphdr->ip_len) - (uint16_t)(iphdr->ip_h1<<2) - (uint16_t)(tcphdr->th_off<<2);
-	sprintIPaddr(sip, iphdr->ip_src);
-	sprintIPaddr(dip, iphdr->ip_dst);
+	sprintIPaddr(sip, htonl(iphdr->ip_src));
+	sprintIPaddr(dip, htonl(iphdr->ip_dst));
 	add_msg("-------------------------------------");
 	snprintf(msg_buf, MAX_MSG_LENGTH, "IP Header:");										add_msg(msg_buf); 
 	snprintf(msg_buf, MAX_MSG_LENGTH, "+ Source: %s", sip);									add_msg(msg_buf); 

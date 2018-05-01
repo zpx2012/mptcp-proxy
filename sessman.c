@@ -836,7 +836,7 @@ int session_pre_est() {
 			set_verdict(1,0,0);
 			return 0;
 		}
-		subflow_send_data(packd.sfl, "A", 1, packd.sess->idsn_rem+1, packd.sess->idsn_loc+1);
+		subflow_send_data(packd.sfl, (unsigned char*)"A", 1, packd.sess->idsn_rem+1, packd.sess->idsn_loc+1);
 		packd.sess->offset_loc -= 1;
 		//call connect to invoke second subflow
 		create_new_subflow_output_slave();
