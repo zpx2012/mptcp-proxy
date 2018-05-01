@@ -1086,6 +1086,7 @@ int mangle_packet() {
 	//*****DATA-PLANE MANAGEMENT******
 	if(!packd.is_from_subflow && packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT){//mptcp level/browser
 		
+		
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
 			
 			add_msg("mangle_packet: browser output");
@@ -1099,11 +1100,11 @@ int mangle_packet() {
 
 				del_below_rcv_payload_list(packd.sess->rcv_data_list_head, packd.dan_curr_loc);
 			}
-			set_verdict(0,0,0);
+			set_verdict(1,0,0);
 		}	
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
-			add_msg("mangle_packet: browser input");
+			add_msg("mangle_packet: browser input...........");
 			set_verdict(1,0,0);
 			
 		}	
