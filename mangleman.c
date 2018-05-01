@@ -1167,7 +1167,7 @@ int mangle_packet() {
 						NULL,
 						0);
 					
-					send_raw_packet(raw_sd, raw_buf, pack_len, sess->ft.ip_loc);
+					send_raw_packet(raw_sd, raw_buf, pack_len, reverse_sess_ft.ip_rem);
 					}
 				}
 			}
