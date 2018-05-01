@@ -172,7 +172,11 @@ void print_tcp_packet(unsigned char *buf) {
 	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Window: %d", ntohs(tcphdr->th_win));				add_msg(msg_buf); 
 	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ TCP checksum: %04x", ntohs(tcphdr->th_sum));		add_msg(msg_buf); 
 	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Urgent pointer: %04x", ntohs(tcphdr->th_urp));	add_msg(msg_buf); 
-	if(len_pay) snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Payload len: %d", len_pay);			add_msg(msg_buf);
+
+	if(len_pay) {
+		snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Payload len: %d", len_pay);			
+		add_msg(msg_buf);
+	}
 	add_msg("-------------------------------------");
 
 }
