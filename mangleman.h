@@ -136,7 +136,7 @@ int find_snd_map_list(struct snd_map_list * head, uint32_t tsn, struct snd_map_l
 
 int print_snd_map_list(struct snd_map_list * head);
 
-int del_snd_map_list(struct snd_map_list * head, uint32_t index);
+int del_below_snd_map_list(struct snd_map_list * head, uint32_t index);
 
 int insert_rcv_buff_list(struct rcv_buff_list * head, uint32_t dan, uint32_t dsn, const unsigned char * payload, uint16_t paylen);
 

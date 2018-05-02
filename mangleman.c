@@ -1542,7 +1542,7 @@ int insert_snd_map_list(struct snd_map_list* head, uint32_t tsn, uint32_t dan, u
 			break;
 	}
 	//insert before iter
-	__list_add(new_node, iter->list.prev, &iter->list);
+	__list_add(&new_node->list, iter->list.prev, &iter->list);
 
 	snprintf(msg_buf,MAX_MSG_LENGTH, "insert_snd_map_list:dan %x, dsn %x, tsn %x", dan, dsn, tsn);
 	add_msg(msg_buf);
@@ -1611,7 +1611,7 @@ int del_below_snd_map_list(struct snd_map_list *head, uint32_t ack) {
 			print_snd_map_list(head);
 		}
 	}
-
+	return 0;
 }
 
 
@@ -1662,7 +1662,7 @@ int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, 
 		}
 	}
 	//insert before iter
-	__list_add(new_node, iter->list.prev, &iter->list);
+	__list_add(&new_node->list, iter->list.prev, &iter->list);
 
 	snprintf(msg_buf,MAX_MSG_LENGTH, "insert_rcv_buff_list:dan %x, dsn %x, len %d", dan, dsn, paylen);
 	add_msg(msg_buf);
