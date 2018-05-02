@@ -1589,7 +1589,7 @@ int print_snd_map_list(struct snd_map_list *head) {
 	add_msg("- - - - - - - - - - - - - - - - - -");
 
 	list_for_each_entry(iter, &head->list, list) {
-		snprintf(msg_buf, MAX_MSG_LENGTH, "| %-8x | %-8x | %-8x |", iter->dan, iter->dsn, iter->tsn);
+		snprintf(msg_buf, MAX_MSG_LENGTH, "| %-8x | %-8x | %-8x  |", iter->dan, iter->dsn, iter->tsn);
 		add_msg(msg_buf);
 	}
 	
@@ -1710,7 +1710,7 @@ int print_rcv_buff_list(struct rcv_buff_list* head) {
 
 	struct rcv_buff_list *iter;
 	add_msg("---------------------------------------------");
-	add_msg("|			    rcv data list                |");
+	add_msg("|			    rcv data list               |");
 	add_msg("- - - - - - - - - - - - - - - - - - - - - - -");
 	add_msg("| dan      | *dsn     | len      | ack      |");
 	add_msg("- - - - - - - - - - - - - - - - - - - - - - -");
