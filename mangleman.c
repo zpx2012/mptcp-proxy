@@ -1582,12 +1582,19 @@ int print_snd_map_list(struct snd_map_list *head) {
 	}
 
 	struct snd_map_list *iter;
-	add_msg("dss map list:\n---------------------------\ndan      dsn      tsn");
+	add_msg("-----------------------------------");
+	add_msg("|			snd map list		  |");
+	add_msg("- - - - - - - - - - - - - - - - - -");
+	add_msg("| dan	   | dsn	  | *tsn	  |");
+	add_msg("- - - - - - - - - - - - - - - - - -");
+
 	list_for_each_entry(iter, &head->list, list) {
-		snprintf(msg_buf, MAX_MSG_LENGTH, "%-8x %-8x %x", iter->dan, iter->dsn, iter->tsn);
+		snprintf(msg_buf, MAX_MSG_LENGTH, "| %-8x | %-8x | %-8x |", iter->dan, iter->dsn, iter->tsn);
 		add_msg(msg_buf);
 	}
-	add_msg("---------------------------");
+	
+	add_msg("-----------------------------------");
+
 	return 0;
 }
 
@@ -1623,7 +1630,9 @@ int del_below_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan) {
 	}
 
 	struct rcv_buff_list *iter, *next;
-	add_msg("before delete:");
+	snprintf(msg_buf,MAX_MSG_LENGTH,"before delete: dan = %x", dan);
+	add_msg(msg_buf);
+	
 	print_rcv_buff_list(head);
 	list_for_each_entry_safe(iter, next, &head->list, list) {
 		if ( (iter->dsn < dan) && (next != head)) {
@@ -1700,12 +1709,17 @@ int print_rcv_buff_list(struct rcv_buff_list* head) {
 	}
 
 	struct rcv_buff_list *iter;
-	add_msg("rcv data list:\n-----------------------\ndan      dsn      len      ack");
+	add_msg("---------------------------------------------");
+	add_msg("|			    rcv data list                |");
+	add_msg("- - - - - - - - - - - - - - - - - - - - - - -");
+	add_msg("| dan      | *dsn     | len      | ack      |");
+	add_msg("- - - - - - - - - - - - - - - - - - - - - - -");
+	
 	list_for_each_entry(iter, &head->list, list) {
-		snprintf(msg_buf, MAX_MSG_LENGTH, "%-8x %-8x %-8d %x", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len);
+		snprintf(msg_buf, MAX_MSG_LENGTH, "| %-8x | %-8x | %-8d | %-8x |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len);
 		add_msg(msg_buf);
 	}
-	add_msg("-----------------------");
+	add_msg("---------------------------------------------");
 	return 0;
 }
 
