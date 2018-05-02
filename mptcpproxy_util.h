@@ -187,8 +187,8 @@ struct dss_map_list_node{//index = tsn
 
 struct rcv_data_list_node{//index = dsn
 	struct list_head list;
-	uint32_t dan;
 	uint32_t dsn;
+	uint32_t dan;
 	uint16_t len;
 	unsigned char *payload;	
 };
