@@ -126,26 +126,24 @@ int ship_data_to_browser(struct session * sess, uint32_t dan, uint32_t dsn, unsi
 
 int split_browser_data_send();
 
-int list_node_add_ordered(struct list_head *head, struct list_head *new_node, uint32_t index);
+int init_head_snd_map_list(struct snd_map_list *head);
 
-int init_head_dsn_map_list(struct dss_map_list_node *head);
+int init_head_rcv_buff_list(struct rcv_buff_list *head);
 
-int init_head_rcv_data_list(struct rcv_data_list_node *head);
+int insert_snd_map_list(struct snd_map_list * head, uint32_t tsn, uint32_t dan, uint32_t dsn);
 
-int insert_dsn_map_list(struct dss_map_list_node * head, uint32_t tsn, uint32_t dan, uint32_t dsn);
+int find_snd_map_list(struct snd_map_list * head, uint32_t tsn, struct snd_map_list ** result);
 
-int find_dss_map_list(struct dss_map_list_node * head, uint32_t tsn, struct dss_map_list_node ** result);
+int print_snd_map_list(struct snd_map_list * head);
 
-int print_dss_map_list(struct dss_map_list_node * head);
+int del_snd_map_list(struct snd_map_list * head, uint32_t index);
 
-int del_dss_map_list(struct dss_map_list_node * head, uint32_t index);
+int insert_rcv_buff_list(struct rcv_buff_list * head, uint32_t dan, uint32_t dsn, const unsigned char * payload, uint16_t paylen);
 
-int insert_rcv_payload_list(struct rcv_data_list_node * head, uint32_t dan, uint32_t dsn, const unsigned char * payload, uint16_t paylen);
+uint32_t find_data_ack(struct rcv_buff_list *head);
 
-uint32_t find_data_ack(struct rcv_data_list_node *head);
+int print_rcv_buff_list(struct rcv_buff_list * head);
 
-int print_rcv_payload_list(struct rcv_data_list_node * head);
-
-int del_below_rcv_payload_list(struct rcv_data_list_node * head, uint32_t dan);
+int del_below_rcv_buff_list(struct rcv_buff_list * head, uint32_t dan);
 
 
