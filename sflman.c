@@ -1459,8 +1459,8 @@ struct subflow* create_subflow(struct fourtuple *ft1,
 	}
 	//+++new
 {
-	sflx->dss_map_list_head = malloc(sizeof(struct dss_map_list_node));
-	init_head_dsn_map_list(sflx->dss_map_list_head);
+	sflx->snd_map_list_head = malloc(sizeof(struct snd_map_list));
+	init_head_snd_map_list(sflx->snd_map_list_head);
 	sflx->sockfd = sockfd;
 }	
 	
@@ -1554,7 +1554,7 @@ int delete_subflow(struct fourtuple *ft1) {
 	//delete subflow from hash tables	
 	HASH_DEL(sfl_hash, sflx);
 
-	free(sflx->dss_map_list_head);
+	free(sflx->snd_map_list_head);
 	free(sflx);
 	return 0;
 }

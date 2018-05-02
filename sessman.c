@@ -1648,8 +1648,8 @@ struct session* create_session(
 	}
 	
 	//+++new
-	sess->rcv_data_list_head = malloc(sizeof(struct rcv_data_list_node));
-	init_head_rcv_data_list(sess->rcv_data_list_head);
+	sess->rcv_buff_list_head = malloc(sizeof(struct rcv_buff_list));
+	init_head_rcv_buff_list(sess->rcv_buff_list_head);
 
 	if(key_loc != NULL) memcpy(sess->key_loc, key_loc, 8);
 	else memset(sess->key_loc, 0, 8);
@@ -1777,7 +1777,7 @@ int delete_session(struct fourtuple *ft1, int rst_sess) {
 	HASH_DEL(sess_hash, sess);
 
 	if (sess != NULL) {
-		free(sess->rcv_data_list_head);
+		free(sess->rcv_buff_list_head);
 		free(sess);
 	}
 
