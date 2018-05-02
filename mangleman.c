@@ -1587,15 +1587,15 @@ int find_dss_map_list(struct dss_map_list_node *head, uint32_t tsn, struct dss_m
 
 int print_dss_map_list(struct dss_map_list_node *head) {
 
-	if (!head) {
-		add_err_msg("print_dss_map_list:null head");
+	if (!head || list_empty(&head->list) {
+		add_err_msg("print_dss_map_list:null head or empty");
 		return -1;
 	}
 
 	struct dss_map_list_node *iter;
 	add_msg("dss map list:\n---------------------------\ntsn      dan      dsn");
 	list_for_each_entry(iter, &head->list, list) {
-		snprintf(msg_buf, MAX_MSG_LENGTH, "%-8x %-8x %x\n", iter->tsn, iter->dan, iter->dsn);
+		snprintf(msg_buf, MAX_MSG_LENGTH, "%-8x %-8x %x", iter->tsn, iter->dan, iter->dsn);
 		add_msg(msg_buf);
 	}
 	add_msg("---------------------------");
@@ -1644,7 +1644,7 @@ int insert_rcv_payload_list(struct rcv_data_list_node *head, uint32_t dan,uint32
 
 	list_node_add_ordered(&head->list, &new_node->list, dsn);
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "insert_dsn_map_list:dan %x, dsn %x, len %d", dan, dsn, paylen);
+	snprintf(msg_buf,MAX_MSG_LENGTH, "insert_rcv_payload_list:dan %x, dsn %x, len %d", dan, dsn, paylen);
 	add_msg(msg_buf);
 
 	print_rcv_payload_list(head);
@@ -1665,7 +1665,7 @@ uint32_t find_data_ack(struct rcv_data_list_node *head) {
 		if ((iter->dsn + iter->len) != next->dsn)
 			break;
 	}
-	snprintf(msg_buf,MAX_MSG_LENGTH,"find_data_ack: dan:%x\n", iter->dsn + iter->len);
+	snprintf(msg_buf,MAX_MSG_LENGTH,"find_data_ack: dan:%x", iter->dsn + iter->len);
 	add_msg(msg_buf);
 
 	print_rcv_payload_list(head);
@@ -1674,7 +1674,7 @@ uint32_t find_data_ack(struct rcv_data_list_node *head) {
 
 int print_rcv_payload_list(struct rcv_data_list_node* head) {
 
-	if (!head) {
+	if (!head || list_empty(&head->list)) {
 		add_err_msg("print_dss_map_list:null head");
 		return -1;
 	}
