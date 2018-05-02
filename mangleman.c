@@ -1172,7 +1172,7 @@ int mangle_packet() {
 							htonl(packd.sess->offset_rem + packd.sess->highest_dsn_rem),
 							htonl(packd.sess->offset_loc + dssopt_in.dan),
 							16,//ACK
-							htons(packd.sess->curr_window_loc),
+							htons(packd.sess->curr_window_rem),
 							NULL,
 							0,
 							NULL,
@@ -1442,7 +1442,7 @@ int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsign
 		htonl(packd.sess->offset_rem + dsn),
 		htonl(packd.sess->offset_loc + dan),
 		16,//ACK
-		htons(packd.sess->curr_window_loc),
+		htons(packd.sess->curr_window_rem),
 		NULL,
 		0,
 		payload,
