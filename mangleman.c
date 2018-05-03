@@ -1091,6 +1091,27 @@ int mangle_packet() {
 			
 			add_msg("mangle_packet: browser output");
 
+			//terminate the whole connection
+			if (packd.fin) {
+				create_raw_packet_send(&packd.sess->ft,
+					1,//input
+					packd.tcph->th_ack,
+					htonl(ntohl(packd.tcph->th_seq) + 1),
+					17,//FIN/ACK
+					packd.sess->init_window_rem,
+					NULL,
+					0,
+					NULL,
+					0
+					);
+
+				execute_sess_teardown(packd.sess);
+
+				add_msg("mangle_packet: terminate the whole connection");
+
+				return 0;
+			}
+
 			if(packd.paylen > 0) //data packet
 				split_browser_data_send();
 			else if(packd.ack){	//ack packet
@@ -1100,7 +1121,7 @@ int mangle_packet() {
 
 				del_below_rcv_buff_list(packd.sess->rcv_buff_list_head, packd.dan_curr_loc);
 			}
-			set_verdict(1,0,0);
+			set_verdict(0,0,0);
 		}	
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
@@ -1160,15 +1181,8 @@ int mangle_packet() {
 						del_below_snd_map_list(packd.sfl->snd_map_list_head, ntohl(packd.tcph->th_ack));
 						
 						//send ack packet to browser
-						struct fourtuple reverse_sess_ft;
-						reverse_sess_ft.ip_loc = packd.sess->ft.ip_rem;
-						reverse_sess_ft.prt_loc = packd.sess->ft.prt_rem;
-						reverse_sess_ft.ip_rem = packd.sess->ft.ip_loc;
-						reverse_sess_ft.prt_rem = packd.sess->ft.prt_loc;
-					
-						uint16_t pack_len = 0;
-						create_packet_payload(raw_buf, &pack_len,
-							&reverse_sess_ft,
+						create_raw_packet_send(&packd.sess->ft,
+							1,//input
 							htonl(packd.sess->offset_rem + packd.sess->highest_dsn_rem),
 							htonl(packd.sess->offset_loc + dssopt_in.dan),
 							16,//ACK
@@ -1178,7 +1192,6 @@ int mangle_packet() {
 							NULL,
 							0);
 						
-						send_raw_packet(raw_sd, raw_buf, pack_len, htonl(reverse_sess_ft.ip_rem));
 					}
 					else if(dssopt_in.Fflag){
 						add_msg("rcv fin");
@@ -1430,15 +1443,9 @@ int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsign
 		return -1;
 	}
 
-	struct fourtuple reverse_sess_ft;
-	reverse_sess_ft.ip_loc = packd.sess->ft.ip_rem;
-	reverse_sess_ft.prt_loc = packd.sess->ft.prt_rem;
-	reverse_sess_ft.ip_rem = packd.sess->ft.ip_loc;
-	reverse_sess_ft.prt_rem = packd.sess->ft.prt_loc;
-
 	uint16_t pack_len = 0;
-	create_packet_payload(raw_buf, &pack_len,
-		&reverse_sess_ft,
+	create_raw_packet_send(%packd.sess->ft,
+		1,
 		htonl(packd.sess->offset_rem + dsn),
 		htonl(packd.sess->offset_loc + dan),
 		16,//ACK
@@ -1447,8 +1454,6 @@ int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsign
 		0,
 		payload,
 		paylen);
-
-	send_raw_packet(raw_sd, raw_buf, pack_len, htonl(sess->ft.ip_loc));
 
 	snprintf(msg_buf, MAX_MSG_LENGTH, "ship_data_to_browser:dan %x, dsn %x, len %d", dan, dsn, paylen);
 	add_msg(msg_buf);
@@ -1648,7 +1653,7 @@ int del_below_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan) {
 }
 
 
-//#define snprintf_msg(msg) snprintf(msg_buf, MAX_MSG_LENGTH,msg); add_msg(msg_buf);
+//#define snprintf_msg(msg...) snprintf(msg_buf, MAX_MSG_LENGTH,msg); add_msg(msg_buf);
 
 int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, const unsigned char *payload, uint16_t paylen) {
 

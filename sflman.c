@@ -589,17 +589,10 @@ int subflow_syn_sent_master(){
 	}
 	else set_verdict(1,1,0);
 
-//+++send syn/ack to browser, call connect to invoke second subflow
+//+++send syn/ack to browser
 {
-	struct fourtuple reverse_sess_ft;
-	reverse_sess_ft.ip_loc = packd.sess->ft.ip_rem;
-	reverse_sess_ft.prt_loc = packd.sess->ft.prt_rem;
-	reverse_sess_ft.ip_rem = packd.sess->ft.ip_loc;
-	reverse_sess_ft.prt_rem = packd.sess->ft.prt_loc;
-
-	uint16_t pack_len = 0;
-	create_packet_payload(raw_buf, &pack_len, 
-		&reverse_sess_ft, 
+	create_packet_payload(&packd.sess->ft,
+		1,
 		htonl(packd.sess->idsn_rem), 
 		htonl(packd.sess->idsn_loc + packd.sess->offset_loc + 1),
 		18,//SYN/ACK
@@ -608,34 +601,10 @@ int subflow_syn_sent_master(){
 		0,
 		NULL,
 		0);
-/*
-	uint16_t pack_len = packd.tcplen + packd.ip4len;
-	memcpy(raw_buf, packd.buf, pack_len);
-
-	//change dst
-	struct ipheader* ip4h = (struct ipheader*)(raw_buf+packd.pos_i4head);
-	struct tcpheader* tcph = (struct tcpheader*)(raw_buf+packd.pos_thead);
-	ip4h->ip_dst = htonl(packd.sess->ft.ip_loc);
-	tcph->th_dport = htons(packd.sess->ft.prt_loc);
-	tcph->th_ack = htonl(packd.sess->idsn_loc + packd.sess->offset_loc+1);
-
-	//change timestamp
-	if(packd.sess->timestamp_flag) 
-		set_timestamps(raw_buf+packd.pos_thead+20 , packd.pos_pay-packd.pos_thead-20, packd.sfl->tsecr, packd.sess->tsval, 1);
 	
-	//update of both checksums
-	compute_checksums(raw_buf, packd.ip4len, pack_len);
-*/
 	snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: sending SYN/ACK packet to browser");
 	add_msg(msg_buf);
 
-	//send syn/ack packet to browser(loc)
-	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(packd.sess->ft.ip_loc))<0) {
-		delete_subflow(&packd.sess->ft);
-		snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: send_raw_packet returns error");
-		add_msg(msg_buf);
-		return 0;
-	}
 }
 //---new
 

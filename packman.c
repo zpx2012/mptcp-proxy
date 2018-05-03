@@ -74,6 +74,81 @@ void create_packet(unsigned char *buf, uint16_t *plen,
 	compute_checksums(buf, iplen, *plen);
 }
 
+int create_raw_packet_send(struct fourtuple *pft,
+	uint8_t direction,//1:input 3:output
+	uint32_t sn_n, //netork format
+	uint32_t an_n, //netork format
+	unsigned char flags_n,//network format 
+	uint16_t win_n, //network format
+	unsigned char *buf_opt,
+	uint16_t len_opt,
+	unsigned char *buf_pay,
+	uint16_t len_pay
+) {
+	unsigned char *buf = raw_buf;
+	uint16_t len;
+	struct sockaddr_in sin;
+	sin.sin_family = AF_INET;
+
+	len_opt = pad_options_buffer(buf_opt, len_opt);
+
+	uint16_t iplen = 20;
+	uint16_t tcplen = 20;
+	unsigned char offset = tcplen + len_opt;
+	len = iplen + offset + len_pay;
+	memset(buf, 0, len);
+
+	//enter payload
+	if (buf_pay && len_pay)
+		memcpy(buf + iplen + tcplen + len_opt, buf_pay, len_pay);
+
+	//enter options
+	if (buf_opt && len_opt)
+		memcpy(buf + iplen + tcplen, buf_opt, len_opt);
+
+	//tcp header
+	if (direction == 3) {//output
+		*((uint16_t*)(buf + iplen)) = htons(pft->prt_loc);
+		*((uint16_t*)(buf + iplen + 2)) = htons(pft->prt_rem);
+		*((uint32_t*)(buf + 12)) = htonl(pft->ip_loc);
+		*((uint32_t*)(buf + 16)) = htonl(pft->ip_rem);
+		sin.sin_port = htons(pft->prt_rem);
+		sin.sin_addr.s_addr = htonl(pft->ip_rem);
+	}
+	else if (direction == 1) {//input
+		*((uint16_t*)(buf + iplen)) = htons(pft->prt_rem);
+		*((uint16_t*)(buf + iplen + 2)) = htons(pft->prt_loc);
+		*((uint32_t*)(buf + 12)) = htonl(pft->ip_rem);
+		*((uint32_t*)(buf + 16)) = htonl(pft->ip_loc);
+		sin.sin_port = htons(pft->prt_loc);
+		sin.sin_addr.s_addr = htonl(pft->ip_loc);
+	}
+	*((uint32_t*)(buf + iplen + 4)) = sn;
+	*((uint32_t*)(buf + iplen + 8)) = an;
+	*(buf + iplen + 13) = flags;
+	*((uint16_t*)(buf + iplen + 14)) = win;
+	*(buf + iplen + 12) = (unsigned char)(offset << 2);//divided by 2 and leftshift4
+
+	//IP header
+	*buf = 69;//version 4 ^^4 + 5
+	*(buf + 6) = 0x40;
+	*(buf + 8) = 64;//TTL
+	*(buf + 9) = 6;//TCP
+	*((uint16_t*)(buf + 2)) = htons(len);
+
+	//update of both checksums
+	compute_checksums(buf, iplen, len);
+
+	print_tcp_packet(buf);
+
+	int ret = sendto(raw_sd, buf, len, 0, (struct sockaddr*) &sin, sizeof(sin));
+	if (ret < 0)
+		add_err_msg("send_raw_packet returns error");
+
+	return ret;
+}
+
+
 void create_packet_payload(unsigned char *buf, uint16_t *plen, 
 	struct fourtuple *pft, 
 	uint32_t sn, //netork format

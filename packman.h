@@ -28,6 +28,9 @@ extern void create_packet(unsigned char *buf, uint16_t *plen,
 	unsigned char *buf_opt, 
 	uint16_t len_opt);
 
+int create_raw_packet_send(struct fourtuple * pft, uint8_t direction, uint32_t sn_n, uint32_t an_n, unsigned char flags_n, uint16_t win_n, unsigned char * buf_opt, uint16_t len_opt, unsigned char * buf_pay, uint16_t len_pay);
+
+
 void create_packet_payload(unsigned char * buf, uint16_t * plen, struct fourtuple * pft, uint32_t sn, uint32_t an, unsigned char flags, uint16_t win, unsigned char * buf_opt, uint16_t len_opt, unsigned char * buf_pay, uint16_t len_pay);
 
 char * tcp_flags(u_int8_t flags);

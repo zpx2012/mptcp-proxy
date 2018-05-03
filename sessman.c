@@ -618,7 +618,7 @@ int contemplate_new_session_output() {
 		sess->tsval = get_timestamp(packd.buf + packd.pos_thead+20, packd.tcplen-20, 0);
 
 	call_connect(sflx);
-	set_verdict(0,0,0);	
+	set_verdict(1,0,0);//let the syn pass, for regular connection compatible 	
 	return 1;
 }//end contemplate_new_session_output
 
