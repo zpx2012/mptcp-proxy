@@ -16,3 +16,4 @@ test_linklist
 *.sln
 *.vcxproj
 log.txt
+wireshark/regular tcp connection.pcapng

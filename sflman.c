@@ -591,7 +591,7 @@ int subflow_syn_sent_master(){
 
 //+++send syn/ack to browser
 {
-	create_packet_payload(&packd.sess->ft,
+	create_raw_packet_send(&packd.sess->ft,
 		1,
 		htonl(packd.sess->idsn_rem), 
 		htonl(packd.sess->idsn_loc + packd.sess->offset_loc + 1),

@@ -1443,8 +1443,7 @@ int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsign
 		return -1;
 	}
 
-	uint16_t pack_len = 0;
-	create_raw_packet_send(%packd.sess->ft,
+	create_raw_packet_send(&packd.sess->ft,
 		1,
 		htonl(packd.sess->offset_rem + dsn),
 		htonl(packd.sess->offset_loc + dan),

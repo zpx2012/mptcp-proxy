@@ -123,10 +123,10 @@ int create_raw_packet_send(struct fourtuple *pft,
 		sin.sin_port = htons(pft->prt_loc);
 		sin.sin_addr.s_addr = htonl(pft->ip_loc);
 	}
-	*((uint32_t*)(buf + iplen + 4)) = sn;
-	*((uint32_t*)(buf + iplen + 8)) = an;
-	*(buf + iplen + 13) = flags;
-	*((uint16_t*)(buf + iplen + 14)) = win;
+	*((uint32_t*)(buf + iplen + 4)) = sn_n;
+	*((uint32_t*)(buf + iplen + 8)) = an_n;
+	*(buf + iplen + 13) = flags_n;
+	*((uint16_t*)(buf + iplen + 14)) = win_n;
 	*(buf + iplen + 12) = (unsigned char)(offset << 2);//divided by 2 and leftshift4
 
 	//IP header
