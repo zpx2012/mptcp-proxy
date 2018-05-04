@@ -170,6 +170,8 @@ struct connect_args{
 	uint16_t port_dst_n;
 };
 
+#define FILE_NAME_LIST_LOG_LOCAL "list_log.txt"
+FILE* file_list_log;
 /*
 struct list_node{
 	struct list_head list;
@@ -804,6 +806,9 @@ void add_msg(char* msg);
 
 void add_err_msg(char * msg);
 
+#define log_list_msg(msg...) snprintf(msg_buf, MAX_MSG_LENGTH,msg); write_msg_file(file_list_log,msg_buf);
+
+void write_msg_file(FILE *pfile, char* msg);
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //void terminate_msg_data();
 // Prints prt_msg_array and closes file

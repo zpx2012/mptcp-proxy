@@ -1503,7 +1503,7 @@ int split_browser_data_send(){
 int init_head_snd_map_list(struct snd_map_list *head) {
 
 	if (!head) {
-		add_err_msg("init_head_snd_map_list:null head");
+		log_list_msg("[Error]:%s","init_head_snd_map_list:null head");
 		return -1;
 	}
 
@@ -1517,7 +1517,7 @@ int init_head_snd_map_list(struct snd_map_list *head) {
 int init_head_rcv_buff_list(struct rcv_buff_list *head) {
 
 	if (!head) {
-		add_err_msg("init_head_rcv_buff_list:null head");
+		log_list_msg("[Error]:%s","init_head_rcv_buff_list:null head");
 		return -1;
 	}
 
@@ -1531,7 +1531,7 @@ int init_head_rcv_buff_list(struct rcv_buff_list *head) {
 int insert_snd_map_list(struct snd_map_list* head, uint32_t tsn, uint32_t dan, uint32_t dsn) {
 
 	if (!head) {
-		add_err_msg("insert_snd_map_list:null head");
+		log_list_msg("[Error]:%s","insert_snd_map_list:null head");
 		return -1;
 	}
 
@@ -1548,9 +1548,8 @@ int insert_snd_map_list(struct snd_map_list* head, uint32_t tsn, uint32_t dan, u
 	//insert before iter
 	__list_add(&new_node->list, iter->list.prev, &iter->list);
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "insert_snd_map_list:dan %x, dsn %x, tsn %x", dan, dsn, tsn);
-	add_msg(msg_buf);
-
+	log_list_msg("insert_snd_map_list:dan %x, dsn %x, tsn %x", dan, dsn, tsn);
+	
 	print_snd_map_list(head);
 	return 0;
 }
@@ -1560,7 +1559,7 @@ int insert_snd_map_list(struct snd_map_list* head, uint32_t tsn, uint32_t dan, u
 int find_snd_map_list(struct snd_map_list *head, uint32_t tsn, struct snd_map_list **p_result) {
 
 	if (!head || list_empty(&head->list)) {
-		add_err_msg("find_snd_map_list:null head or empty list");
+		log_list_msg("[Error]:%s","find_snd_map_list:null head or empty list");
 		*p_result = NULL;
 		return -1;
 	}
@@ -1570,8 +1569,7 @@ int find_snd_map_list(struct snd_map_list *head, uint32_t tsn, struct snd_map_li
 	list_for_each_entry(iter, &head->list, list) {
 		if (iter->tsn == tsn) {
 			*p_result = iter;
-			snprintf(msg_buf,MAX_MSG_LENGTH, "find_snd_map_list： found dan %x, dsn %x, tsn %x", iter->dan, iter->dsn, iter->tsn);
-			add_msg(msg_buf);
+			log_list_msg("find_snd_map_list： found dan %x, dsn %x, tsn %x", iter->dan, iter->dsn, iter->tsn);
 			return 0;
 		}
 	}
@@ -1581,23 +1579,23 @@ int find_snd_map_list(struct snd_map_list *head, uint32_t tsn, struct snd_map_li
 int print_snd_map_list(struct snd_map_list *head) {
 
 	if (!head || list_empty(&head->list)) {
-		add_err_msg("print_snd_map_list:null head or empty");
+		log_list_msg("[Error]:%s","print_snd_map_list:null head or empty");
 		return -1;
 	}
 
 	struct snd_map_list *iter;
-	add_msg("-----------------------------------");
-	add_msg("|			snd map list		  |");
-	add_msg("- - - - - - - - - - - - - - - - - -");
-	add_msg("| dan	   | dsn	  | *tsn	  |");
-	add_msg("- - - - - - - - - - - - - - - - - -");
+	log_list_msg("%s","-----------------------------------");
+	log_list_msg("%s","|			snd map list		  |");
+	log_list_msg("%s","- - - - - - - - - - - - - - - - - -");
+	log_list_msg("%s","| dan	   | dsn	  | *tsn	  |");
+	log_list_msg("%s","- - - - - - - - - - - - - - - - - -");
 
 	list_for_each_entry(iter, &head->list, list) {
 		snprintf(msg_buf, MAX_MSG_LENGTH, "| %-8x | %-8x | %-8x  |", iter->dan, iter->dsn, iter->tsn);
-		add_msg(msg_buf);
+		
 	}
 	
-	add_msg("-----------------------------------");
+	log_list_msg("%s","-----------------------------------");
 
 	return 0;
 }
@@ -1606,19 +1604,19 @@ int print_snd_map_list(struct snd_map_list *head) {
 int del_below_snd_map_list(struct snd_map_list *head, uint32_t ack) {
 
 	if (!head || list_empty(&head->list)) {
-		add_err_msg("del_snd_map_list:null head");
+		log_list_msg("[Error]:%s","del_snd_map_list:null head");
 		return -1;
 	}
 
 	struct snd_map_list *iter, *next;
-	add_msg("before delete:");
+	log_list_msg("%s","before delete:");
 	print_snd_map_list(head);
 	list_for_each_entry_safe(iter, next, &head->list, list) {
 		if ( (iter->tsn < ack)) {
 			list_del(&iter->list);
 			free(iter);
-			snprintf(msg_buf,MAX_MSG_LENGTH,"delete node: tsn = %x", iter->tsn);
-			add_msg(msg_buf);
+			log_list_msg("delete node: tsn = %x", iter->tsn);
+			
 			print_snd_map_list(head);
 		}
 	}
@@ -1629,13 +1627,13 @@ int del_below_snd_map_list(struct snd_map_list *head, uint32_t ack) {
 int del_below_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan) {
 
 	if (!head || list_empty(&head->list)) {
-		add_err_msg("del_below_rcv_payload:null head or empty list");
+		log_list_msg("[Error]:%s","del_below_rcv_payload:null head or empty list");
 		return -1;
 	}
 
 	struct rcv_buff_list *iter, *next;
-	snprintf(msg_buf,MAX_MSG_LENGTH,"before delete: dan = %x", dan);
-	add_msg(msg_buf);
+	log_list_msg("before delete: dan = %x", dan);
+	
 	
 	print_rcv_buff_list(head);
 	list_for_each_entry_safe(iter, next, &head->list, list) {
@@ -1643,8 +1641,8 @@ int del_below_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan) {
 			list_del(&iter->list);
 			free(iter->payload);
 			free(iter);
-			snprintf(msg_buf,MAX_MSG_LENGTH,"delete node: dsn = %x", iter->dsn);
-			add_msg(msg_buf);
+			log_list_msg("delete node: dsn = %x", iter->dsn);
+			
 			print_rcv_buff_list(head);
 		}
 	}
@@ -1652,12 +1650,12 @@ int del_below_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan) {
 }
 
 
-//#define snprintf_msg(msg...) snprintf(msg_buf, MAX_MSG_LENGTH,msg); add_msg(msg_buf);
+//#define snprintf_msg(msg...) snprintf(msg_buf, MAX_MSG_LENGTH,msg); 
 
 int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, const unsigned char *payload, uint16_t paylen) {
 
 	if (!head) {
-		add_err_msg("insert_rcv_buff_list:null head");
+		log_list_msg("[Error]:%s","insert_rcv_buff_list:null head");
 		return -1;
 	}
 
@@ -1677,8 +1675,8 @@ int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, 
 	//insert before iter
 	__list_add(&new_node->list, iter->list.prev, &iter->list);
 
-	snprintf(msg_buf,MAX_MSG_LENGTH, "insert_rcv_buff_list:dan %x, dsn %x, len %d", dan, dsn, paylen);
-	add_msg(msg_buf);
+	log_list_msg("insert_rcv_buff_list:dan %x, dsn %x, len %d", dan, dsn, paylen);
+	
 
 	print_rcv_buff_list(head);
 	return 0;
@@ -1689,7 +1687,7 @@ int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, 
 uint32_t find_data_ack(struct rcv_buff_list *head) {
 
 	if (!head || list_empty(&head->list)) {
-		add_err_msg("find_data_ack:null head or empty list");
+		log_list_msg("[Error]:%s","find_data_ack:null head or empty list");
 		return 0;
 	}
 
@@ -1698,8 +1696,8 @@ uint32_t find_data_ack(struct rcv_buff_list *head) {
 		if ((iter->dsn + iter->len) != next->dsn)
 			break;
 	}
-	snprintf(msg_buf,MAX_MSG_LENGTH,"find_data_ack: dan:%x", iter->dsn + iter->len);
-	add_msg(msg_buf);
+	log_list_msg("find_data_ack: dan:%x", iter->dsn + iter->len);
+	
 
 	print_rcv_buff_list(head);
 	return iter->dsn + iter->len;
@@ -1708,24 +1706,26 @@ uint32_t find_data_ack(struct rcv_buff_list *head) {
 int print_rcv_buff_list(struct rcv_buff_list* head) {
 
 	if (!head || list_empty(&head->list)) {
-		add_err_msg("print_snd_map_list:null head");
+		log_list_msg("[Error]:%s","print_snd_map_list:null head");
 		return -1;
 	}
 
 	struct rcv_buff_list *iter;
-	add_msg("---------------------------------------------");
-	add_msg("|			    rcv data list               |");
-	add_msg("- - - - - - - - - - - - - - - - - - - - - - -");
-	add_msg("| dan      | *dsn     | len      | ack      |");
-	add_msg("- - - - - - - - - - - - - - - - - - - - - - -");
+	log_list_msg("%s","---------------------------------------------");
+	log_list_msg("%s","|			    rcv data list               |");
+	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - -");
+	log_list_msg("%s","| dan      | *dsn     | len      | ack      |");
+	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - -");
 	
 	list_for_each_entry(iter, &head->list, list) {
 		snprintf(msg_buf, MAX_MSG_LENGTH, "| %-8x | %-8x | %-8d | %-8x |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len);
-		add_msg(msg_buf);
+		
 	}
-	add_msg("---------------------------------------------");
+	log_list_msg("%s","---------------------------------------------");
 	return 0;
 }
+
+
 
 
 

@@ -206,6 +206,19 @@ void add_msg(char *msg){
 	prt_msg_array.curr_msg_index %= MAX_MSG_LINES;//loops around
 }
 
+void write_msg_file(FILE *pfile, char* msg){
+
+	if(!pfile)
+	{
+		perror("Failed to open file");
+		return;
+	} else{
+		if(fprintf(pfile,"%s\n", msg) <= 0) 
+			perror("Failed to write to file");
+	}
+	return;
+}
+
 void add_err_msg(char* msg) {
 	snprintf(msg_buf, MAX_MSG_LENGTH, "[Error] %s", msg);
 	add_msg(msg_buf);
