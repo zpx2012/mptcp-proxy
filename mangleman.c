@@ -1126,7 +1126,10 @@ int mangle_packet() {
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
 			add_msg("mangle_packet: browser input");
-			set_verdict(1,0,0);
+			if(packd.syn && packd.ack)
+				set_verdict(0,0,0);
+			else
+				set_verdict(1,0,0);
 			
 		}	
 	}
