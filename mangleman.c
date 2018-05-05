@@ -1720,7 +1720,7 @@ int print_rcv_buff_list(struct rcv_buff_list* head) {
 	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
 	
 	list_for_each_entry(iter, &head->list, list) {
-		log_list_msg( "| %-8x | %-8x | %-8d | %-8x | %-6x | %-6x | %-6x | %-6d |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len，&iter->list, iter->list.prev, iter->list.next, packd.sess->ft.prt_loc);
+		log_list_msg( "| %-8x | %-8x | %-8d | %-8x | %-6x | %-6x | %-6x | %-6d |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len, &iter->list, iter->list.prev, iter->list.next, packd.sess->ft.prt_loc);
 		
 	}
 	log_list_msg("%s","---------------------------------------------------------------------------------");
