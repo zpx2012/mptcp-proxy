@@ -1551,7 +1551,7 @@ int insert_snd_map_list(struct snd_map_list* head, uint32_t tsn, uint32_t dan, u
 	//insert before iter
 	__list_add(&new_node->list, iter->list.prev, &iter->list);
 
-	log_list_msg("insert_snd_map_list:dan %x, dsn %x, tsn %x", dan, dsn, tsn);
+	log_list_msg("insert_snd_map_list:dan %x, dsn %x, tsn %x, port %d", dan, dsn, tsn, packd.ft.prt_loc);
 	
 	print_snd_map_list(head);
 	return 0;
@@ -1587,18 +1587,18 @@ int print_snd_map_list(struct snd_map_list *head) {
 	}
 
 	struct snd_map_list *iter;
-	log_list_msg("%s","-----------------------------------");
-	log_list_msg("%s","|			snd map list		  |");
-	log_list_msg("%s","- - - - - - - - - - - - - - - - - -");
-	log_list_msg("%s","| dan	   | dsn	  | *tsn	  |");
-	log_list_msg("%s","- - - - - - - - - - - - - - - - - -");
+	log_list_msg("%s","-----------------------------------------------------------------------");
+	log_list_msg("%s","|			               snd map list		                          |");
+	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+	log_list_msg("%s","| dan	   | dsn	  | *tsn	  | list   | prev   | next   | port   |");
+	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
 
 	list_for_each_entry(iter, &head->list, list) {
-		log_list_msg( "| %-8x | %-8x | %-8x  |", iter->dan, iter->dsn, iter->tsn);
+		log_list_msg( "| %-8x | %-8x | %-8x  | %-6x | %-6x | %-6x | %-6d |", iter->dan, iter->dsn, iter->tsn, &iter->list, iter->list.prev, iter->list.next, packd.sess->ft.prt_loc);
 		
 	}
 	
-	log_list_msg("%s","-----------------------------------");
+	log_list_msg("%s","-----------------------------------------------------------------------");
 
 	return 0;
 }
@@ -1612,13 +1612,13 @@ int del_below_snd_map_list(struct snd_map_list *head, uint32_t ack) {
 	}
 
 	struct snd_map_list *iter, *next;
-	log_list_msg("%s","before delete:");
+	log_list_msg("before delete: ack %x, port %d", ack, packd.ft.prt_loc);
 	print_snd_map_list(head);
 	list_for_each_entry_safe(iter, next, &head->list, list) {
 		if ( (iter->tsn < ack)) {
+			log_list_msg("delete node: tsn = %x", iter->tsn);
 			list_del(&iter->list);
 			free(iter);
-			log_list_msg("delete node: tsn = %x", iter->tsn);
 			
 			print_snd_map_list(head);
 		}
@@ -1635,16 +1635,15 @@ int del_below_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan) {
 	}
 
 	struct rcv_buff_list *iter, *next;
-	log_list_msg("before delete: dan = %x", dan);
-	
+	log_list_msg("before delete: dan = %x, port = %d", dan, packd.ft.prt_loc);
 	
 	print_rcv_buff_list(head);
 	list_for_each_entry_safe(iter, next, &head->list, list) {
 		if ( (iter->dsn < dan) && (next != head)) {
+			log_list_msg("delete node: dsn = %x", iter->dsn);
 			list_del(&iter->list);
 			free(iter->payload);
 			free(iter);
-			log_list_msg("delete node: dsn = %x", iter->dsn);
 			
 			print_rcv_buff_list(head);
 		}
@@ -1678,7 +1677,7 @@ int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, 
 	//insert before iter
 	__list_add(&new_node->list, iter->list.prev, &iter->list);
 
-	log_list_msg("insert_rcv_buff_list:dan %x, dsn %x, len %d", dan, dsn, paylen);
+	log_list_msg("insert_rcv_buff_list:dan %x, dsn %x, len %d, port %d", dan, dsn, paylen, packd.ft.prt_loc);
 	
 
 	print_rcv_buff_list(head);
@@ -1714,17 +1713,17 @@ int print_rcv_buff_list(struct rcv_buff_list* head) {
 	}
 
 	struct rcv_buff_list *iter;
-	log_list_msg("%s","---------------------------------------------");
-	log_list_msg("%s","|			    rcv data list               |");
-	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - -");
-	log_list_msg("%s","| dan      | *dsn     | len      | ack      |");
-	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - -");
+	log_list_msg("%s","---------------------------------------------------------------------------------");
+	log_list_msg("%s","|			                    rcv data list                                   |");
+	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+	log_list_msg("%s","| dan      | *dsn     | len      | ack      | list   | prev   | next   | port   |");
+	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
 	
 	list_for_each_entry(iter, &head->list, list) {
-		log_list_msg( "| %-8x | %-8x | %-8d | %-8x |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len);
+		log_list_msg( "| %-8x | %-8x | %-8d | %-8x | %-6x | %-6x | %-6x | %-6d |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len，&iter->list, iter->list.prev, iter->list.next, packd.sess->ft.prt_loc);
 		
 	}
-	log_list_msg("%s","---------------------------------------------");
+	log_list_msg("%s","---------------------------------------------------------------------------------");
 	return 0;
 }
 
