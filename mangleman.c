@@ -1591,7 +1591,7 @@ int print_snd_map_list(struct snd_map_list *head) {
 	log_list_msg("%s","- - - - - - - - - - - - - - - - - -");
 
 	list_for_each_entry(iter, &head->list, list) {
-		snprintf(msg_buf, MAX_MSG_LENGTH, "| %-8x | %-8x | %-8x  |", iter->dan, iter->dsn, iter->tsn);
+		log_list_msg( "| %-8x | %-8x | %-8x  |", iter->dan, iter->dsn, iter->tsn);
 		
 	}
 	
@@ -1650,7 +1650,7 @@ int del_below_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan) {
 }
 
 
-//#define snprintf_msg(msg...) snprintf(msg_buf, MAX_MSG_LENGTH,msg); 
+//#define snprintf_msg(msg...) log_list_msg(msg); 
 
 int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, const unsigned char *payload, uint16_t paylen) {
 
@@ -1718,12 +1718,13 @@ int print_rcv_buff_list(struct rcv_buff_list* head) {
 	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - -");
 	
 	list_for_each_entry(iter, &head->list, list) {
-		snprintf(msg_buf, MAX_MSG_LENGTH, "| %-8x | %-8x | %-8d | %-8x |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len);
+		log_list_msg( "| %-8x | %-8x | %-8d | %-8x |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len);
 		
 	}
 	log_list_msg("%s","---------------------------------------------");
 	return 0;
 }
+
 
 
 
