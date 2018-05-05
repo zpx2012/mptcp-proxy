@@ -1542,6 +1542,7 @@ int insert_snd_map_list(struct snd_map_list* head, uint32_t tsn, uint32_t dan, u
 	new_node->tsn = tsn;
 	new_node->dsn = dsn;
 	new_node->dan = dan;
+//	INIT_LIST_HEAD(&new_node->list);
 
 	struct snd_map_list *iter;
 	list_for_each_entry(iter, &head->list, list) {
@@ -1588,7 +1589,7 @@ int print_snd_map_list(struct snd_map_list *head) {
 
 	struct snd_map_list *iter;
 	log_list_msg("%s","-----------------------------------------------------------------------");
-	log_list_msg("%s","|			               snd map list		                          |");
+	log_list_msg("%s","|			         snd map list %-12x                      |",head);
 	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
 	log_list_msg("%s","| dan	   | dsn	  | *tsn	  | list   | prev   | next   | port   |");
 	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
@@ -1607,7 +1608,7 @@ int print_snd_map_list(struct snd_map_list *head) {
 int del_below_snd_map_list(struct snd_map_list *head, uint32_t ack) {
 
 	if (!head || list_empty(&head->list)) {
-		log_list_msg("[Error]:%s","del_snd_map_list:null head");
+		log_list_msg("del_snd_map_list:null head, head %x, head->prev %x, head->next %x", &head->list, head->list.prev, head->list.next);
 		return -1;
 	}
 
@@ -1635,12 +1636,12 @@ int del_below_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan) {
 	}
 
 	struct rcv_buff_list *iter, *next;
-	log_list_msg("before delete: dan = %x, port = %d", dan, packd.ft.prt_loc);
+//	log_list_msg("before delete: dan = %x, port = %d", dan, packd.ft.prt_loc);
 	
 	print_rcv_buff_list(head);
 	list_for_each_entry_safe(iter, next, &head->list, list) {
 		if ( (iter->dsn < dan) && (next != head)) {
-			log_list_msg("delete node: dsn = %x", iter->dsn);
+//			log_list_msg("delete node: dsn = %x", iter->dsn);
 			list_del(&iter->list);
 			free(iter->payload);
 			free(iter);
@@ -1651,8 +1652,6 @@ int del_below_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan) {
 	return 0;
 }
 
-
-//#define snprintf_msg(msg...) log_list_msg(msg); 
 
 int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, const unsigned char *payload, uint16_t paylen) {
 
@@ -1677,7 +1676,7 @@ int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, 
 	//insert before iter
 	__list_add(&new_node->list, iter->list.prev, &iter->list);
 
-	log_list_msg("insert_rcv_buff_list:dan %x, dsn %x, len %d, port %d", dan, dsn, paylen, packd.ft.prt_loc);
+//	log_list_msg("insert_rcv_buff_list:dan %x, dsn %x, len %d, port %d", dan, dsn, paylen, packd.ft.prt_loc);
 	
 
 	print_rcv_buff_list(head);
@@ -1698,7 +1697,7 @@ uint32_t find_data_ack(struct rcv_buff_list *head) {
 		if ((iter->dsn + iter->len) != next->dsn)
 			break;
 	}
-	log_list_msg("find_data_ack: dan:%x", iter->dsn + iter->len);
+//	log_list_msg("find_data_ack: dan:%x", iter->dsn + iter->len);
 	
 
 	print_rcv_buff_list(head);
@@ -1706,7 +1705,7 @@ uint32_t find_data_ack(struct rcv_buff_list *head) {
 }
 
 int print_rcv_buff_list(struct rcv_buff_list* head) {
-
+/*
 	if (!head || list_empty(&head->list)) {
 		log_list_msg("[Error]:%s","print_snd_map_list:null head");
 		return -1;
@@ -1725,6 +1724,7 @@ int print_rcv_buff_list(struct rcv_buff_list* head) {
 	}
 	log_list_msg("%s","---------------------------------------------------------------------------------");
 	return 0;
+*/
 }
 
 
