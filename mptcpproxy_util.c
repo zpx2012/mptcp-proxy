@@ -21,6 +21,9 @@
 struct print_data prt_data;
 struct print_msg_array prt_msg_array;
 
+uint32_t ip_white_list[MAX_IP_WHITE_LIST_LEN] = {0};
+uint16_t ip_white_list_counter = 0;
+
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //sn smaller
 // returns 1 if a "<" b
