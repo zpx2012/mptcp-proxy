@@ -173,8 +173,8 @@ struct connect_args{
 #define FILE_NAME_LIST_LOG_LOCAL "list_log.txt"
 FILE* file_list_log;
 #define MAX_IP_WHITE_LIST_LEN 2000
-uint32_t ip_white_list[MAX_IP_WHITE_LIST_LEN] = {0};
-uint16_t ip_white_list_counter = 0;
+uint32_t ip_white_list[MAX_IP_WHITE_LIST_LEN];
+uint16_t ip_white_list_counter;
 
 #define log(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); add_msg(msg_buf);
 #define log_list_msg(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); write_msg_file(prt_msg_array.file_msg,msg_buf);
