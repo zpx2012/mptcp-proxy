@@ -235,7 +235,7 @@ void update_timestamp(){
 	if(packd.hook < 3 && packd.fwd_type == M_TO_T) {
 
 		ts = get_timestamp(packd.buf+packd.pos_thead+20, packd.tcplen-20, 0);
-		if(sn_smaller(packd.sfl->tsecr, ts)) packd.sfl->tsecr = ts;
+		if(packd.sfl && sn_smaller(packd.sfl->tsecr, ts)) packd.sfl->tsecr = ts;
 	}
 }
 
