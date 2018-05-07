@@ -483,6 +483,11 @@ int call_connect(struct subflow* sfl){
 
 int contemplate_new_session_output() {
 
+	if(is_in_ip_white_list_array(packd.ft.ip_rem)){
+		set_verdict(1,0,0);
+		return 0;
+	}
+		
 	//create socket
 	int sockfd;
 	struct fourtuple ft_sfl;
@@ -618,7 +623,7 @@ int contemplate_new_session_output() {
 		sess->tsval = get_timestamp(packd.buf + packd.pos_thead+20, packd.tcplen-20, 0);
 
 	call_connect(sflx);
-	set_verdict(1,0,0);//let the syn pass, for regular connection compatible 	
+	set_verdict(0,0,0);	
 	return 1;
 }//end contemplate_new_session_output
 
@@ -783,6 +788,7 @@ int session_syn_sent() {
 			delete_session_parm(packd.sess->token_loc);
 			delete_session(&packd.sess->ft, 1);
 			set_verdict(1,0,0);
+			add_ip_white_list_array(packd.sess->ft.ip_rem);
 			return 0;
 		}
 

@@ -1121,7 +1121,7 @@ int mangle_packet() {
 
 				del_below_rcv_buff_list(packd.sess->rcv_buff_list_head, packd.dan_curr_loc);
 			}
-			set_verdict(0,0,0);
+			set_verdict(1,0,0);
 		}	
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
@@ -1732,7 +1732,24 @@ int print_rcv_buff_list(struct rcv_buff_list* head) {
 */
 }
 
+int add_ip_white_list_array(uint32_t ip) {
 
+	if (ip_white_list_counter >= MAX_IP_WHITE_LIST_LEN) {
+		add_err_msg("add_ip_white_list_array:too many ip");
+		return -1;
+	}
+
+	ip_white_list[ip_white_list_counter++] = ip;
+	return 0;
+}
+
+int is_in_ip_white_list_array(uint32_t target_ip) {
+
+	for (size_t i = 0; i < MAX_IP_WHITE_LIST_LEN; i++)
+		if (ip_white_list[i] == target_ip)
+			return 1;
+	return 0;
+}
 
 
 

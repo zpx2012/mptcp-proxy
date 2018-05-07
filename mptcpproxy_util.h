@@ -172,13 +172,10 @@ struct connect_args{
 
 #define FILE_NAME_LIST_LOG_LOCAL "list_log.txt"
 FILE* file_list_log;
-/*
-struct list_node{
-	struct list_head list;
-	uint32_t index;
-	void *data;
-};//generic linked list
-*/
+#define MAX_IP_WHITE_LIST_LEN 2000
+uint32_t ip_white_list[MAX_IP_WHITE_LIST_LEN];
+uint16_t ip_white_list_counter = 0;
+
 
 struct snd_map_list{//index = tsn
 	struct list_head list;
