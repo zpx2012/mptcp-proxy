@@ -1206,8 +1206,8 @@ int mangle_packet() {
 
 	//*****CONTROL-PLANE MANAGEMENT******
 	//Subflow control plane: only for INPUT (hook = 1) && CANDIDATE sfls and when session established
-	if(packd.hook<3 && packd.fwd_type == M_TO_T && packd.sess->sess_state >= ESTABLISHED)
-		update_subflow_control_plane();
+//	if(packd.hook<3 && packd.fwd_type == M_TO_T && packd.sess->sess_state >= ESTABLISHED)
+//		update_subflow_control_plane();
 
 	//session control plane
 	if(!packd.is_from_subflow){
