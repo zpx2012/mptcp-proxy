@@ -1583,13 +1583,13 @@ int find_snd_map_list(struct snd_map_list *head, uint32_t tsn, struct snd_map_li
 int print_snd_map_list(struct snd_map_list *head) {
 
 	if (!head || list_empty(&head->list)) {
-		log_list_msg("[Error]:%s","print_snd_map_list:null head or empty");
+		log_list_msg("del_snd_map_list:null head, head %x, head->prev %x, head->next %x", &head->list, head->list.prev, head->list.next);
 		return -1;
 	}
 
 	struct snd_map_list *iter;
 	log_list_msg("%s","-----------------------------------------------------------------------");
-	log_list_msg("%s","|			         snd map list %-12x                      |",head);
+	log_list_msg("|			         snd map list %-12x                      |",head);
 	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
 	log_list_msg("%s","| dan	   | dsn	  | *tsn	  | list   | prev   | next   | port   |");
 	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
