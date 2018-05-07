@@ -1524,6 +1524,7 @@ int delete_subflow(struct fourtuple *ft1) {
 	HASH_DEL(sfl_hash, sflx);
 
 	free(sflx->snd_map_list_head);
+	sflx->snd_map_list_head = NULL;
 	free(sflx);
 	return 0;
 }

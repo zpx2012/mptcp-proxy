@@ -1778,6 +1778,7 @@ int delete_session(struct fourtuple *ft1, int rst_sess) {
 
 	if (sess != NULL) {
 		free(sess->rcv_buff_list_head);
+		sess->rcv_buff_list_head = NULL;
 		free(sess);
 	}
 

@@ -806,7 +806,7 @@ void add_msg(char* msg);
 
 void add_err_msg(char * msg);
 
-#define log_list_msg(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); write_msg_file(file_list_log,msg_buf);
+#define log_list_msg(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); write_msg_file(prt_msg_array.file_msg,msg_buf);
 
 void write_msg_file(FILE *pfile, char* msg);
 //++++++++++++++++++++++++++++++++++++++++++++++++
