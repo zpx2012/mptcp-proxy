@@ -619,6 +619,12 @@ inline void sprintIPaddr(char* buf, uint32_t ipaddr) {
 	return;
 }
 
+inline char* ip2str(uint32_t ipaddr){
+	char *buf;
+	sprintf(buf, "%d.%d.%d.%d",(ipaddr>>24)&0xff,(ipaddr>>16)&0xff,(ipaddr>>8)&0xff,ipaddr&0xff);
+	return buf;
+}
+
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //util: printFourtuple
 //++++++++++++++++++++++++++++++++++++++++++++++++

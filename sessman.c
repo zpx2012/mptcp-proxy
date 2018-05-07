@@ -484,6 +484,7 @@ int call_connect(struct subflow* sfl){
 int contemplate_new_session_output() {
 
 	if(is_in_ip_white_list_array(packd.ft.ip_rem)){
+		log("find in white list:%s", ip2str(packd.ft.ip_rem));
 		set_verdict(1,0,0);
 		return 0;
 	}

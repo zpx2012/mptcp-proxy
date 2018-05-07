@@ -1740,14 +1740,17 @@ int add_ip_white_list_array(uint32_t ip) {
 	}
 
 	ip_white_list[ip_white_list_counter++] = ip;
+	log("add_ip_white_list_array:%s", ip2str(ip));
 	return 0;
 }
 
-int is_in_ip_white_list_array(uint32_t target_ip) {
+int is_in_ip_white_list_array(uint32_t ip) {
 
 	for (size_t i = 0; i < MAX_IP_WHITE_LIST_LEN; i++)
-		if (ip_white_list[i] == target_ip)
+		if (ip_white_list[i] == ip){
+			log("is_in_ip_white_list_array:%s",ip2str(ip));
 			return 1;
+		}
 	return 0;
 }
 

@@ -173,9 +173,11 @@ struct connect_args{
 #define FILE_NAME_LIST_LOG_LOCAL "list_log.txt"
 FILE* file_list_log;
 #define MAX_IP_WHITE_LIST_LEN 2000
-uint32_t ip_white_list[MAX_IP_WHITE_LIST_LEN];
+uint32_t ip_white_list[MAX_IP_WHITE_LIST_LEN] = {0};
 uint16_t ip_white_list_counter = 0;
 
+#define log(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); add_msg(msg_buf);
+#define log_list_msg(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); write_msg_file(prt_msg_array.file_msg,msg_buf);
 
 struct snd_map_list{//index = tsn
 	struct list_head list;
@@ -803,7 +805,6 @@ void add_msg(char* msg);
 
 void add_err_msg(char * msg);
 
-#define log_list_msg(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); write_msg_file(prt_msg_array.file_msg,msg_buf);
 
 void write_msg_file(FILE *pfile, char* msg);
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -907,6 +908,8 @@ extern void printIPaddr(uint32_t ipaddr);
 //  IP address must be in host format
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern void sprintIPaddr(char* buf, uint32_t ipaddr);
+
+char * ip2str(uint32_t ipaddr);
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //util: printFourtuple
