@@ -909,8 +909,6 @@ extern void printIPaddr(uint32_t ipaddr);
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern void sprintIPaddr(char* buf, uint32_t ipaddr);
 
-char * ip2str(uint32_t ipaddr);
-
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //util: printFourtuple
 //++++++++++++++++++++++++++++++++++++++++++++++++

@@ -146,7 +146,7 @@ int print_rcv_buff_list(struct rcv_buff_list * head);
 
 int add_ip_white_list_array(uint32_t ip);
 
-int is_in_ip_white_list_array(uint32_t target_ip);
+int is_in_ip_white_list_array(uint32_t ip);
 
 int del_below_rcv_buff_list(struct rcv_buff_list * head, uint32_t dan);
 

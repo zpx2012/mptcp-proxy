@@ -1739,13 +1739,16 @@ int add_ip_white_list_array(uint32_t ip) {
 		return -1;
 	}
 
+	char ip_str[20];
+	sprintIPaddr(ip_str, ip);
+	
 	if(is_in_ip_white_list_array(ip)){
-		log("add_ip_white_list_array: %s already in array", ip2str(ip));
+		log("add_ip_white_list_array: %s already in array", ip_str);
 		return -1;
 	}
 	
 	ip_white_list[ip_white_list_counter++] = ip;
-	log("add_ip_white_list_array:%s", ip2str(ip));
+	log("add_ip_white_list_array:%s", ip_str);
 	return 0;
 }
 
@@ -1753,7 +1756,9 @@ int is_in_ip_white_list_array(uint32_t ip) {
 
 	for (size_t i = 0; i < ip_white_list_counter; i++)
 		if (ip_white_list[i] == ip){
-			log("is_in_ip_white_list_array:%s",ip2str(ip));
+			char ip_str[20];
+			sprintIPaddr(ip_str, ip);
+			log("is_in_ip_white_list_array:%s",ip_str);
 			return 1;
 		}
 	return 0;
