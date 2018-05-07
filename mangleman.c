@@ -1121,7 +1121,7 @@ int mangle_packet() {
 
 				del_below_rcv_buff_list(packd.sess->rcv_buff_list_head, packd.dan_curr_loc);
 			}
-			set_verdict(1,0,0);
+			set_verdict(0,0,0);
 		}	
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
