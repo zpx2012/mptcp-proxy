@@ -1210,7 +1210,7 @@ int mangle_packet() {
 //		update_subflow_control_plane();
 
 	//session control plane
-	if(!packd.is_from_subflow){
+	if(!packd.is_from_subflow && packd.sess->sess_state < ESTABLISHED){
 		if(packd.hook < 3 && packd.fwd_type == M_TO_T)
 			if(packd.syn && packd.ack){
 				add_msg("capture syn/ack from server");
