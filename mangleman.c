@@ -1126,10 +1126,7 @@ int mangle_packet() {
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
 			add_msg("mangle_packet: browser input");
-			if(packd.syn && packd.ack)
-				set_verdict(0,0,0);
-			else
-				set_verdict(1,0,0);
+			set_verdict(1,0,0);
 			
 		}	
 	}
@@ -1212,8 +1209,14 @@ int mangle_packet() {
 	if(packd.hook<3 && packd.fwd_type == M_TO_T && packd.sess->sess_state >= ESTABLISHED)
 		update_subflow_control_plane();
 
-	//Session control plane
-	if(packd.is_from_subflow)
+	//session control plane
+	if(!packd.is_from_subflow){
+		if(packd.syn && packd.ack){
+			add_msg("capture syn/ack from server");
+			set_verdict(0,0,0);
+		}
+	}
+	else //Subflow control plane
 		return update_session_control_plane();
 
 	return 0;
