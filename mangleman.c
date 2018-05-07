@@ -1739,6 +1739,11 @@ int add_ip_white_list_array(uint32_t ip) {
 		return -1;
 	}
 
+	if(is_in_ip_white_list_array(ip)){
+		log("add_ip_white_list_array: %s already in array", ip2str(ip));
+		return -1;
+	}
+	
 	ip_white_list[ip_white_list_counter++] = ip;
 	log("add_ip_white_list_array:%s", ip2str(ip));
 	return 0;
@@ -1746,7 +1751,7 @@ int add_ip_white_list_array(uint32_t ip) {
 
 int is_in_ip_white_list_array(uint32_t ip) {
 
-	for (size_t i = 0; i < MAX_IP_WHITE_LIST_LEN; i++)
+	for (size_t i = 0; i < ip_white_list_counter; i++)
 		if (ip_white_list[i] == ip){
 			log("is_in_ip_white_list_array:%s",ip2str(ip));
 			return 1;
