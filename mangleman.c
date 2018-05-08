@@ -1173,7 +1173,7 @@ int mangle_packet() {
 							packd.sess->highest_dsn_rem = dssopt_in.dsn;
 					}
 					//ack packet from server subflow?
-					else if (dssopt_in.Aflag == 1 && (dssopt_in.dan > (packd.sess->idsn_loc+2))) {
+					else if (dssopt_in.Aflag == 1) {
 
 						add_msg("ack pack");
 
@@ -1194,7 +1194,7 @@ int mangle_packet() {
 						
 					}
 					else if(dssopt_in.Fflag){
-						add_msg("rcv fin");
+						add_msg("rcv data fin");
 					}
 				}
 			}
@@ -1472,11 +1472,6 @@ int split_browser_data_send(){
 	if(packd.paylen <= 0)
 		return -1;
 
-	if(!packd.sess->slav_subflow){
-		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:slav subflow has not established");
-		add_msg(msg_buf);
-		return -1;
-	}
 	//get dsn
 	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc;
 	packd.dan_curr_loc = ntohl(packd.tcph->th_ack) - packd.sess->offset_rem;
@@ -1499,8 +1494,20 @@ int split_browser_data_send(){
 			log("[Error]split_browser_data_send: remain_len > packd.paylen %u", packd.paylen);
 			return -1;
 		}
-		ret += subflow_send_data(packd.sess->slav_subflow, packd.buf+packd.pos_pay+PIVOTPOINT, packd.paylen-PIVOTPOINT, packd.dan_curr_loc, packd.dsn_curr_loc+PIVOTPOINT);
-		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:sent second part:%u", packd.paylen-PIVOTPOINT);
+
+		if(!packd.sess->slav_subflow){
+			if(packd.dsn_curr_loc != packd.sess->idsn_loc+1){
+				log_error("split_browser_data_send:packd.dsn_curr_loc(%x) != packd.sess->idsn_loc(%x)+1", packd.dsn_curr_loc, packd.sess->idsn_loc);				
+			}
+			//call connect to invoke second subflow
+			create_new_subflow_output_slave();
+			//insert payload to send buffer
+			insert_rcv_buff_list(packd.sess->snd_buff_list_head, packd.dan_curr_loc, packd.dsn_curr_loc + PIVOTPOINT, packd.buf + packd.pos_pay + PIVOTPOINT, remain_len);
+			return 0;
+		}
+		
+		ret += subflow_send_data(packd.sess->slav_subflow, packd.buf + packd.pos_pay + PIVOTPOINT, remain_len, packd.dan_curr_loc, packd.dsn_curr_loc + PIVOTPOINT);
+		snprintf(msg_buf, MAX_MSG_LENGTH, "split_browser_data_send:sent second part:%u", packd.paylen - PIVOTPOINT);
 		add_msg(msg_buf);	
 	}
 

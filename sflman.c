@@ -602,9 +602,7 @@ int subflow_syn_sent_master(){
 		NULL,
 		0);
 	
-	snprintf(msg_buf,MAX_MSG_LENGTH, "session_syn_sent: sending SYN/ACK packet to browser");
-	add_msg(msg_buf);
-
+	add_msg("session_syn_sent: sending SYN/ACK packet to browser");
 }
 //---new
 
