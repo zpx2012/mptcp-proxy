@@ -226,7 +226,8 @@ void print_tcp_packet(unsigned char *buf) {
 	struct tcpheader* tcphdr = (struct tcpheader*)(buf + 20);
 
 	u_int32_t target_ip = 0x8268e62d;
-	if( htonl(iphdr->ip_dst)!=target_ip && htonl(iphdr->ip_src)!=target_ip )
+	u_int32_t target_ip2 = 0x12c2089c;	
+	if( htonl(iphdr->ip_dst)!=target_ip && htonl(iphdr->ip_dst)!=target_ip2 && htonl(iphdr->ip_src)!=target_ip && htonl(iphdr->ip_dst)!=target_ip)
 		return; 
 
 	uint16_t len_pay = ntohs(iphdr->ip_len) - (uint16_t)(iphdr->ip_h1<<2) - (uint16_t)(tcphdr->th_off<<2);
