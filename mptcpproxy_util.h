@@ -38,6 +38,7 @@
 #include <pthread.h>
 #include "list.h"
 #include <errno.h>
+#include "logging.h"
 
 //Operations
 #define UPDATE_DEFAULT_ROUTE 0 //derives new /24 default route in case of mpproxy -B and mpproxy -A
@@ -164,20 +165,20 @@ extern int raw_sd;
 extern unsigned char raw_buf[RAWBUFLEN] __attribute__ ((aligned));// = malloc( 60 * sizeof(unsigned char));
 
 //+++new
+#define MAX_IP_WHITE_LIST_LEN 2000
+extern uint32_t ip_white_list[MAX_IP_WHITE_LIST_LEN];
+extern uint16_t ip_white_list_counter;
+#define log(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); add_msg(msg_buf);
+#define log_error(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); add_err_msg(msg_buf);
+#define log_list_msg(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); write_msg_file(prt_msg_array.file_msg,msg_buf);
+
+
 struct connect_args{
 	int sockfd;
 	uint32_t ip_dst_n;
 	uint16_t port_dst_n;
 };
 
-#define FILE_NAME_LIST_LOG_LOCAL "list_log.txt"
-FILE* file_list_log;
-#define MAX_IP_WHITE_LIST_LEN 2000
-extern uint32_t ip_white_list[MAX_IP_WHITE_LIST_LEN];
-extern uint16_t ip_white_list_counter;
-
-#define log(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); add_msg(msg_buf);
-#define log_list_msg(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); write_msg_file(prt_msg_array.file_msg,msg_buf);
 
 struct snd_map_list{//index = tsn
 	struct list_head list;
@@ -967,3 +968,18 @@ void clear_pA(struct  pntArray *pa);
 void sprintFourtuple(char* buf, struct fourtuple *ft);
 
 int system_safe(const char *command);
+
+/*
+static FILE* log_file;
+
+int init_log(void);
+int fin_log(void);
+
+void log_func(int level, const char *msg, ...);
+
+#define log_error(args...) log_func(0, args)
+#define log_warn(args...) log_func(1, args)
+#define log_info(args...) log_func(2, args)
+#define log_debug(args...) log_func(3, args)
+#define log_debugv(args...) log_func(4, args)
+*/

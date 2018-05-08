@@ -1483,12 +1483,22 @@ struct subflow* create_subflow(struct fourtuple *ft1,
 //	Returns -1 if subflow not found
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int delete_subflow(struct fourtuple *ft1) {
-		
-	if(ft1 == NULL) return -1;
+	
+	char* func_name = "delete_subflow";
+	if (ft1 == NULL) {
+		log_error("%s:null ft", func_name);
+		return -1;
+	}
+	
+	char buf_ft[100];
+	sprintFourtuple(buf_ft, ft1);
 
 	struct subflow *sflx;
 	HASH_FIND(hh, sfl_hash, ft1, sizeof(struct fourtuple), sflx);
-	if(!sflx) return -1;
+	if(!sflx) {
+		log_error("%s: ft not found %s", func_name, buf_ft);
+		return -1;
+	}
 
 	//find session this subflow belongs to and delete it there too
 	struct session *sess = sflx->sess;
@@ -1503,6 +1513,7 @@ int delete_subflow(struct fourtuple *ft1) {
 	//if sfl = last_subflow or act_subflow, set them to NULL
 	if(sflx == sess->act_subflow) sess->act_subflow = NULL;
 	if(sflx == sess->last_subflow) sess->last_subflow = NULL;
+	if(sflx == sess->slav_subflow) sess->slav_subflow = NULL;
 
 	delete_map(sflx->map_recv);
 	delete_map(sflx->map_send);
@@ -1523,6 +1534,7 @@ int delete_subflow(struct fourtuple *ft1) {
 	//delete subflow from hash tables	
 	HASH_DEL(sfl_hash, sflx);
 
+	log("%s: delete subflow %x, ft %s", func_name, sflx, buf_ft);
 	free(sflx->snd_map_list_head);
 	sflx->snd_map_list_head = NULL;
 	free(sflx);

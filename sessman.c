@@ -1765,7 +1765,7 @@ int delete_session(struct fourtuple *ft1, int rst_sess) {
 	HASH_FIND(hh, sess_hash, ft1, sizeof(struct fourtuple), sess);
 	if(sess == NULL) return -1;
 
-	if(sess->sess_state < TIME_WAIT && rst_sess) send_reset_session(sess);
+//	if(sess->sess_state < TIME_WAIT && rst_sess) send_reset_session(sess);
 
 	struct subflow *sfl;
 	while(sess->pA_sflows.number > 0) {

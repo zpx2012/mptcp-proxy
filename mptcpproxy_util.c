@@ -21,8 +21,11 @@
 struct print_data prt_data;
 struct print_msg_array prt_msg_array;
 
+//+++new
 uint32_t ip_white_list[MAX_IP_WHITE_LIST_LEN] = {0};
 uint16_t ip_white_list_counter = 0;
+
+
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //sn smaller
@@ -757,4 +760,73 @@ int system_safe(const char *command){
 	}
 	return systemRet;
 }
+/*
+/*
+ * Options
+
+// 0 - print log to stdout, 1 - output log to /tmp/log.txt
+int opt_logging_to_file = 1;
+
+
+int init_log()
+{
+    log_file = fopen(FILE_NAME_MSG, "w");
+    if (log_file == NULL) {
+        fprintf(stderr, "Failed to open or create log file %s\n", FILE_NAME_MSG);
+        return -1;
+    }
+    chmod(FILE_NAME_MSG, 0644);
+    setbuf(log_file, NULL);
+    return 0;
+}
+
+int fin_log()
+{
+    if (log_file != NULL) {
+        fclose(log_file);
+    }
+    return 0;
+}
+
+const char LEVEL_STR[][10] = {
+    "ERROR", 
+    "WARNING",
+    "INFO",
+    "DEBUG",
+    "DEBUGV",
+};
+
+void log_func(int level, const char *fmt, ...)
+{
+    va_list ap;
+    char buffer[1024];
+    char time_str[20];
+    time_t rawtime;
+    struct tm * timeinfo;
+    struct timespec ts;
+    double time_ts;
+
+    if (level > 4)
+        return;
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    strftime(time_str, 20, "%Y-%m-%d %H:%M:%S", timeinfo);
+
+    // a more acurate timestamp 
+    clock_gettime(CLOCK_REALTIME, &ts);
+    time_ts = ts.tv_sec + ts.tv_nsec / 1000000000.0;
+
+    va_start(ap, fmt);
+    vsnprintf(buffer, sizeof(buffer), fmt, ap);
+    if (log_file != NULL) {
+        fprintf(log_file, "%lf [%s] %s\n", time_ts, LEVEL_STR[level], buffer);
+    } else {
+        fprintf(stdout, "%lf [%s] %s\n", time_ts, LEVEL_STR[level], buffer);
+    }
+    va_end(ap);
+}
+
+*/
+
 

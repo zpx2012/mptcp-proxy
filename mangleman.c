@@ -1494,8 +1494,13 @@ int split_browser_data_send(){
 		add_msg(msg_buf);	
 		
 		//second part
+		uint16_t remain_len = packd.paylen - PIVOTPOINT;
+		if (remain_len > packd.paylen) {
+			log("[Error]split_browser_data_send: remain_len > packd.paylen %u", packd.paylen);
+			return -1;
+		}
 		ret += subflow_send_data(packd.sess->slav_subflow, packd.buf+packd.pos_pay+PIVOTPOINT, packd.paylen-PIVOTPOINT, packd.dan_curr_loc, packd.dsn_curr_loc+PIVOTPOINT);
-		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:sent second part:%d", packd.paylen-PIVOTPOINT);
+		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:sent second part:%u", packd.paylen-PIVOTPOINT);
 		add_msg(msg_buf);	
 	}
 
