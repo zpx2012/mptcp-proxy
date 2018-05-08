@@ -1682,7 +1682,7 @@ int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, 
 	new_node->dsn = dsn;
 	new_node->len = paylen;
 	new_node->payload = (unsigned char *)malloc(paylen);
-	strncpy((char*)new_node->payload, (char*)payload, paylen);
+	memcpy((char*)new_node->payload, (char*)payload, paylen);//don't use strcpy
 
 	struct rcv_buff_list *iter;
 	list_for_each_entry(iter, &head->list, list) {
