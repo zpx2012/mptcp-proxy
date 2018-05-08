@@ -171,12 +171,6 @@ void init_msg_data() {
 	fclose(file);
 
 	prt_msg_array.file_msg = fopen(FILE_NAME_MSG_LOCAL, "a");
-
-	file = fopen(FILE_NAME_LIST_LOG_LOCAL,"w");
-	fprintf(file,"start\n");
-	fclose(file);
-
-	file_list_log = fopen(FILE_NAME_LIST_LOG_LOCAL,"a");
 	
 }
 
