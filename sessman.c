@@ -834,19 +834,13 @@ int session_pre_est() {
 		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est:master");
 		add_msg(msg_buf);	
 		if( !create_MPcap(packd.mptcp_opt_buf, &packd.mptcp_opt_len, packd.sess->key_loc, packd.sess->key_rem) ){
-			snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est: create_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
-			add_msg(msg_buf);
+			log_error("session_pre_est: create_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
 			delete_subflow(&packd.ft);
 			delete_session_parm(packd.sess->token_loc);
 			delete_session(&packd.sess->ft, 1);
 			set_verdict(1,0,0);
 			return 0;
 		}
-		subflow_send_data(packd.sfl, (unsigned char*)"A", 1, packd.sess->idsn_rem+1, packd.sess->idsn_loc+1);
-		packd.sess->offset_loc -= 1;
-		//call connect to invoke second subflow
-		create_new_subflow_output_slave();
-
 	} else {
 		snprintf(msg_buf,MAX_MSG_LENGTH, "session_pre_est:slave");
 		add_msg(msg_buf);	
@@ -863,7 +857,12 @@ int session_pre_est() {
 			return 0;
 		}
 		
-		//retransmit packet
+		//transmit pending packet
+		struct rcv_buff_list *iter, *next, *head = packd.sess->snd_buff_list_head;
+		list_for_each_entry_safe(iter, next, &head->list, list) {
+			subflow_send_data(packd.sfl, iter->payload, iter->len, iter->dan, iter->dsn);
+			log("send pending pack: dan %x, dsn %x, len %u", iter->dan, iter->dsn, iter->len);
+		}
 	}
 
 	if(!output_data_mptcp()){
@@ -1655,7 +1654,9 @@ struct session* create_session(
 	
 	//+++new
 	sess->rcv_buff_list_head = malloc(sizeof(struct rcv_buff_list));
+	sess->snd_buff_list_head = malloc(sizeof(struct rcv_buff_list));
 	init_head_rcv_buff_list(sess->rcv_buff_list_head);
+	init_head_rcv_buff_list(sess->snd_buff_list_head);	
 
 	if(key_loc != NULL) memcpy(sess->key_loc, key_loc, 8);
 	else memset(sess->key_loc, 0, 8);
@@ -1784,7 +1785,9 @@ int delete_session(struct fourtuple *ft1, int rst_sess) {
 
 	if (sess != NULL) {
 		free(sess->rcv_buff_list_head);
+		free(sess->snd_buff_list_head);
 		sess->rcv_buff_list_head = NULL;
+		sess->snd_buff_list_head = NULL;
 		free(sess);
 	}
 

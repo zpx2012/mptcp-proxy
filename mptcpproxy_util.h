@@ -569,6 +569,7 @@ struct session{
 	//++++new
 	uint32_t idsn_h_loc;
 	struct rcv_buff_list *rcv_buff_list_head;
+	struct rcv_buff_list *snd_buff_list_head;//for slave subflow
 	//----new
 
 	struct fourtuple ft;//key, this is the ft used by the TCP control block
