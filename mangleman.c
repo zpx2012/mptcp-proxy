@@ -156,7 +156,7 @@ void handle_data_reset_input() {
 //handle_reset_input()
 //++++++++++++++++++++++++++++++++++++++++++++++++
 void handle_reset_input() {
-	if(packd.sess == NULL) {
+	if(packd.sess == NULL || !packd.sfl) {
 		set_verdict(1,0,0);	
 		return;
 	}
