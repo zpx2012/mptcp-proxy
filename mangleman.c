@@ -1495,10 +1495,7 @@ int split_browser_data_send(){
 			return -1;
 		}
 
-		if(!packd.sess->slav_subflow){
-			if(packd.dsn_curr_loc != packd.sess->idsn_loc+1){
-				log_error("split_browser_data_send:packd.dsn_curr_loc(%x) != packd.sess->idsn_loc(%x)+1", packd.dsn_curr_loc, packd.sess->idsn_loc);				
-			}
+		if(!packd.sess->slav_subflow || packd.sess->slav_subflow->tcp_state < ESTABLISHED){
 			//call connect to invoke second subflow
 			create_new_subflow_output_slave();
 			//insert payload to send buffer
