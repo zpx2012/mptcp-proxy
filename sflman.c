@@ -1821,7 +1821,7 @@ int delete_subflow(struct fourtuple *ft1) {
 	//delete subflow from hash tables	
 	HASH_DEL(sfl_hash, sflx);
 
-	log("%s: delete subflow %x, ft %s", func_name, sflx, buf_ft);
+	log("%s: delete subflow %p, ft %s", func_name, (void *)sflx, buf_ft);
 	free(sflx->snd_map_list_head);
 	sflx->snd_map_list_head = NULL;
 	free(sflx);

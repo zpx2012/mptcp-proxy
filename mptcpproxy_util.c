@@ -755,7 +755,6 @@ int system_safe(const char *command){
 	return systemRet;
 }
 /*
-/*
  * Options
 
 // 0 - print log to stdout, 1 - output log to /tmp/log.txt

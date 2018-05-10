@@ -1026,7 +1026,7 @@ int update_subflow_control_plane() {
 		set_verdict(0, 0, 0);
 	}//end switch
 
-	if (packd.sfl != init_tcp_state && !packd.verdict) {
+	if (packd.sfl->tcp_state != init_tcp_state && !packd.verdict) {
 		set_verdict(1, 1, 0);
 	}
 
@@ -1161,7 +1161,7 @@ int mangle_packet() {
 	else if(packd.is_from_subflow && packd.sfl->tcp_state >= ESTABLISHED && packd.sfl->tcp_state <= TIME_WAIT) {//subflow
 
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
-			mangle_datatrasfer_subflow_output();
+			mangle_datatransfer_subflow_output();
 		} 
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 			mangle_datatransfer_subflow_input();
@@ -1208,7 +1208,7 @@ int mangle_datatransfer_session_output() {
 			0
 		);
 
-		add_msg("mangle_packet: terminate the whole connection");
+		add_msg("mangle_packet: send ack to fin from browser");
 
 		return 0;
 	}
@@ -1223,6 +1223,7 @@ int mangle_datatransfer_session_output() {
 		del_below_rcv_buff_list(packd.sess->rcv_buff_list_head, packd.dan_curr_loc);
 	}
 	set_verdict(0, 0, 0);
+	return 0;
 }
 
 int mangle_datatransfer_session_input() {
@@ -1303,128 +1304,128 @@ int mangle_datatransfer_subflow_input() {
 	set_verdict(1, 0, 0);
 	return 0;
 }
-/*
+
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //int mangle_packet()
 // Initiates all packet processing and mangling
 //++++++++++++++++++++++++++++++++++++++++++++++++
-int mangle_packet_old() {
+// int mangle_packet_old() {
 
-	if(packd.nb_mptcp_options > 0){
+// 	if(packd.nb_mptcp_options > 0){
 
-		//*****SELF-INDUCED PACKETS******
-		if( packd.hook == 3){
+// 		//*****SELF-INDUCED PACKETS******
+// 		if( packd.hook == 3){
 
-			set_verdict(1,0,0);
-			return 0;
-		}
-		//*****CHECK FOR DATA RST******
-		if( packd.hook < 3 && packd.fwd_type == M_TO_T && packd.sess != NULL && find_MPsubkind(mptopt, packd.nb_mptcp_options, MPTCP_RST) > -1){
+// 			set_verdict(1,0,0);
+// 			return 0;
+// 		}
+// 		//*****CHECK FOR DATA RST******
+// 		if( packd.hook < 3 && packd.fwd_type == M_TO_T && packd.sess != NULL && find_MPsubkind(mptopt, packd.nb_mptcp_options, MPTCP_RST) > -1){
 
-			handle_data_reset_input();
-			return(0);
-		}
-	}
+// 			handle_data_reset_input();
+// 			return(0);
+// 		}
+// 	}
 
-	//*****TCP RESET******
-	// 
-	//handles RSTs send by tcp
-	//sess can be NULL
-	if(packd.rst == 1) {
+// 	//*****TCP RESET******
+// 	// 
+// 	//handles RSTs send by tcp
+// 	//sess can be NULL
+// 	if(packd.rst == 1) {
 
-		//handle all other RSTs
-		if(packd.hook < 3 && packd.fwd_type == M_TO_T) handle_reset_input();//sent by other MPTCP host
-		if(packd.hook > 1 && packd.fwd_type == T_TO_M) handle_reset_output();//sent by TCP
-		return 0; //terminate here
-	}
+// 		//handle all other RSTs
+// 		if(packd.hook < 3 && packd.fwd_type == M_TO_T) handle_reset_input();//sent by other MPTCP host
+// 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) handle_reset_output();//sent by TCP
+// 		return 0; //terminate here
+// 	}
 
-	//*****SESSION ESTABLISHMENT******
-	//Sess = NULL && SYN only: contemplate session creation or subflow creation
-	//   Evaluates MP_CAP or MP_JOIN
-	if(packd.sess == NULL) {
+// 	//*****SESSION ESTABLISHMENT******
+// 	//Sess = NULL && SYN only: contemplate session creation or subflow creation
+// 	//   Evaluates MP_CAP or MP_JOIN
+// 	if(packd.sess == NULL) {
 
-		if( packd.syn == 1 && packd.ack == 0) {
+// 		if( packd.syn == 1 && packd.ack == 0) {
 
-			return contemplate_new_session();
-		}
-		else{
-			set_verdict(1,0,0);
-			return 0;
-		}
-	} else{
+// 			return contemplate_new_session();
+// 		}
+// 		else{
+// 			set_verdict(1,0,0);
+// 			return 0;
+// 		}
+// 	} else{
 
-		//generic features if session exists
-		if(packd.sess->timestamp_flag) update_timestamp();
-	}
+// 		//generic features if session exists
+// 		if(packd.sess->timestamp_flag) update_timestamp();
+// 	}
 	
-	//*****DATA-PLANE MANAGEMENT******
-	if(packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT) {
+// 	//*****DATA-PLANE MANAGEMENT******
+// 	if(packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT) {
 
-		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
+// 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
 
-			update_conn_level_data();
-			determine_thruway_subflow();//sets verdict
+// 			update_conn_level_data();
+// 			determine_thruway_subflow();//sets verdict
 
-			//*****SIDE ACK MANAGEMENT******
-			//packet is sent on packd.sfl, which may be last or active
-			if(packd.ack == 1) {
+// 			//*****SIDE ACK MANAGEMENT******
+// 			//packet is sent on packd.sfl, which may be last or active
+// 			if(packd.ack == 1) {
 			
-				//determine side acks and update SANs for them
-				find_side_acks();
+// 				//determine side acks and update SANs for them
+// 				find_side_acks();
 
-				//update thruway for ACKs, i.e. no payload
-				if(packd.verdict == 0) update_thruway_subflow();//updates verdict
+// 				//update thruway for ACKs, i.e. no payload
+// 				if(packd.verdict == 0) update_thruway_subflow();//updates verdict
 		
-				if(packd.verdict == 0) return 0;//packet terminates here
+// 				if(packd.verdict == 0) return 0;//packet terminates here
 
-				//prepare DAN and send side ACKS
-				if( packd.sess->pA_sflows_data.number > 0) send_side_acks();
+// 				//prepare DAN and send side ACKS
+// 				if( packd.sess->pA_sflows_data.number > 0) send_side_acks();
 
-			}//end if packd.ACK == 1
+// 			}//end if packd.ACK == 1
 
 
-			//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
-			if(packd.rst == 0) set_dss_and_prio();
+// 			//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
+// 			if(packd.rst == 0) set_dss_and_prio();
 
-			update_packet_output();
+// 			update_packet_output();
 
-		} else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
+// 		} else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
 
-			if(packd.sfl->broken) {
-				set_verdict(0,0,0);
-				return 0;
-			}
+// 			if(packd.sfl->broken) {
+// 				set_verdict(0,0,0);
+// 				return 0;
+// 			}
 
-			packd.verdict = 0;
-			if(packd.sfl->tcp_state >= ESTABLISHED) {
-				update_subflow_level_data();
-				packd.verdict = 1;//packd.sess->sent_state;
+// 			packd.verdict = 0;
+// 			if(packd.sfl->tcp_state >= ESTABLISHED) {
+// 				update_subflow_level_data();
+// 				packd.verdict = 1;//packd.sess->sent_state;
 			
 
-				if( packd.nb_mptcp_options > 0 ) {
+// 				if( packd.nb_mptcp_options > 0 ) {
 
-					process_dss();
-					process_remove_addr();
-					process_prio();
+// 					process_dss();
+// 					process_remove_addr();
+// 					process_prio();
 	
-				}//end if packd.nb_mptcp_options
+// 				}//end if packd.nb_mptcp_options
 
-				update_packet_input();
-			}
+// 				update_packet_input();
+// 			}
 
-		}//end if hook = 1/3
-	}//end if (packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT)
+// 		}//end if hook = 1/3
+// 	}//end if (packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT)
 
 
 
-	//*****CONTROL-PLANE MANAGEMENT******
-	//Subflow control plane: only for INPUT (hook = 1) && CANDIDATE sfls and when session established
-	if(packd.hook<3 && packd.fwd_type == M_TO_T && packd.sess->sess_state >= ESTABLISHED)
-		update_subflow_control_plane();
+// 	//*****CONTROL-PLANE MANAGEMENT******
+// 	//Subflow control plane: only for INPUT (hook = 1) && CANDIDATE sfls and when session established
+// 	if(packd.hook<3 && packd.fwd_type == M_TO_T && packd.sess->sess_state >= ESTABLISHED)
+// 		update_subflow_control_plane();
 
-	return update_session_control_plane();	
-}
-*/
+// 	return update_session_control_plane();	
+// }
+
 
 int Send(int sockfd, const void *buf, size_t len, int flags){
 	int ret;
@@ -1659,19 +1660,19 @@ int find_snd_map_list(struct snd_map_list *head, uint32_t tsn, struct snd_map_li
 int print_snd_map_list(struct snd_map_list *head) {
 
 	if (!head || list_empty(&head->list)) {
-		log_list_msg("del_snd_map_list:null head, head %x, head->prev %x, head->next %x", &head->list, head->list.prev, head->list.next);
+		log_list_msg("del_snd_map_list:null head, head %p, head->prev %p, head->next %p", (void *)&head->list, (void *)head->list.prev, (void *)head->list.next);
 		return -1;
 	}
 
 	struct snd_map_list *iter;
 	log_list_msg("%s","-----------------------------------------------------------------------");
-	log_list_msg("|			         snd map list %-12x                      |",head);
+	log_list_msg("|			         snd map list %-12p                      |",(void *)head);
 	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
 	log_list_msg("%s","| dan	   | dsn	  | *tsn	  | list   | prev   | next   | port   |");
 	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
 
 	list_for_each_entry(iter, &head->list, list) {
-		log_list_msg( "| %-8x | %-8x | %-8x  | %-6x | %-6x | %-6x | %-6d |", iter->dan, iter->dsn, iter->tsn, &iter->list, iter->list.prev, iter->list.next, packd.sess->ft.prt_loc);
+		log_list_msg( "| %-8x | %-8x | %-8x  | %-6p | %-6p | %-6p | %-6d |", iter->dan, iter->dsn, iter->tsn, (void *)&iter->list, (void *)iter->list.prev, (void *)iter->list.next, packd.sess->ft.prt_loc);
 		
 	}
 	
@@ -1684,7 +1685,7 @@ int print_snd_map_list(struct snd_map_list *head) {
 int del_below_snd_map_list(struct snd_map_list *head, uint32_t ack) {
 
 	if (!head || list_empty(&head->list)) {
-		log_list_msg("del_snd_map_list:null head, head %x, head->prev %x, head->next %x", &head->list, head->list.prev, head->list.next);
+		log_list_msg("del_snd_map_list:null head, head %p, head->prev %p, head->next %p", (void *)&head->list, (void *)head->list.prev, (void *)head->list.next);
 		return -1;
 	}
 
@@ -1754,7 +1755,6 @@ int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, 
 
 //	log_list_msg("insert_rcv_buff_list:dan %x, dsn %x, len %d, port %d", dan, dsn, paylen, packd.ft.prt_loc);
 	
-
 	print_rcv_buff_list(head);
 	return 0;
 }
@@ -1781,7 +1781,7 @@ uint32_t find_data_ack(struct rcv_buff_list *head) {
 }
 
 int print_rcv_buff_list(struct rcv_buff_list* head) {
-/*
+
 	if (!head || list_empty(&head->list)) {
 		log_list_msg("[Error]:%s","print_snd_map_list:null head");
 		return -1;
@@ -1795,12 +1795,12 @@ int print_rcv_buff_list(struct rcv_buff_list* head) {
 	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
 	
 	list_for_each_entry(iter, &head->list, list) {
-		log_list_msg( "| %-8x | %-8x | %-8d | %-8x | %-6x | %-6x | %-6x | %-6d |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len, &iter->list, iter->list.prev, iter->list.next, packd.sess->ft.prt_loc);
+		log_list_msg( "| %-8x | %-8x | %-8d | %-8x | %-6p | %-6p | %-6p | %-6d |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len, (void *)&iter->list, (void *)iter->list.prev, (void *)iter->list.next, packd.sess->ft.prt_loc);
 		
 	}
 	log_list_msg("%s","---------------------------------------------------------------------------------");
 	return 0;
-*/
+
 }
 
 int add_ip_white_list_array(uint32_t ip) {
