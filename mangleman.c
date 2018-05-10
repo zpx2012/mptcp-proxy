@@ -935,6 +935,7 @@ void update_packet_input() {
 	}
 }
 
+/*
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //update_subflow_control_plane()
 //++++++++++++++++++++++++++++++++++++++++++++++++
@@ -967,16 +968,82 @@ int update_subflow_control_plane() {
 	}//end switch sfl->tcp_state
 	return 0;	
 }
+*/
+
+int update_subflow_control_plane() {
+
+	int init_tcp_state = packd.sfl->tcp_state;
+	int ret = 0;
+
+	switch (packd.sfl->tcp_state) {
+//	case ESTABLISHED:
+//		ret = session_established();
+//		break;
+	case PRE_SYN_SENT:
+		ret = subflow_pre_syn_sent();
+		break;
+	case SYN_SENT:
+		ret = subflow_syn_sent();
+		break;
+	case PRE_EST:
+		ret = subflow_pre_est();
+		break;
+/*
+	case PRE_SYN_REC_1:
+		ret = session_pre_syn_rec_1();
+		break;
+	case SYN_REC:
+		ret = session_syn_rec();
+		break;
+	case FIN_WAIT_1:
+		ret = session_fin_wait_1();
+		break;
+	case FIN_WAIT_2:
+		ret = session_fin_wait_2();
+		break;
+	case PRE_CLOSING:
+		ret = session_pre_closing();
+		break;
+	case PRE_TIME_WAIT:
+		ret = session_pre_time_wait();
+		break;
+	case CLOSING:
+		ret = session_closing();
+		break;
+	case PRE_CLOSE_WAIT:
+		ret = session_pre_close_wait();
+		break;
+	case CLOSE_WAIT:
+		ret = session_close_wait();
+		break;
+	case LAST_ACK:
+		ret = session_last_ack();
+		break;
+	case TIME_WAIT:
+		ret = session_time_wait();
+*/
+	default:
+		set_verdict(0, 0, 0);
+	}//end switch
+
+	if (packd.sfl != init_tcp_state && !packd.verdict) {
+		set_verdict(1, 1, 0);
+	}
+
+	return ret;
+}
+
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //update_packet_input()
 //++++++++++++++++++++++++++++++++++++++++++++++++
+/*
 int update_session_control_plane() {
 
 	int init_sess_state = packd.sess->sess_state;
 	int ret = 0;
 
-	switch(packd.sfl->tcp_state){
+	switch(packd.sess->sess_state){
 	case ESTABLISHED:
 		ret = session_established();
 		break;
@@ -1024,14 +1091,12 @@ int update_session_control_plane() {
 	}//end switch
 	
 	if(packd.sess->sess_state != init_sess_state && !packd.verdict) {
-
 		set_verdict(1,1,0);
-
 	}
 
 	return ret;
 }
-
+*/
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //int mangle_packet()
 // Initiates all packet processing and mangling
@@ -1119,7 +1184,7 @@ int mangle_packet() {
 			}
 	}
 	else //Subflow control plane
-		return update_session_control_plane();
+		return update_subflow_control_plane();
 
 	return 0;
 

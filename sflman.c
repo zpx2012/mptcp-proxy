@@ -495,6 +495,298 @@ int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, un
 
 }
 
+
+//++++new
+
+void* connect_handler(void *args) {
+
+	struct sockaddr_in sin_rem;
+	struct connect_args* p_cn;
+
+	pthread_detach(pthread_self());
+
+	p_cn = (struct connect_args*)args;
+
+	//connect to dst
+	sin_rem.sin_addr.s_addr = p_cn->ip_dst_n;
+	sin_rem.sin_family = AF_INET;
+	sin_rem.sin_port = p_cn->port_dst_n;
+
+	//connect to remote server
+	if (connect(p_cn->sockfd, (struct sockaddr *)&sin_rem, sizeof(sin_rem)) < 0) {
+		printf("connect failed. Error");
+		pthread_exit(NULL);
+	}
+
+	snprintf(msg_buf, MAX_MSG_LENGTH, "connect_handler:connect success return");
+	add_msg(msg_buf);
+	pthread_exit(NULL);
+}
+
+
+int create_subflow_socket(struct fourtuple* ft, int *p_sockfd) {
+
+	int sockfd;
+	struct sockaddr_in sin_loc;
+	socklen_t sin_loc_len;
+
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd == -1) {
+		snprintf(msg_buf, MAX_MSG_LENGTH, "create_socket_call_connect:Could not create socket");
+		add_msg(msg_buf);
+		return -1;
+	}
+
+	//bind new port number
+	sin_loc.sin_family = AF_INET;
+	sin_loc.sin_port = 0;
+	sin_loc.sin_addr.s_addr = ntohl(ft->ip_loc);
+	if (bind(sockfd, (const struct sockaddr *)&sin_loc, sizeof(sin_loc)) == -1) {
+		snprintf(msg_buf, MAX_MSG_LENGTH, "create_socket_call_connect:Failed to bind, errno %d", errno);
+		add_msg(msg_buf);
+		return -1;
+	}
+	sin_loc_len = sizeof(sin_loc);
+	if (getsockname(sockfd, (struct sockaddr *)&sin_loc, &sin_loc_len) == -1) {
+		snprintf(msg_buf, MAX_MSG_LENGTH, "create_socket_call_connect:getsockname() failed");
+		add_msg(msg_buf);
+		return -1;
+	}
+
+	//return
+	*p_sockfd = sockfd;
+	ft->prt_loc = ntohs(sin_loc.sin_port);
+	return 0;
+
+}
+
+int call_connect(struct subflow* sfl) {
+
+	snprintf(msg_buf, MAX_MSG_LENGTH, "call_connect: %zu", sfl->index);
+	add_msg(msg_buf);
+
+	//call connect
+	struct connect_args *p_cn = malloc(sizeof(struct connect_args));
+	if (!p_cn) {
+		snprintf(msg_buf, MAX_MSG_LENGTH, "malloc failed");
+		add_msg(msg_buf);
+		return -1;
+	}
+	p_cn->sockfd = sfl->sockfd;
+	p_cn->ip_dst_n = ntohl(sfl->ft.ip_rem);
+	p_cn->port_dst_n = ntohs(sfl->ft.prt_rem);
+
+	pthread_t connect_thread;
+	if (pthread_create(&connect_thread, NULL, connect_handler, p_cn) < 0)
+	{
+		snprintf(msg_buf, MAX_MSG_LENGTH, "Could not create server thread");
+		add_msg(msg_buf);
+		set_verdict(0, 0, 0);
+		return -1;
+	}
+	return 0;
+
+}
+
+
+
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//subflow PRE_SYN_SENT
+//  Targe states: SYN_SENT
+//  Currently, we omit simultaneous open
+//++++++++++++++++++++++++++++++++++++++++++++++++
+int subflow_pre_syn_sent() {
+
+	if (!packd.syn || packd.ack) {
+		set_verdict(1, 0, 0);
+		return 0;
+	}
+
+	if (packd.hook < 3 && packd.fwd_type == M_TO_T) {
+		set_verdict(1, 0, 0);
+		//TODO: Confirm return value
+		return 0;
+	}
+
+	snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_syn_sent: input tcp_seq=%lu, tcp_an=%lu",
+		(long unsigned)ntohl(packd.tcph->th_seq),
+		(long unsigned)ntohl(packd.tcph->th_ack));
+	add_msg(msg_buf);
+
+	if (packd.is_master) {
+		snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_syn_sent:master");
+		add_msg(msg_buf);
+		if (!create_MPcap(packd.mptcp_opt_buf, &packd.mptcp_opt_len, packd.sess->key_loc, NULL)) {
+			snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_syn_sent: total option len too long, len=%u", packd.mptcp_opt_len);
+			add_msg(msg_buf);
+			return 0;
+		}
+	}
+	else {
+		snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_syn_sent: slave");
+		add_msg(msg_buf);
+		if (!create_MPjoin_syn(packd.mptcp_opt_buf, &packd.mptcp_opt_len, packd.sess->token_rem, packd.sfl->rand_nmb_loc, packd.sfl->addr_id_loc, 0)) {
+			snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_syn_sent: total option len too long, len=%u", packd.mptcp_opt_len);
+			add_msg(msg_buf);
+			return 0;
+		}
+	}
+
+	if (!output_data_mptcp()) {
+		set_verdict(1, 0, 0);
+		execute_sess_teardown(packd.sess);
+		snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_syn_sent: output_data_mptcp fails");
+		add_msg(msg_buf);
+		return 0;
+	}
+
+	packd.sfl->tcp_state = SYN_SENT;
+	packd.sess->sess_state = SYN_SENT;
+
+	//update tsn
+	packd.sfl->isn_loc = htonl(packd.tcph->th_seq);
+	packd.sfl->highest_sn_loc = packd.sfl->isn_loc;
+	packd.sfl->offset_loc = packd.sfl->isn_loc;
+
+	//there is room for opimization: the first subflow does not have to be in IP tables
+	//	after SYN/ACK handshake
+
+	snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_syn_sent: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, sfl_seq=%lu, sfl_an=%lu",
+		(long unsigned)packd.sfl->isn_loc, (long unsigned)packd.sfl->isn_rem,
+		(long unsigned)packd.sess->idsn_loc, (long unsigned)packd.sess->idsn_rem,
+		(long unsigned)ntohl(packd.tcph->th_seq),
+		(long unsigned)ntohl(packd.tcph->th_ack));
+	add_msg(msg_buf);
+
+	set_verdict(1, 1, 1);
+	return 1;
+
+
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//subflow SYN_SENT
+//  Targe states: PRE_EST
+//  Currently, we omit simultaneous open
+//++++++++++++++++++++++++++++++++++++++++++++++++
+int subflow_syn_sent() {
+	//Check for INPUT (or FWD with M_TO_T) + SYN + ACK + MPTCP option
+	if (packd.hook < 3 && packd.fwd_type == M_TO_T && packd.syn && packd.ack) {
+		//drop session if remote host does not speak MPTCP
+		if (packd.nb_mptcp_options == 0) {
+			snprintf(msg_buf, MAX_MSG_LENGTH, "session_syn_sent: no MPTCP options attached. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+			add_msg(msg_buf);
+			delete_subflow(&packd.ft);
+			delete_session_parm(packd.sess->token_loc);
+			delete_session(&packd.sess->ft, 1);
+			set_verdict(1, 0, 0);
+			add_ip_white_list_array(packd.sess->ft.ip_rem);
+			return 0;
+		}
+
+		if (packd.is_master)
+			subflow_syn_sent_master();
+		else
+			subflow_syn_sent_slave();
+
+		snprintf(msg_buf, MAX_MSG_LENGTH, "syn_sent: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
+			(long unsigned)packd.sfl->isn_loc, (long unsigned)packd.sfl->isn_rem,
+			(long unsigned)packd.sess->idsn_loc, (long unsigned)packd.sess->idsn_rem,
+			(long unsigned)ntohl(packd.tcph->th_seq),
+			(long unsigned)ntohl(packd.tcph->th_ack));
+		add_msg(msg_buf);
+
+		return 1;
+	}
+
+	set_verdict(1, 0, 0);
+	return 0;
+}
+
+
+//++++++++++++++++++++++++++++++++++++++++++++++++
+//subflow PRE_EST
+//  Target states: ESTABLISHED
+//  Add TP_CAP headers with both ISDNs
+//++++++++++++++++++++++++++++++++++++++++++++++++
+int subflow_pre_est() {
+
+	if (packd.hook <= 1 || packd.fwd_type != T_TO_M || packd.syn || !packd.ack || packd.fin) {
+		set_verdict(1, 0, 0);
+		return 0;
+	}
+
+	//	packd.sfl = packd.sess->act_subflow;
+
+	//append IDSNloc and IDSNrem to packd.mptcp_opt_buf (which is still zero)
+	//if too long, kill the whole MPTCP idea and fallback to ordinary TCP mode
+	if (packd.is_master) {
+		snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_est:master");
+		add_msg(msg_buf);
+		if (!create_MPcap(packd.mptcp_opt_buf, &packd.mptcp_opt_len, packd.sess->key_loc, packd.sess->key_rem)) {
+			log_error("session_pre_est: create_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+			delete_subflow(&packd.ft);
+			delete_session_parm(packd.sess->token_loc);
+			delete_session(&packd.sess->ft, 1);
+			set_verdict(1, 0, 0);
+			return 0;
+		}
+	}
+	else {
+		snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_est:slave");
+		add_msg(msg_buf);
+
+		uint32_t mac_test[5];
+		create_mac(packd.sess->key_loc, packd.sess->key_rem, packd.sfl->rand_nmb_loc, packd.sfl->rand_nmb_rem, mac_test);
+		if (!create_MPjoin_ack(packd.mptcp_opt_buf, &packd.mptcp_opt_len, mac_test)) {
+			snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_est: create_MPjoin fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+			add_msg(msg_buf);
+			delete_subflow(&packd.ft);
+			delete_session_parm(packd.sess->token_loc);
+			delete_session(&packd.sess->ft, 1);
+			set_verdict(1, 0, 0);
+			return 0;
+		}
+
+		//transmit pending packet
+		struct rcv_buff_list *iter, *next, *head = packd.sess->snd_buff_list_head;
+		list_for_each_entry_safe(iter, next, &head->list, list) {
+			subflow_send_data(packd.sfl, iter->payload, iter->len, iter->dan, iter->dsn);
+			log("send pending pack: dan %x, dsn %x, len %u", iter->dan, iter->dsn, iter->len);
+		}
+	}
+
+	if (!output_data_mptcp()) {
+		set_verdict(1, 0, 0);
+		snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_est: output_data_mptcp fails, sess_id=%zu", packd.sess->index);
+		add_msg(msg_buf);
+		return 0;
+	}
+
+	packd.sess->highest_dsn_loc += 1;
+	packd.sess->last_dan_loc = packd.sess->highest_dsn_loc;
+	packd.sess->highest_dan_loc = packd.sess->highest_dsn_loc;
+
+
+	packd.sess->curr_window_loc = ntohs(packd.tcph->th_win);
+	packd.sfl->tcp_state = ESTABLISHED;
+	packd.sess->sess_state = ESTABLISHED;
+
+	snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_est: PRE_EST->ESTABLISHED - sess->sack=%d, sfl->sack=%d, sess_id=%zu, sfl_id=%zu",
+		packd.sess->sack_flag, packd.sfl->sack_flag, packd.sess->index, packd.sfl->index);
+	add_msg(msg_buf);
+	set_verdict(1, 1, 1);
+
+	snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_est: isn_loc=%u, isn_rem=%u, idsn_loc=%u, idsn_rem=%u, sfl_seq=%u, sfl_an=%u",
+		packd.sfl->isn_loc, packd.sfl->isn_rem,
+		packd.sess->idsn_loc, packd.sess->idsn_rem,
+		ntohl(packd.tcph->th_seq),
+		ntohl(packd.tcph->th_ack));
+	add_msg(msg_buf);
+
+	return 1;
+}
+
 int subflow_syn_sent_master(){
 
 	//get rem IDSN from MPTCP CAP option
@@ -645,12 +937,13 @@ int subflow_syn_sent_slave(){
 
 }
 
+/*
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //subflow SYN_SENT
 //  Target states: ESTABLISHED
 //  Expect SYN/ACK with TP_JOIN2, Send ACK
 //++++++++++++++++++++++++++++++++++++++++++++++++
-int subflow_syn_sent() {
+int subflow_syn_sent_old() {
 
 	if(packd.hook>=3 || packd.fwd_type != M_TO_T || !packd.syn || !packd.ack || packd.nb_mptcp_options<=0)
 		return 0;
@@ -669,12 +962,7 @@ int subflow_syn_sent() {
 	uint32_t mac[2];
 	if(!analyze_MPjoin_synack(mptopt, packd.nb_mptcp_options, mac, &rand_nmb_rem,  &addr_id_rem, &backup))
 		return 0;
-	/*
-	//test if hmac is correct
-	printf("subflow_syn_sent: krem=%X%X kloc=%X%X rrem=%X rloc=%X\n",
-	packd.sess->key_rem[0],packd.sess->key_rem[1], 
-	packd.sess->key_loc[0],packd.sess->key_loc[1], rand_nmb_rem, packd.sfl->rand_nmb_loc);
-	*/
+
 	uint32_t mac_test[5];
 	create_mac(packd.sess->key_rem, packd.sess->key_loc, rand_nmb_rem, packd.sfl->rand_nmb_loc, mac_test);
 	if(memcmp(mac_test, mac, 8) != 0) {
@@ -765,6 +1053,7 @@ int subflow_syn_sent() {
 	}
 	return 1;
 }
+*/
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //subflow SYN_RECEIVED

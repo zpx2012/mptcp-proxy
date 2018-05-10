@@ -41,8 +41,13 @@ extern int initiate_cand_subflow(struct session *sess, struct fourtuple *ft, uns
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int create_new_subflow_input(struct session *sess, unsigned char addr_id_rem, unsigned char backup, uint32_t rand_nmb);
 
+//+++new
+int create_subflow_socket(struct fourtuple* ft, int *p_sockfd);
+int call_connect(struct subflow * sfl);
+int subflow_pre_syn_sent();
+int subflow_pre_est();
+int subflow_syn_sent();
 int subflow_syn_sent_master();
-
 int subflow_syn_sent_slave();
 
 
