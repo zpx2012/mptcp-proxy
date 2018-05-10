@@ -1471,22 +1471,25 @@ int set_dss() {
 
 		create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
 		packd.mptcp_opt_appended = 1;
+		
+		log("set_dss: append complete MPdss for tsn %x", packd.ssn_curr_loc);
 	}
 	else if (packd.ack) {
 		//subflow ack
 		//Your code goes here
 		create_dan_MPdss_nondssopt(packd.mptcp_opt_buf, &packd.mptcp_opt_len, find_data_ack(packd.sess->rcv_buff_list_head));
 		packd.mptcp_opt_appended = 1;
+	
+		log("set_dss: append dan MPdss for tsn %x", packd.ssn_curr_loc);
 	}
 
 	//append options to buffer
 	if (!output_data_mptcp()) {
 		set_verdict(1, 0, 0);
-		execute_sess_teardown(packd.sess);
-		snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_syn_sent: output_data_mptcp fails");
-		add_msg(msg_buf);
+		add_err_msg("session_pre_syn_sent: output_data_mptcp fails");
 		return -1;
 	}
+	log("%s","set_dss: output data mptcp success");
 	return 0;
 }
 
