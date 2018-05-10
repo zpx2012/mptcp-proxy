@@ -976,7 +976,8 @@ int update_subflow_control_plane() {
 	int ret = 0;
 
 	switch (packd.sfl->tcp_state) {
-//	case ESTABLISHED:
+	case ESTABLISHED:
+		break;
 //		ret = session_established();
 //		break;
 	case PRE_SYN_SENT:
@@ -1123,13 +1124,13 @@ int mangle_packet() {
 	// 
 	//handles RSTs send by tcp
 	//sess can be NULL
-	if(packd.rst == 1) {
+//	if(packd.rst == 1) {
 
 		//handle all other RSTs
-		if(packd.hook < 3 && packd.fwd_type == M_TO_T) handle_reset_input();//sent by other MPTCP host
-		if(packd.hook > 1 && packd.fwd_type == T_TO_M) handle_reset_output();//sent by TCP
-		return 0; //terminate here
-	}
+//		if(packd.hook < 3 && packd.fwd_type == M_TO_T) handle_reset_input();//sent by other MPTCP host
+//		if(packd.hook > 1 && packd.fwd_type == T_TO_M) handle_reset_output();//sent by TCP
+//		return 0; //terminate here
+//	}
 
 	//*****SESSION ESTABLISHMENT******
 	//Sess = NULL && SYN only: contemplate session creation or subflow creation
@@ -1452,8 +1453,7 @@ int set_dss() {
 		packd.ssn_curr_loc = ntohl(packd.tcph->th_seq);
 		struct snd_map_list *rlst = NULL;
 		if (find_snd_map_list(packd.sfl->snd_map_list_head, packd.ssn_curr_loc, &rlst) || !rlst) {
-			snprintf(msg_buf, MAX_MSG_LENGTH, "set_dss: dsn not found, tsn %x", packd.ssn_curr_loc);
-			add_err_msg(msg_buf);
+			log_error("set_dss: dsn not found, tsn %x", packd.ssn_curr_loc);	
 			return -1;
 		}
 
