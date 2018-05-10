@@ -116,6 +116,14 @@ int update_session_control_plane();
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern int mangle_packet();
 
+int mangle_datatransfer_session_output();
+
+int mangle_datatransfer_session_input();
+
+int mangle_datatransfer_subflow_output();
+
+int mangle_datatransfer_subflow_input();
+
 int Send(int sockfd, const void * buf, size_t len, int flags);
 
 int set_dss();

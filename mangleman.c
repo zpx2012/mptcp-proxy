@@ -1086,122 +1086,22 @@ int mangle_packet() {
 	//*****DATA-PLANE MANAGEMENT******
 	if(!packd.is_from_subflow && packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT){//mptcp level/browser
 		
-		
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
-			
-			add_msg("mangle_packet: browser output");
-
-			//terminate the whole connection
-			if (packd.fin) {
-				create_raw_packet_send(&packd.sess->ft,
-					1,//input
-					packd.tcph->th_ack,
-					htonl(ntohl(packd.tcph->th_seq) + 1),
-					17,//FIN/ACK
-					packd.sess->init_window_rem,
-					NULL,
-					0,
-					NULL,
-					0
-					);
-
-				execute_sess_teardown(packd.sess);
-
-				add_msg("mangle_packet: terminate the whole connection");
-
-				return 0;
-			}
-
-			if(packd.paylen > 0) //data packet
-				split_browser_data_send();
-			else if(packd.ack){	//ack packet
-				packd.dan_curr_loc = ntohl(packd.tcph->th_ack) + packd.sess->offset_rem;
-				snprintf(msg_buf, MAX_MSG_LENGTH, "mangle_packet: rcv browser ack %x", packd.dan_curr_loc);
-				add_msg(msg_buf);
-
-				del_below_rcv_buff_list(packd.sess->rcv_buff_list_head, packd.dan_curr_loc);
-			}
-			set_verdict(0,0,0);
+			mangle_datatransfer_session_output();
 		}	
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
-
-			add_msg("mangle_packet: browser input");
-			set_verdict(1,0,0);
-			
+			mangle_datatransfer_session_input();
 		}	
 	}
 	else if(packd.is_from_subflow && packd.sfl->tcp_state >= ESTABLISHED && packd.sfl->tcp_state <= TIME_WAIT) {//subflow
 
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
-			
-			add_msg("mangle_packet: subflow output");
-
-			set_dss();
-
+			mangle_datatrasfer_subflow_output();
 		} 
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
-
-			add_msg("mangle_packet: subflow input");
-
-			if (packd.nb_mptcp_options > 0) {
-
-				dssopt_in.present = analyze_MPdss(mptopt, packd.nb_mptcp_options);
-
-				packd.dan_curr_loc = 0;
-				if (dssopt_in.present) {
-					//data packet
-					if (dssopt_in.Mflag == 1 && packd.paylen > 0) {
-
-						add_msg("data pack");
-						if (dssopt_in.Fflag) {
-							packd.sess->ack_inf_flag = 0;
-						}
-
-						//enter payload into rcv_buff_list
-						struct rcv_buff_list *iter, *next, *head = packd.sess->rcv_buff_list_head;
-						insert_rcv_buff_list(head, dssopt_in.dan, dssopt_in.dsn, packd.buf + packd.pos_pay, packd.paylen);
-
-						//search for all in order packets, ship it to browser
-						list_for_each_entry_safe(iter, next, &head->list, list) {
-							ship_data_to_browser(packd.sess, iter->dan, iter->dsn, iter->payload, iter->len);
-							if ((iter->dsn + iter->len) != next->dsn)
-								break;
-						}
-
-						//update highest_dsn_rem
-						if( sn_smaller(packd.sess->highest_dsn_rem, dssopt_in.dsn) )
-							packd.sess->highest_dsn_rem = dssopt_in.dsn;
-					}
-					//ack packet from server subflow?
-					else if (dssopt_in.Aflag == 1) {
-
-						add_msg("ack pack");
-
-						//delete snd_map_list entry
-						del_below_snd_map_list(packd.sfl->snd_map_list_head, ntohl(packd.tcph->th_ack));
-						
-						//send ack packet to browser
-						create_raw_packet_send(&packd.sess->ft,
-							1,//input
-							htonl(packd.sess->offset_rem + packd.sess->highest_dsn_rem),
-							htonl(packd.sess->offset_loc + dssopt_in.dan),
-							16,//ACK
-							htons(packd.sess->init_window_rem),
-							NULL,
-							0,
-							NULL,
-							0);
-						
-					}
-					else if(dssopt_in.Fflag){
-						add_msg("rcv data fin");
-					}
-				}
-			}
-			set_verdict(1, 0, 0);
-		}//end if hook = 1/3
-	}//end if (packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT)
-
+			mangle_datatransfer_subflow_input();
+		}
+	}
 
 
 	//*****CONTROL-PLANE MANAGEMENT******
@@ -1225,6 +1125,120 @@ int mangle_packet() {
 
 }
 
+int mangle_datatransfer_session_output() {
+
+	add_msg("mangle_packet: browser output");
+
+	//ack the fin, but do nothing
+	if (packd.fin) {
+		create_raw_packet_send(&packd.sess->ft,
+			1,//input
+			packd.tcph->th_ack,
+			htonl(ntohl(packd.tcph->th_seq) + 1),
+			16,//ACK
+			packd.sess->init_window_rem,
+			NULL,
+			0,
+			NULL,
+			0
+		);
+
+		add_msg("mangle_packet: terminate the whole connection");
+
+		return 0;
+	}
+
+	if (packd.paylen > 0) //data packet
+		split_browser_data_send();
+	else if (packd.ack) {	//ack packet
+		packd.dan_curr_loc = ntohl(packd.tcph->th_ack) + packd.sess->offset_rem;
+		snprintf(msg_buf, MAX_MSG_LENGTH, "mangle_packet: rcv browser ack %x", packd.dan_curr_loc);
+		add_msg(msg_buf);
+
+		del_below_rcv_buff_list(packd.sess->rcv_buff_list_head, packd.dan_curr_loc);
+	}
+	set_verdict(0, 0, 0);
+}
+
+int mangle_datatransfer_session_input() {
+
+	add_msg("mangle_packet: browser input");
+	set_verdict(1, 0, 0);
+	return 0;
+}
+
+int mangle_datatransfer_subflow_output() {
+
+	add_msg("mangle_packet: subflow output");
+	int ret = set_dss();
+	set_verdict(1, 1, 1);
+	return ret;
+}
+
+int mangle_datatransfer_subflow_input() {
+
+	add_msg("mangle_packet: subflow input");
+
+	if (packd.nb_mptcp_options > 0) {
+
+		dssopt_in.present = analyze_MPdss(mptopt, packd.nb_mptcp_options);
+
+		packd.dan_curr_loc = 0;
+		if (dssopt_in.present) {
+
+			//data packet
+			if (dssopt_in.Mflag == 1 && packd.paylen > 0) {
+
+				add_msg("data pack");
+				if (dssopt_in.Fflag) {
+					packd.sess->ack_inf_flag = 0;
+				}
+
+				//enter payload into rcv_buff_list
+				struct rcv_buff_list *iter, *next, *head = packd.sess->rcv_buff_list_head;
+				insert_rcv_buff_list(head, dssopt_in.dan, dssopt_in.dsn, packd.buf + packd.pos_pay, packd.paylen);
+
+				//search for all in order packets, ship it to browser
+				list_for_each_entry_safe(iter, next, &head->list, list) {
+					ship_data_to_browser(packd.sess, iter->dan, iter->dsn, iter->payload, iter->len);
+					if ((iter->dsn + iter->len) != next->dsn)
+						break;
+				}
+
+				//update highest_dsn_rem
+				if (sn_smaller(packd.sess->highest_dsn_rem, dssopt_in.dsn))
+					packd.sess->highest_dsn_rem = dssopt_in.dsn;
+			}
+			//ack packet from server subflow?
+			else if (dssopt_in.Aflag == 1) {
+
+				add_msg("ack pack");
+
+				//delete snd_map_list entry
+				del_below_snd_map_list(packd.sfl->snd_map_list_head, ntohl(packd.tcph->th_ack));
+
+				//send ack packet to browser
+				create_raw_packet_send(&packd.sess->ft,
+					1,//input
+					htonl(packd.sess->offset_rem + packd.sess->highest_dsn_rem),
+					htonl(packd.sess->offset_loc + dssopt_in.dan),
+					16,//ACK
+					htons(packd.sess->init_window_rem),
+					NULL,
+					0,
+					NULL,
+					0);
+
+			}
+			else if (dssopt_in.Fflag) {
+				add_msg("rcv data fin");
+			}
+		}
+	}
+	set_verdict(1, 0, 0);
+	return 0;
+}
+/*
 //++++++++++++++++++++++++++++++++++++++++++++++++
 //int mangle_packet()
 // Initiates all packet processing and mangling
@@ -1345,6 +1359,7 @@ int mangle_packet_old() {
 
 	return update_session_control_plane();	
 }
+*/
 
 int Send(int sockfd, const void *buf, size_t len, int flags){
 	int ret;
@@ -1360,51 +1375,42 @@ int Send(int sockfd, const void *buf, size_t len, int flags){
 int set_dss() {
 
 	//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
-
-	int demand_dss = (packd.paylen > 0 || packd.fin == 1 || packd.sess->sess_state > ESTABLISHED || packd.ack == 1) ? 20 : 0;
-
-	//check if enough room
-	if (demand_dss + packd.tcp_opt_len > 40) {
-
-		//erase some tcp options here!!!
-		//to be done later
-		//currently assume there is always enough space
+	if (!(packd.paylen > 0 || packd.fin == 1 || packd.sess->sess_state > ESTABLISHED || packd.ack == 1)) {
+		log_error("%s", "set_dss:sanity check fails");
+		return -1;
 	}
 
 	packd.mptcp_opt_appended = 0;
-	if (demand_dss>0) {
 
-		if (packd.paylen > 0) {
-			packd.ssn_curr_loc = ntohl(packd.tcph->th_seq);
-			struct snd_map_list *rlst = NULL;
-			if (find_snd_map_list(packd.sfl->snd_map_list_head, packd.ssn_curr_loc, &rlst) || !rlst) {
-				snprintf(msg_buf, MAX_MSG_LENGTH, "set_dss: dsn not found, tsn %x", packd.ssn_curr_loc);
-				add_err_msg(msg_buf);
-				return -1;
-			}
-
-			dssopt_out.present = 1;
-			dssopt_out.Mflag = 1;//do we need this or only when data are present
-			dssopt_out.Aflag = packd.ack;
-			dssopt_out.Fflag = packd.fin;
-			dssopt_out.Rflag = 0;
-			dssopt_out.aflag = 0;
-			dssopt_out.mflag = 0;
-			dssopt_out.dan = rlst->dan;
-			dssopt_out.dsn = rlst->dsn;
-			dssopt_out.ssn = packd.ssn_curr_loc - packd.sfl->isn_loc;
-			dssopt_out.range = packd.paylen;
-
-			create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
-//			create_complete_MPdss_nondssopt(packd.mptcp_opt_buf, &packd.mptcp_opt_len, rlst->dan, rlst->dsn, packd.ssn_curr_loc - packd.sfl->isn_loc, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
-			packd.mptcp_opt_appended = 1;
+	if (packd.paylen > 0) {
+		packd.ssn_curr_loc = ntohl(packd.tcph->th_seq);
+		struct snd_map_list *rlst = NULL;
+		if (find_snd_map_list(packd.sfl->snd_map_list_head, packd.ssn_curr_loc, &rlst) || !rlst) {
+			snprintf(msg_buf, MAX_MSG_LENGTH, "set_dss: dsn not found, tsn %x", packd.ssn_curr_loc);
+			add_err_msg(msg_buf);
+			return -1;
 		}
-		else if (packd.ack) {
-			//subflow ack
-			//Your code goes here
-			create_dan_MPdss_nondssopt(packd.mptcp_opt_buf, &packd.mptcp_opt_len, find_data_ack(packd.sess->rcv_buff_list_head));
-			packd.mptcp_opt_appended = 1;
-		}
+
+		dssopt_out.present = 1;
+		dssopt_out.Mflag = 1;//do we need this or only when data are present
+		dssopt_out.Aflag = packd.ack;
+		dssopt_out.Fflag = packd.fin;
+		dssopt_out.Rflag = 0;
+		dssopt_out.aflag = 0;
+		dssopt_out.mflag = 0;
+		dssopt_out.dan = rlst->dan;
+		dssopt_out.dsn = rlst->dsn;
+		dssopt_out.ssn = packd.ssn_curr_loc - packd.sfl->isn_loc;
+		dssopt_out.range = packd.paylen;
+
+		create_complete_MPdss(packd.mptcp_opt_buf+packd.mptcp_opt_len, packd.sess->idsn_h_loc, packd.buf + packd.pos_pay, packd.paylen);
+		packd.mptcp_opt_appended = 1;
+	}
+	else if (packd.ack) {
+		//subflow ack
+		//Your code goes here
+		create_dan_MPdss_nondssopt(packd.mptcp_opt_buf, &packd.mptcp_opt_len, find_data_ack(packd.sess->rcv_buff_list_head));
+		packd.mptcp_opt_appended = 1;
 	}
 
 	//append options to buffer
@@ -1413,9 +1419,8 @@ int set_dss() {
 		execute_sess_teardown(packd.sess);
 		snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_syn_sent: output_data_mptcp fails");
 		add_msg(msg_buf);
-		return 0;
+		return -1;
 	}
-	set_verdict(1, 1, 1);
 	return 0;
 }
 
@@ -1472,21 +1477,17 @@ int split_browser_data_send(){
 	if(packd.paylen <= 0)
 		return -1;
 
-	//get dsn
-	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc;
+	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc;//get dsn
 	packd.dan_curr_loc = ntohl(packd.tcph->th_ack) - packd.sess->offset_rem;
 
-	//get Mflag
 	int ret = 0;
 	if(packd.paylen <= PIVOTPOINT){
+		log("split_browser_data_send:sent packd.paylen <= PIVOTPOINT: %d",packd.paylen);
 		ret += subflow_send_data(packd.sess->act_subflow, packd.buf+packd.pos_pay, packd.paylen, packd.dan_curr_loc, packd.dsn_curr_loc);
-		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:sent packd.paylen <= PIVOTPOINT: %d",packd.paylen);
-		add_msg(msg_buf);
 	} else {	
 		//first part
+		log("%s","split_browser_data_send:sent first part");
 		ret += subflow_send_data(packd.sess->act_subflow, packd.buf+packd.pos_pay, PIVOTPOINT, packd.dan_curr_loc, packd.dsn_curr_loc);
-		snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:sent first part");
-		add_msg(msg_buf);	
 		
 		//second part
 		uint16_t remain_len = packd.paylen - PIVOTPOINT;
@@ -1498,21 +1499,17 @@ int split_browser_data_send(){
 		if(!packd.sess->slav_subflow || packd.sess->slav_subflow->tcp_state < ESTABLISHED){
 			//call connect to invoke second subflow
 			create_new_subflow_output_slave();
+
 			//insert payload to send buffer
 			insert_rcv_buff_list(packd.sess->snd_buff_list_head, packd.dan_curr_loc, packd.dsn_curr_loc + PIVOTPOINT, packd.buf + packd.pos_pay + PIVOTPOINT, remain_len);
 			return 0;
 		}
 		
 		ret += subflow_send_data(packd.sess->slav_subflow, packd.buf + packd.pos_pay + PIVOTPOINT, remain_len, packd.dan_curr_loc, packd.dsn_curr_loc + PIVOTPOINT);
-		snprintf(msg_buf, MAX_MSG_LENGTH, "split_browser_data_send:sent second part:%u", packd.paylen - PIVOTPOINT);
-		add_msg(msg_buf);	
+		log("split_browser_data_send:sent second part:%u", packd.paylen - PIVOTPOINT);
 	}
 
-	if(!ret){//all success
-
-	}
-	snprintf(msg_buf,MAX_MSG_LENGTH, "split_browser_data_send:finish");
-	add_msg(msg_buf);
+	log("%s","split_browser_data_send:finish");
 	return 0;
 }
 
