@@ -761,15 +761,19 @@ void hex_dump(const unsigned char *packet, size_t size)
 	int count = 0;
 
 	int len = 0;
+	memset(msg_buf, 0, MAX_MSG_LENGTH);
 	snprintf(msg_buf, MAX_MSG_LENGTH, "\t\t");
 	len += 8;
 	for (; byte < ((unsigned char*)packet) + size; byte++) {
 		count++;
 		snprintf(msg_buf + len, MAX_MSG_LENGTH, "%02x ", *byte);
-		len += 2;
-		if (count % 16 == 0) add_msg("\n\t\t");
+		len += 3;
+		if (count % 16 == 0) {
+			snprintf(msg_buf + len, MAX_MSG_LENGTH, "\n\t\t");
+			len += 9;
+		}
 	}
-	add_msg("\n\n");
+	add_msg(msg_buf);
 }
 
 /*

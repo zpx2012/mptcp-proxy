@@ -255,8 +255,7 @@ void print_tcp_packet(unsigned char *buf) {
 
 	if(len_pay) {
 		log("\t+ Payload len: %d", len_pay);	
-		hex_dump_to_buffer(buf, len_pay, 16, 1, msg_buf, sizeof(msg_buf), 1);
-		add_msg(msg_buf);
+		hex_dump(buf + (uint16_t)(iphdr->ip_h1<<2) + (uint16_t)(tcphdr->th_off<<2), len_pay);
 	}
 	log("-------------------------------------");
 
