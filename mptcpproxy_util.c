@@ -769,7 +769,9 @@ void hex_dump(const unsigned char *packet, size_t size)
 		snprintf(msg_buf + len, MAX_MSG_LENGTH, "%02x ", *byte);
 		len += 3;
 		if (count % 16 == 0) {
-			snprintf(msg_buf + len, MAX_MSG_LENGTH, "\n\t\t");
+			add_msg(msg_buf);
+			len = 0;
+			snprintf(msg_buf + len, MAX_MSG_LENGTH, "\t\t");
 			len += 3;
 		}
 	}

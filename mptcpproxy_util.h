@@ -38,6 +38,7 @@
 #include <pthread.h>
 #include "list.h"
 #include <errno.h>
+#include <netinet/tcp.h>
 
 //Operations
 #define UPDATE_DEFAULT_ROUTE 0 //derives new /24 default route in case of mpproxy -B and mpproxy -A

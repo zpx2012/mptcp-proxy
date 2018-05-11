@@ -1434,6 +1434,8 @@ int Send(int sockfd, const void *buf, size_t len, int flags){
 		add_err_msg("Sent: send returns error");
 		return ret;
 	}
+	int flag = 1;
+	setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int));
 	add_msg("Sent: send success");	
 	hex_dump(buf, len);
 	return ret;
