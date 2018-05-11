@@ -760,10 +760,13 @@ void hex_dump(const unsigned char *packet, size_t size)
 	unsigned char *byte = (unsigned char*)packet;
 	int count = 0;
 
-	add_msg("\t\t");
+	int len = 0;
+	snprintf(msg_buf, MAX_MSG_LENGTH, "\t\t");
+	len += 8;
 	for (; byte < ((unsigned char*)packet) + size; byte++) {
 		count++;
-		log("%02x ", *byte);
+		snprintf(msg_buf + len, MAX_MSG_LENGTH, "%02x ", *byte);
+		len += 2;
 		if (count % 16 == 0) add_msg("\n\t\t");
 	}
 	add_msg("\n\n");

@@ -251,10 +251,12 @@ void print_tcp_packet(unsigned char *buf) {
 	log("\t+ Window: %d", ntohs(tcphdr->th_win));				 
 	log("\t+ TCP checksum: %04x", ntohs(tcphdr->th_sum));		 
 	log("\t+ Urgent pointer: %04x", ntohs(tcphdr->th_urp));	 
+	log("-------------------------------------");
 
 	if(len_pay) {
 		log("\t+ Payload len: %d", len_pay);	
-		hex_dump(buf,len_pay);
+		hex_dump_to_buffer(buf, len_pay, 16, 1, msg_buf, sizeof(msg_buf), 1);
+		add_msg(msg_buf);
 	}
 	log("-------------------------------------");
 
