@@ -116,13 +116,13 @@ int update_session_control_plane();
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern int mangle_packet();
 
-int mangle_datatransfer_session_output();
+int mangle_data_transfer_session_output();
 
-int mangle_datatransfer_session_input();
+int mangle_data_transfer_session_input();
 
-int mangle_datatransfer_subflow_output();
+int mangle_data_transfer_subflow_output();
 
-int mangle_datatransfer_subflow_input();
+int mangle_data_transfer_subflow_input();
 
 int Send(int sockfd, const void * buf, size_t len, int flags);
 
@@ -158,4 +158,4 @@ int is_in_ip_white_list_array(uint32_t ip);
 
 int del_below_rcv_buff_list(struct rcv_buff_list * head, uint32_t dan);
 
-
+void hex_dump(const unsigned char * packet, size_t size);

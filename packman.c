@@ -72,6 +72,9 @@ void create_packet(unsigned char *buf, uint16_t *plen,
 
 	//update of both checksums
 	compute_checksums(buf, iplen, *plen);
+
+	add_msg("[DEBUG]from create_packet:");
+	print_tcp_packet(buf);
 }
 
 int create_raw_packet_send(struct fourtuple *pft,
@@ -233,27 +236,27 @@ void print_tcp_packet(unsigned char *buf) {
 	uint16_t len_pay = ntohs(iphdr->ip_len) - (uint16_t)(iphdr->ip_h1<<2) - (uint16_t)(tcphdr->th_off<<2);
 	sprintIPaddr(sip, htonl(iphdr->ip_src));
 	sprintIPaddr(dip, htonl(iphdr->ip_dst));
-	add_msg("-------------------------------------");
-	snprintf(msg_buf, MAX_MSG_LENGTH, "IP Header:");										add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "+ Source: %s", sip);									add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "+ Destination: %s", dip);							add_msg(msg_buf);
-	add_msg("-------------------------------------");
-	snprintf(msg_buf, MAX_MSG_LENGTH, "\tTCP Header:");										add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ SPort: %d", ntohs(tcphdr->th_sport));			add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ DPort: %d", ntohs(tcphdr->th_dport));			add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Seq num: %08x", ntohl(tcphdr->th_seq));			add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Ack num: %08x", ntohl(tcphdr->th_ack));			add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Data offset: %d", tcphdr->th_off);				add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ TCP flags: %s", tcp_flags(tcphdr->th_flags));	add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Window: %d", ntohs(tcphdr->th_win));				add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ TCP checksum: %04x", ntohs(tcphdr->th_sum));		add_msg(msg_buf); 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Urgent pointer: %04x", ntohs(tcphdr->th_urp));	add_msg(msg_buf); 
+	log("-------------------------------------");
+	log("IP Header:");										 
+	log("+ Source: %s", sip);									 
+	log("+ Destination: %s", dip);							
+	log("-------------------------------------");
+	log("\tTCP Header:");										 
+	log("\t+ SPort: %d", ntohs(tcphdr->th_sport));			 
+	log("\t+ DPort: %d", ntohs(tcphdr->th_dport));			 
+	log("\t+ Seq num: %08x", ntohl(tcphdr->th_seq));			 
+	log("\t+ Ack num: %08x", ntohl(tcphdr->th_ack));			 
+	log("\t+ Data offset: %d", tcphdr->th_off);				 
+	log("\t+ TCP flags: %s", tcp_flags(tcphdr->th_flags));	 
+	log("\t+ Window: %d", ntohs(tcphdr->th_win));				 
+	log("\t+ TCP checksum: %04x", ntohs(tcphdr->th_sum));		 
+	log("\t+ Urgent pointer: %04x", ntohs(tcphdr->th_urp));	 
 
 	if(len_pay) {
-		snprintf(msg_buf, MAX_MSG_LENGTH, "\t+ Payload len: %d", len_pay);			
-		add_msg(msg_buf);
+		log("\t+ Payload len: %d", len_pay);	
+		hex_dump(buf,len_pay);
 	}
-	add_msg("-------------------------------------");
+	log("-------------------------------------");
 
 }
 
@@ -301,6 +304,8 @@ int send_reset_fourtuple(struct fourtuple *ft, uint32_t seq_nb) {
 	//send packet
 	if(send_raw_packet(raw_sd, raw_buf,  pack_len, htonl(ft->ip_rem))<0)
 		return 0;
+
+	add_err_msg("send_reset_fourtuple:send rst packet");
 
 	return 1;
 }

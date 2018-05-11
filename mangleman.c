@@ -1153,19 +1153,19 @@ int mangle_packet() {
 	if(!packd.is_from_subflow && packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT){//mptcp level/browser
 		
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
-			mangle_datatransfer_session_output();
+			mangle_data_transfer_session_output();
 		}	
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
-			mangle_datatransfer_session_input();
+			mangle_data_transfer_session_input();
 		}	
 	}
 	else if(packd.is_from_subflow && packd.sfl->tcp_state >= ESTABLISHED && packd.sfl->tcp_state <= TIME_WAIT) {//subflow
 
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
-			mangle_datatransfer_subflow_output();
+			mangle_data_transfer_subflow_output();
 		} 
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
-			mangle_datatransfer_subflow_input();
+			mangle_data_transfer_subflow_input();
 		}
 	}
 
@@ -1191,7 +1191,7 @@ int mangle_packet() {
 
 }
 
-int mangle_datatransfer_session_output() {
+int mangle_data_transfer_session_output() {
 
 	add_msg("mangle_packet: browser output");
 
@@ -1227,14 +1227,14 @@ int mangle_datatransfer_session_output() {
 	return 0;
 }
 
-int mangle_datatransfer_session_input() {
+int mangle_data_transfer_session_input() {
 
 	add_msg("mangle_packet: browser input");
 	set_verdict(1, 0, 0);
 	return 0;
 }
 
-int mangle_datatransfer_subflow_output() {
+int mangle_data_transfer_subflow_output() {
 
 	add_msg("mangle_packet: subflow output");
 	int ret = set_dss();
@@ -1242,7 +1242,7 @@ int mangle_datatransfer_subflow_output() {
 	return ret;
 }
 
-int mangle_datatransfer_subflow_input() {
+int mangle_data_transfer_subflow_input() {
 
 	add_msg("mangle_packet: subflow input");
 
@@ -1435,6 +1435,7 @@ int Send(int sockfd, const void *buf, size_t len, int flags){
 		return ret;
 	}
 	add_msg("Sent: send success");	
+	hex_dump(buf, len);
 	return ret;
 }
 
@@ -1555,7 +1556,7 @@ int split_browser_data_send(){
 		ret += subflow_send_data(packd.sess->act_subflow, packd.buf+packd.pos_pay, packd.paylen, packd.dan_curr_loc, packd.dsn_curr_loc);
 	} else {	
 		//first part
-		log("%s","split_browser_data_send:sent first part");
+		log("split_browser_data_send:sent first part %u", PIVOTPOINT);
 		ret += subflow_send_data(packd.sess->act_subflow, packd.buf+packd.pos_pay, PIVOTPOINT, packd.dan_curr_loc, packd.dsn_curr_loc);
 		
 		//second part
@@ -1806,39 +1807,51 @@ int print_rcv_buff_list(struct rcv_buff_list* head) {
 
 }
 
-int add_ip_white_list_array(uint32_t ip) {
+int add_ip_whitelist_array(uint32_t ip) {
 
-	if (ip_white_list_counter >= MAX_IP_WHITE_LIST_LEN) {
-		add_err_msg("add_ip_white_list_array:too many ip");
+	if (ip_whitelist_counter >= MAX_IP_WHITELIST_LEN) {
+		add_err_msg("add_ip_whitelist_array:too many ip");
 		return -1;
 	}
 
 	char ip_str[20];
 	sprintIPaddr(ip_str, ip);
 	
-	if(is_in_ip_white_list_array(ip)){
-		log("add_ip_white_list_array: %s already in array", ip_str);
+	if(is_in_ip_whitelist_array(ip)){
+		log("add_ip_whitelist_array: %s already in array", ip_str);
 		return -1;
 	}
 	
-	ip_white_list[ip_white_list_counter++] = ip;
-	log("add_ip_white_list_array:%s", ip_str);
+	ip_whitelist[ip_whitelist_counter++] = ip;
+	log("add_ip_whitelist_array:%s", ip_str);
 	return 0;
 }
 
-int is_in_ip_white_list_array(uint32_t ip) {
+int is_in_ip_whitelist_array(uint32_t ip) {
 
-	for (size_t i = 0; i < ip_white_list_counter; i++)
-		if (ip_white_list[i] == ip){
+	for (size_t i = 0; i < ip_whitelist_counter; i++)
+		if (ip_whitelist[i] == ip){
 			char ip_str[20];
 			sprintIPaddr(ip_str, ip);
-			log("is_in_ip_white_list_array:%s",ip_str);
+			log("is_in_ip_whitelist_array:%s",ip_str);
 			return 1;
 		}
 	return 0;
 }
 
 
+void hex_dump(const unsigned char *packet, size_t size)
+{
+	unsigned char *byte = (unsigned char*)packet;
+	int count = 0;
 
+	add_msg("\t\t");
+	for (; byte < ((unsigned char*)packet) + size; byte++) {
+		count++;
+		log("%02x ", *byte);
+		if (count % 16 == 0) add_msg("\n\t\t");
+	}
+	add_msg("\n\n");
+}
 
 

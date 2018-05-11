@@ -164,12 +164,12 @@ extern int raw_sd;
 extern unsigned char raw_buf[RAWBUFLEN] __attribute__ ((aligned));// = malloc( 60 * sizeof(unsigned char));
 
 //+++new
-#define MAX_IP_WHITE_LIST_LEN 2000
-extern uint32_t ip_white_list[MAX_IP_WHITE_LIST_LEN];
-extern uint16_t ip_white_list_counter;
-#define log(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); add_msg(msg_buf);
-#define log_error(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); add_err_msg(msg_buf);
-#define log_list_msg(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, msg); write_msg_file(prt_msg_array.file_msg,msg_buf);
+#define MAX_IP_WHITELIST_LEN 2000
+extern uint32_t ip_whitelist[MAX_IP_WHITELIST_LEN];
+extern uint16_t ip_whitelist_counter;
+#define log(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, ##msg); add_msg(msg_buf);
+#define log_error(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, ##msg); add_err_msg(msg_buf);
+#define log_list_msg(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, ##msg); write_msg_file(prt_msg_array.file_msg,msg_buf);
 
 
 struct connect_args{

@@ -392,7 +392,7 @@ int contemplate_new_session_output_old() {
 
 int contemplate_new_session_output() {
 
-	if(is_in_ip_white_list_array(packd.ft.ip_rem)){
+	if(is_in_ip_whitelist_array(packd.ft.ip_rem)){
 		set_verdict(1,0,0);
 		return 0;
 	}

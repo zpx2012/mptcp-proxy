@@ -680,7 +680,7 @@ int subflow_syn_sent() {
 			delete_session_parm(packd.sess->token_loc);
 			delete_session(&packd.sess->ft, 1);
 			set_verdict(1, 0, 0);
-			add_ip_white_list_array(packd.sess->ft.ip_rem);
+			add_ip_whitelist_array(packd.sess->ft.ip_rem);
 			return 0;
 		}
 
