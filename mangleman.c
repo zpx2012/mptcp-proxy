@@ -1838,20 +1838,3 @@ int is_in_ip_whitelist_array(uint32_t ip) {
 		}
 	return 0;
 }
-
-
-void hex_dump(const unsigned char *packet, size_t size)
-{
-	unsigned char *byte = (unsigned char*)packet;
-	int count = 0;
-
-	add_msg("\t\t");
-	for (; byte < ((unsigned char*)packet) + size; byte++) {
-		count++;
-		log("%02x ", *byte);
-		if (count % 16 == 0) add_msg("\n\t\t");
-	}
-	add_msg("\n\n");
-}
-
-

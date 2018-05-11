@@ -170,7 +170,7 @@ extern uint16_t ip_whitelist_counter;
 #define log(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, ##msg); add_msg(msg_buf);
 #define log_error(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, ##msg); add_err_msg(msg_buf);
 #define log_list_msg(format,msg...) snprintf(msg_buf, MAX_MSG_LENGTH,format, ##msg); write_msg_file(prt_msg_array.file_msg,msg_buf);
-
+void hex_dump(const unsigned char * packet, size_t size);
 
 struct connect_args{
 	int sockfd;
