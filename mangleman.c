@@ -1521,6 +1521,7 @@ int ship_data_to_browser() {
 				break;
 		}
 	}
+	return 0;
 }
 
 

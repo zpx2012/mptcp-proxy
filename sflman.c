@@ -731,6 +731,12 @@ int subflow_pre_est() {
 			set_verdict(1, 0, 0);
 			return 0;
 		}
+		packd.sess->highest_dsn_loc += 1;
+		packd.sess->last_dan_loc = packd.sess->highest_dsn_loc;
+		packd.sess->highest_dan_loc = packd.sess->highest_dsn_loc;
+		packd.sess->curr_window_loc = ntohs(packd.tcph->th_win);
+		packd.sess->sess_state = ESTABLISHED;
+
 	}
 	else {
 		snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_est:slave");
@@ -763,14 +769,7 @@ int subflow_pre_est() {
 		return 0;
 	}
 
-	packd.sess->highest_dsn_loc += 1;
-	packd.sess->last_dan_loc = packd.sess->highest_dsn_loc;
-	packd.sess->highest_dan_loc = packd.sess->highest_dsn_loc;
-
-
-	packd.sess->curr_window_loc = ntohs(packd.tcph->th_win);
 	packd.sfl->tcp_state = ESTABLISHED;
-	packd.sess->sess_state = ESTABLISHED;
 
 	snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_est: PRE_EST->ESTABLISHED - sess->sack=%d, sfl->sack=%d, sess_id=%zu, sfl_id=%zu",
 		packd.sess->sack_flag, packd.sfl->sack_flag, packd.sess->index, packd.sfl->index);
@@ -883,6 +882,9 @@ int subflow_syn_sent_master(){
 
 //+++send syn/ack to browser
 {
+	packd.sess->rcv_buff_list_head->dsn = packd.sess->idsn_rem;
+	packd.sess->rcv_buff_list_head->len = 1;
+	
 	create_raw_packet_send(&packd.sess->ft,
 		1,
 		htonl(packd.sess->idsn_rem), 

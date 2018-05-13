@@ -1371,8 +1371,6 @@ struct session* create_session(
 	sess->rcv_buff_list_head = malloc(sizeof(struct rcv_buff_list));
 	init_head_rcv_buff_list(sess->snd_buff_list_head);	
 	init_head_rcv_buff_list(sess->rcv_buff_list_head);
-	sess->rcv_buff_list_head->dsn = idsn_rem;
-	sess->rcv_buff_list_head->len = 1;
 
 	if(key_loc != NULL) memcpy(sess->key_loc, key_loc, 8);
 	else memset(sess->key_loc, 0, 8);
