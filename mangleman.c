@@ -1262,15 +1262,10 @@ int mangle_data_transfer_subflow_input() {
 				}
 
 				//enter payload into rcv_buff_list
-				struct rcv_buff_list *iter, *next, *head = packd.sess->rcv_buff_list_head;
-				insert_rcv_buff_list(head, dssopt_in.dan, dssopt_in.dsn, packd.buf + packd.pos_pay, packd.paylen);
+				insert_rcv_buff_list(packd.sess->rcv_buff_list_head, dssopt_in.dan, dssopt_in.dsn, packd.buf + packd.pos_pay, packd.paylen);
 
 				//search for all in order packets, ship it to browser
-				list_for_each_entry_safe(iter, next, &head->list, list) {
-					ship_data_to_browser(packd.sess, iter->dan, iter->dsn, iter->payload, iter->len);
-					if ((iter->dsn + iter->len) != next->dsn)
-						break;
-				}
+				ship_data_to_browser();
 
 				//update highest_dsn_rem
 				if (sn_smaller(packd.sess->highest_dsn_rem, dssopt_in.dsn))
@@ -1446,7 +1441,7 @@ int set_dss() {
 
 	//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
 	if (!(packd.paylen > 0 || packd.fin == 1 || packd.sess->sess_state > ESTABLISHED || packd.ack == 1)) {
-		log_error("%s", "set_dss:sanity check fails");
+		log_error("set_dss:sanity check fails");
 		return -1;
 	}
 
@@ -1492,7 +1487,7 @@ int set_dss() {
 		add_err_msg("session_pre_syn_sent: output_data_mptcp fails");
 		return -1;
 	}
-	log("%s","set_dss: output data mptcp success");
+	log("set_dss: output data mptcp success");
 	return 0;
 }
 
@@ -1513,9 +1508,24 @@ int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uin
 }
 
 //int ship_rcv_to_browser
+//search for all in order packets, ship it to browser
 //find consecutive parts, create packet, decrement the window size
+int ship_data_to_browser() {
+
+	struct rcv_buff_list *iter, *next, *head = packd.sess->rcv_buff_list_head;
+	//iter = list_entry(head->list.next, struct rcv_buff_list, list);
+	if (head->dsn + head->len == list_entry(head->list.next, struct rcv_buff_list, list)->dsn) {
+		list_for_each_entry_safe(iter, next, &head->list, list) {
+			session_send_data(packd.sess, iter->dan, iter->dsn, iter->payload, iter->len);
+			if ((iter->dsn + iter->len) != next->dsn)
+				break;
+		}
+	}
+}
+
+
 //session send data
-int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsigned char* payload, int paylen) {
+int session_send_data(struct session* sess, uint32_t dan, uint32_t dsn,unsigned char* payload, int paylen) {
 //int ship_data_to_browser(uint32_t seq, uint32_t ack, char* payload, int paylen){
 	
 	if (!sess) {
@@ -1528,19 +1538,18 @@ int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsign
 		return -1;
 	}
 
-	create_raw_packet_send(&packd.sess->ft,
+	create_raw_packet_send(&sess->ft,
 		1,
-		htonl(packd.sess->offset_rem + dsn),
-		htonl(packd.sess->offset_loc + dan),
+		htonl(sess->offset_rem + dsn),
+		htonl(sess->offset_loc + dan),
 		16,//ACK
-		htons(packd.sess->init_window_rem),
+		htons(sess->init_window_rem),
 		NULL,
 		0,
 		payload,
 		paylen);
 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "ship_data_to_browser:dan %x, dsn %x, len %d", dan, dsn, paylen);
-	add_msg(msg_buf);
+	log("ship_data_to_browser:dan %x, dsn %x, len %d", dan, dsn, paylen);
 	return 0;
 }
 
@@ -1581,7 +1590,7 @@ int split_browser_data_send(){
 		log("split_browser_data_send:sent second part:%u", packd.paylen - PIVOTPOINT);
 	}
 
-	log("%s","split_browser_data_send:finish");
+	log("split_browser_data_send:finish");
 	return 0;
 }
 
@@ -1671,18 +1680,18 @@ int print_snd_map_list(struct snd_map_list *head) {
 	}
 
 	struct snd_map_list *iter;
-	log_list_msg("%s","-----------------------------------------------------------------------");
+	log_list_msg("-----------------------------------------------------------------------");
 	log_list_msg("|			         snd map list %-12p                      |",(void *)head);
-	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
-	log_list_msg("%s","| dan	   | dsn	  | *tsn	  | list   | prev   | next   | port   |");
-	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+	log_list_msg("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+	log_list_msg("| dan	   | dsn	  | *tsn	  | list   | prev   | next   | port   |");
+	log_list_msg("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
 
 	list_for_each_entry(iter, &head->list, list) {
 		log_list_msg( "| %-8x | %-8x | %-8x  | %-6p | %-6p | %-6p | %-6d |", iter->dan, iter->dsn, iter->tsn, (void *)&iter->list, (void *)iter->list.prev, (void *)iter->list.next, packd.sess->ft.prt_loc);
 		
 	}
 	
-	log_list_msg("%s","-----------------------------------------------------------------------");
+	log_list_msg("-----------------------------------------------------------------------");
 
 	return 0;
 }
@@ -1719,12 +1728,14 @@ int del_below_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan) {
 	}
 
 	struct rcv_buff_list *iter, *next;
-//	log_list_msg("before delete: dan = %x, port = %d", dan, packd.ft.prt_loc);
+	log_list_msg("before delete: dan = %x, port = %d", dan, packd.ft.prt_loc);
 	
 	print_rcv_buff_list(head);
 	list_for_each_entry_safe(iter, next, &head->list, list) {
-		if ( (iter->dsn < dan) && (next != head)) {
-//			log_list_msg("delete node: dsn = %x", iter->dsn);
+		if (iter->dsn < dan) {
+			log_list_msg("delete node: dsn = %x", iter->dsn);
+			head->dsn = iter->dsn;
+			head->len = iter->len;
 			list_del(&iter->list);
 			free(iter->payload);
 			free(iter);
@@ -1775,13 +1786,17 @@ uint32_t find_data_ack(struct rcv_buff_list *head) {
 	}
 
 	struct rcv_buff_list *iter, *next;
+
+	if (head->dsn + head->len != list_entry(head->list.next, struct rcv_buff_list, list)->dsn){
+		return head->dsn + head->len;
+	}
+
 	list_for_each_entry_safe(iter, next, &head->list, list) {
 		if ((iter->dsn + iter->len) != next->dsn)
 			break;
 	}
-//	log_list_msg("find_data_ack: dan:%x", iter->dsn + iter->len);
+	log_list_msg("find_data_ack: dan:%x", iter->dsn + iter->len);
 	
-
 	print_rcv_buff_list(head);
 	return iter->dsn + iter->len;
 }
@@ -1794,17 +1809,17 @@ int print_rcv_buff_list(struct rcv_buff_list* head) {
 	}
 
 	struct rcv_buff_list *iter;
-	log_list_msg("%s","---------------------------------------------------------------------------------");
-	log_list_msg("%s","|			                    rcv data list                                   |");
-	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
-	log_list_msg("%s","| dan      | *dsn     | len      | ack      | list   | prev   | next   | port   |");
-	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
-	
+	log_list_msg("---------------------------------------------------------------------------------");
+	log_list_msg("|			                    rcv data list                                   |");
+	log_list_msg("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+	log_list_msg("| dan      | *dsn     | len      | ack      | list   | prev   | next   | port   |");
+	log_list_msg("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+
+	log_list_msg("| %-8x | %-8x | %-8d | %-8x | %-6p | %-6p | %-6p | %-6d |", head->dan, head->dsn, head->len, head->dsn + head->len, (void *)&head->list, (void *)head->list.prev, (void *)head->list.next, packd.sess->ft.prt_loc);
 	list_for_each_entry(iter, &head->list, list) {
-		log_list_msg( "| %-8x | %-8x | %-8d | %-8x | %-6p | %-6p | %-6p | %-6d |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len, (void *)&iter->list, (void *)iter->list.prev, (void *)iter->list.next, packd.sess->ft.prt_loc);
-		
+		log_list_msg( "| %-8x | %-8x | %-8d | %-8x | %-6p | %-6p | %-6p | %-6d |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len, (void *)&iter->list, (void *)iter->list.prev, (void *)iter->list.next, packd.sess->ft.prt_loc);		
 	}
-	log_list_msg("%s","---------------------------------------------------------------------------------");
+	log_list_msg("---------------------------------------------------------------------------------");
 	return 0;
 
 }

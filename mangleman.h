@@ -130,7 +130,9 @@ int set_dss();
 
 int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uint32_t dan, uint32_t dsn);
 
-int ship_data_to_browser(struct session * sess, uint32_t dan, uint32_t dsn, unsigned char * payload, int paylen);
+int ship_data_to_browser();
+
+int session_send_data(struct session * sess, uint32_t dan, uint32_t dsn, unsigned char * payload, int paylen);
 
 int split_browser_data_send();
 
