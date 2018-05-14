@@ -1104,6 +1104,7 @@ int update_session_control_plane() {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int mangle_packet() {
 
+	log("mangle_packet: begin");
 	if(packd.nb_mptcp_options > 0){
 
 		//*****SELF-INDUCED PACKETS******
@@ -1135,6 +1136,7 @@ int mangle_packet() {
 	//*****SESSION ESTABLISHMENT******
 	//Sess = NULL && SYN only: contemplate session creation or subflow creation
 	//   Evaluates MP_CAP or MP_JOIN
+	log("mangle_packet: before sess==NULL");
 	if(packd.sess == NULL) {
 
 		if( packd.syn == 1 && packd.ack == 0) {
@@ -1149,6 +1151,7 @@ int mangle_packet() {
 	//generic features if session exists
 	if(packd.sess->timestamp_flag) update_timestamp();
 
+	log("mangle_packet: before data plane, sess_state: %d", packd.sess->sess_state);
 	//*****DATA-PLANE MANAGEMENT******
 	if(!packd.is_from_subflow && packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT){//mptcp level/browser
 		
