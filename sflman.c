@@ -621,6 +621,7 @@ int subflow_pre_syn_sent() {
 			add_msg(msg_buf);
 			return 0;
 		}
+		packd.sess->sess_state = SYN_SENT;
 	}
 	else {
 		snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_syn_sent: slave");
@@ -641,7 +642,7 @@ int subflow_pre_syn_sent() {
 	}
 
 	packd.sfl->tcp_state = SYN_SENT;
-	packd.sess->sess_state = SYN_SENT;
+
 
 	//update tsn
 	packd.sfl->isn_loc = htonl(packd.tcph->th_seq);
@@ -731,6 +732,7 @@ int subflow_pre_est() {
 			set_verdict(1, 0, 0);
 			return 0;
 		}
+		
 		packd.sess->highest_dsn_loc += 1;
 		packd.sess->last_dan_loc = packd.sess->highest_dsn_loc;
 		packd.sess->highest_dan_loc = packd.sess->highest_dsn_loc;
