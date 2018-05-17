@@ -1213,8 +1213,6 @@ int mangle_data_transfer_session_output() {
 		);
 
 		add_msg("mangle_packet: send ack to fin from browser");
-
-		return 0;
 	}
 
 	if (packd.paylen > 0) //data packet
@@ -1559,11 +1557,18 @@ int session_send_data(struct session* sess, uint32_t dan, uint32_t dsn,unsigned 
 
 int split_browser_data_send(){
 
-	if(packd.paylen <= 0)
+	if (packd.paylen <= 0 || !packd.sess) {
+		log_error("split_browser_data_send: sanity check fails");
 		return -1;
+	}
 
 	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc;//get dsn
 	packd.dan_curr_loc = ntohl(packd.tcph->th_ack) - packd.sess->offset_rem;
+
+	if (contains_dsn_snd_map_list(packd.sess->act_subflow->snd_map_list_head,packd.dsn_curr_loc) || (packd.sess->slav_subflow && contains_dsn_snd_map_list(packd.sess->slav_subflow->snd_map_list_head, packd.dsn_curr_loc))) {
+		log("split_browser_data_send: retransmition, ignore");
+		return -1;
+	}
 
 	int ret = 0;
 	if(packd.paylen <= PIVOTPOINT){
@@ -1654,7 +1659,22 @@ int insert_snd_map_list(struct snd_map_list* head, uint32_t tsn, uint32_t dan, u
 	return 0;
 }
 
+int contains_dsn_snd_map_list(struct snd_map_list *head, uint32_t dsn) {
+	if (!head || list_empty(&head->list)) {
+		log_list_msg("[Error]:%s", "find_snd_map_list:null head or empty list");
+		return 0;
+	}
 
+	struct snd_map_list *iter;
+	print_snd_map_list(head);
+	list_for_each_entry(iter, &head->list, list) {
+		if (dsn <= iter->dsn) {
+			log_list_msg("contains_dsn_snd_map_list： found dan %x, dsn %x, tsn %x", iter->dan, iter->dsn, iter->tsn);
+			return 1;
+		}
+	}
+	return 0;
+}
 
 int find_snd_map_list(struct snd_map_list *head, uint32_t tsn, struct snd_map_list **p_result) {
 
