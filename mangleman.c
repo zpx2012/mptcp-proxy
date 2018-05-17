@@ -1269,8 +1269,8 @@ int mangle_data_transfer_subflow_input() {
 				ship_data_to_browser();
 
 				//update highest_dsn_rem
-				if (sn_smaller(packd.sess->highest_dsn_rem, dssopt_in.dsn))
-					packd.sess->highest_dsn_rem = dssopt_in.dsn;
+				if (sn_smaller(packd.sess->highest_dsn_rem, dssopt_in.dsn + packd.paylen))
+					packd.sess->highest_dsn_rem = dssopt_in.dsn + packd.paylen;
 			}
 			//ack packet from server subflow?
 			else if (dssopt_in.Aflag == 1) {
@@ -1660,12 +1660,14 @@ int insert_snd_map_list(struct snd_map_list* head, uint32_t tsn, uint32_t dan, u
 }
 
 int contains_dsn_snd_map_list(struct snd_map_list *head, uint32_t dsn) {
-	if (!head || list_empty(&head->list)) {
+	if (!head || list_empty(&head->list) || !dsn) {
 		log_list_msg("[Error]:%s", "find_snd_map_list:null head or empty list");
 		return 0;
 	}
 
 	struct snd_map_list *iter;
+
+	log_list_msg("contains_dsn_snd_map_list：try to find dsn %x", dsn);
 	print_snd_map_list(head);
 	list_for_each_entry(iter, &head->list, list) {
 		if (dsn <= iter->dsn) {
