@@ -1278,7 +1278,7 @@ int mangle_data_transfer_subflow_input() {
 				add_msg("ack pack");
 
 				//delete snd_map_list entry
-				del_below_snd_map_list(packd.sfl->snd_map_list_head, ntohl(packd.tcph->th_ack));
+//				del_below_snd_map_list(packd.sfl->snd_map_list_head, ntohl(packd.tcph->th_ack));
 
 				//send ack packet to browser
 				create_raw_packet_send(&packd.sess->ft,
