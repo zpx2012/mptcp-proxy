@@ -1780,24 +1780,33 @@ int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, 
 		return -1;
 	}
 
+	log_list_msg("insert_rcv_buff_list:input - dan %x, dsn %x, len %d, port %d", dan, dsn, paylen, packd.ft.prt_loc);
+
+	struct rcv_buff_list *iter;
+	list_for_each_entry(iter, &head->list, list) 
+		if (iter->dsn >= dsn)  
+			break;
+
+	if (iter != head && iter->dsn == dsn){
+		if(iter->len == paylen && iter->dan == dan){
+			log_error("insert_rcv_buff_list: duplicate entry");
+			return -1;
+		}
+		else {
+			log_error("insert_rcv_buff_list: 2 entry with same dsn : dan %x, dsn %x, len %d", dan, dsn, paylen);
+			return -1;
+		}
+	}
+
 	struct rcv_buff_list* new_node = (struct rcv_buff_list*)malloc(sizeof(struct rcv_buff_list));
 	new_node->dan = dan;
 	new_node->dsn = dsn;
 	new_node->len = paylen;
 	new_node->payload = (unsigned char *)malloc(paylen);
 	memcpy((char*)new_node->payload, (char*)payload, paylen);//don't use strcpy
+	__list_add(&new_node->list, iter->list.prev, &iter->list);//insert before iter
 
-	struct rcv_buff_list *iter;
-	list_for_each_entry(iter, &head->list, list) {
-		if (iter->dsn > dsn) {
-			break;
-		}
-	}
-	//insert before iter
-	__list_add(&new_node->list, iter->list.prev, &iter->list);
-
-//	log_list_msg("insert_rcv_buff_list:dan %x, dsn %x, len %d, port %d", dan, dsn, paylen, packd.ft.prt_loc);
-	
+	log_list_msg("insert_rcv_buff_list: success");
 	print_rcv_buff_list(head);
 	return 0;
 }
