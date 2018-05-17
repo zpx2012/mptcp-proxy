@@ -757,7 +757,7 @@ int system_safe(const char *command){
 
 void hex_dump(const unsigned char *packet, size_t size)
 {
-	unsigned char *byte = (unsigned char*)packet;
+/*	unsigned char *byte = (unsigned char*)packet;
 	int count = 0;
 
 	int len = 0;
@@ -776,6 +776,7 @@ void hex_dump(const unsigned char *packet, size_t size)
 		}
 	}
 	add_msg(msg_buf);
+*/
 }
 
 /*
