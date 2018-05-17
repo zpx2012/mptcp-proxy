@@ -1157,8 +1157,11 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
 
 		eval_packet(id, ph->hook, payldata, ret);
 		mangle_packet(id);
-		if(packd.verdict) log("cb: Accept");
-		else 			  log("cb: Drop"); 
+		if(packd.verdict) { 
+			log("cb: Accept"); 
+		} else { 			  
+			log("cb: Drop"); 
+		}
 
 		if(packd.data_update_flag == 1){
 			if(packd.size_update_flag == 1 ) //fix_checksums(packd.new_buf, packd.ip4len, packd.totlen);
