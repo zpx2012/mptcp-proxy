@@ -1787,8 +1787,9 @@ int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, 
 		if (iter->dsn >= dsn)  
 			break;
 
-	if (iter != head && iter->dsn == dsn){
-		if(iter->len == paylen && iter->dan == dan){
+	//check for duplicate entry
+	if ((iter != head && iter->dsn == dsn) || head->dsn == dsn){
+		if((iter->len == paylen && iter->dan == dan) || head->len == paylen){
 			log_error("insert_rcv_buff_list: duplicate entry");
 			return -1;
 		}
@@ -1797,6 +1798,7 @@ int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, 
 			return -1;
 		}
 	}
+
 
 	struct rcv_buff_list* new_node = (struct rcv_buff_list*)malloc(sizeof(struct rcv_buff_list));
 	new_node->dan = dan;
