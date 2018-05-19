@@ -1027,9 +1027,9 @@ int update_subflow_control_plane() {
 		set_verdict(0, 0, 0);
 	}//end switch
 
-	if (packd.sfl->tcp_state != init_tcp_state && !packd.verdict) {
-		set_verdict(1, 1, 0);
-	}
+//	if (packd.sfl->tcp_state != init_tcp_state && !packd.verdict) {
+//		set_verdict(1, 1, 0);
+//	}
 
 	return ret;
 }

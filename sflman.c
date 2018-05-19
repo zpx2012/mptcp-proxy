@@ -597,14 +597,11 @@ int call_connect(struct subflow* sfl) {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int subflow_pre_syn_sent() {
 
-	if (!packd.syn || packd.ack) {
-		set_verdict(1, 0, 0);
-		return 0;
-	}
+	char func_name[] = "subflow_pre_syn_sent";
 
-	if (packd.hook < 3 && packd.fwd_type == M_TO_T) {
-		set_verdict(1, 0, 0);
-		//TODO: Confirm return value
+	if (packd.hook <= 1 || packd.fwd_type != T_TO_M || !packd.syn || packd.ack){
+		log_error("%s: sanity check fails. Dropped", func_name);
+		set_verdict(0, 0, 0);
 		return 0;
 	}
 
@@ -671,37 +668,42 @@ int subflow_pre_syn_sent() {
 //  Currently, we omit simultaneous open
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int subflow_syn_sent() {
+
+	char func_name[] = "subflow_syn_sent";
+
 	//Check for INPUT (or FWD with M_TO_T) + SYN + ACK + MPTCP option
-	if (packd.hook < 3 && packd.fwd_type == M_TO_T && packd.syn && packd.ack) {
-		//drop session if remote host does not speak MPTCP
-		if (packd.nb_mptcp_options == 0) {
-			snprintf(msg_buf, MAX_MSG_LENGTH, "session_syn_sent: no MPTCP options attached. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
-			add_msg(msg_buf);
-			delete_subflow(&packd.ft);
-			delete_session_parm(packd.sess->token_loc);
-			delete_session(&packd.sess->ft, 1);
-			set_verdict(1, 0, 0);
-			add_ip_whitelist_array(packd.sess->ft.ip_rem);
-			return 0;
-		}
-
-		if (packd.is_master)
-			subflow_syn_sent_master();
-		else
-			subflow_syn_sent_slave();
-
-		snprintf(msg_buf, MAX_MSG_LENGTH, "syn_sent: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
-			(long unsigned)packd.sfl->isn_loc, (long unsigned)packd.sfl->isn_rem,
-			(long unsigned)packd.sess->idsn_loc, (long unsigned)packd.sess->idsn_rem,
-			(long unsigned)ntohl(packd.tcph->th_seq),
-			(long unsigned)ntohl(packd.tcph->th_ack));
-		add_msg(msg_buf);
-
-		return 1;
+	if (packd.hook >= 3 || packd.fwd_type != M_TO_T || !packd.syn || !packd.ack) {
+		log_error("%s: sanity check fails. Dropped", func_name);
+		set_verdict(0, 0, 0);
+		return 0;
 	}
 
-	set_verdict(1, 0, 0);
-	return 0;
+	//drop session if remote host does not speak MPTCP
+	if (packd.nb_mptcp_options == 0) {
+		snprintf(msg_buf, MAX_MSG_LENGTH, "session_syn_sent: no MPTCP options attached. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
+		add_msg(msg_buf);
+		delete_subflow(&packd.ft);
+		delete_session_parm(packd.sess->token_loc);
+		delete_session(&packd.sess->ft, 1);
+		set_verdict(1, 0, 0);
+		add_ip_whitelist_array(packd.sess->ft.ip_rem);
+		return 0;
+	}
+	log("session_syn_sent: MPTCP options attached.");
+
+	if (packd.is_master)
+		subflow_syn_sent_master();
+	else
+		subflow_syn_sent_slave();
+
+	snprintf(msg_buf, MAX_MSG_LENGTH, "syn_sent: isn_loc=%lu, isn_rem=%lu, idsn_loc=%lu, idsn_rem=%lu, tcp_seq=%lu, tcp_an=%lu",
+		(long unsigned)packd.sfl->isn_loc, (long unsigned)packd.sfl->isn_rem,
+		(long unsigned)packd.sess->idsn_loc, (long unsigned)packd.sess->idsn_rem,
+		(long unsigned)ntohl(packd.tcph->th_seq),
+		(long unsigned)ntohl(packd.tcph->th_ack));
+	add_msg(msg_buf);
+
+	return 1;
 }
 
 
@@ -713,7 +715,8 @@ int subflow_syn_sent() {
 int subflow_pre_est() {
 
 	if (packd.hook <= 1 || packd.fwd_type != T_TO_M || packd.syn || !packd.ack || packd.fin) {
-		set_verdict(1, 0, 0);
+		log_error("subflow_pre_est: sanity check fails. Dropped.");
+		set_verdict(0, 0, 0);
 		return 0;
 	}
 
@@ -726,10 +729,10 @@ int subflow_pre_est() {
 		add_msg(msg_buf);
 		if (!create_MPcap(packd.mptcp_opt_buf, &packd.mptcp_opt_len, packd.sess->key_loc, packd.sess->key_rem)) {
 			log_error("session_pre_est: create_MPcap fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
-			delete_subflow(&packd.ft);
-			delete_session_parm(packd.sess->token_loc);
-			delete_session(&packd.sess->ft, 1);
-			set_verdict(1, 0, 0);
+//			delete_subflow(&packd.ft);
+//			delete_session_parm(packd.sess->token_loc);
+//			delete_session(&packd.sess->ft, 1);
+			set_verdict(0, 0, 0);//retry
 			return 0;
 		}
 		
@@ -749,10 +752,10 @@ int subflow_pre_est() {
 		if (!create_MPjoin_ack(packd.mptcp_opt_buf, &packd.mptcp_opt_len, mac_test)) {
 			snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_est: create_MPjoin fails. Killing sfl_id=%zu and sess_id=%zu", packd.sfl->index, packd.sess->index);
 			add_msg(msg_buf);
-			delete_subflow(&packd.ft);
-			delete_session_parm(packd.sess->token_loc);
-			delete_session(&packd.sess->ft, 1);
-			set_verdict(1, 0, 0);
+//			delete_subflow(&packd.ft);
+//			delete_session_parm(packd.sess->token_loc);
+//			delete_session(&packd.sess->ft, 1);
+			set_verdict(0, 0, 0);//retry
 			return 0;
 		}
 
@@ -765,7 +768,7 @@ int subflow_pre_est() {
 	}
 
 	if (!output_data_mptcp()) {
-		set_verdict(1, 0, 0);
+		set_verdict(0, 0, 0);
 		snprintf(msg_buf, MAX_MSG_LENGTH, "session_pre_est: output_data_mptcp fails, sess_id=%zu", packd.sess->index);
 		add_msg(msg_buf);
 		return 0;
@@ -918,11 +921,10 @@ int subflow_syn_sent_slave(){
 	uint32_t mac_test[5];
 	create_mac(packd.sess->key_rem, packd.sess->key_loc, rand_nmb_rem, packd.sfl->rand_nmb_loc, mac_test);
 	if(memcmp(mac_test, mac, 8) != 0) {
-
 		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: MAC on SYN/ACK packet for sess id=%zu, sfl id=%zu is incorrect!",
 				packd.sess->index, packd.sfl->index);
 		add_msg(msg_buf);
-		set_verdict(1,0,0);
+		set_verdict(0,0,0);
 		return 0; 
 
 	}
