@@ -1180,12 +1180,10 @@ int mangle_packet() {
 
 	//session control plane
 	if(!packd.is_from_subflow){
-		if(packd.sess->sess_state < ESTABLISHED)
-		if(packd.hook < 3 && packd.fwd_type == M_TO_T)
-			if(packd.syn && packd.ack){
-				add_msg("capture syn/ack from server");
-				set_verdict(0,0,0);
-			}
+		if(packd.sess->sess_state < ESTABLISHED && packd.hook > 1 && packd.fwd_type == T_TO_M){//retrx syn will not go through mangle_data_transfer above
+			log("mangle_packet: dropped in session control plane ");
+			set_verdict(0,0,0);
+		}
 	}
 	else //Subflow control plane
 		return update_subflow_control_plane();
