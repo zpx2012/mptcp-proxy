@@ -1221,6 +1221,9 @@ int mangle_data_transfer_session_output() {
 		add_msg(msg_buf);
 
 		del_below_rcv_buff_list(packd.sess->rcv_buff_list_head, packd.dan_curr_loc);
+
+		//retrx
+		ship_data_to_browser();
 	}
 	set_verdict(0, 0, 0);
 	return 0;
@@ -1263,8 +1266,8 @@ int mangle_data_transfer_subflow_input() {
 				//enter payload into rcv_buff_list
 				insert_rcv_buff_list(packd.sess->rcv_buff_list_head, dssopt_in.dan, dssopt_in.dsn, packd.buf + packd.pos_pay, packd.paylen);
 
-				//search for all in order packets, ship it to browser
-				ship_data_to_browser();
+				//send this packet immediately
+				session_send_data(packd.sess, dssopt_in.dan, dssopt_in.dsn, packd.buf + packd.pos_pay, packd.paylen);
 
 				//update highest_dsn_rem
 				if (sn_smaller(packd.sess->highest_dsn_rem, dssopt_in.dsn + packd.paylen))
@@ -1507,19 +1510,20 @@ int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uin
 }
 
 //int ship_rcv_to_browser
-//search for all in order packets, ship it to browser
-//find consecutive parts, create packet, decrement the window size
+//
+//don't need to be consecutive, but should consider the window size
 int ship_data_to_browser() {
 
 	struct rcv_buff_list *iter, *next, *head = packd.sess->rcv_buff_list_head;
-	//iter = list_entry(head->list.next, struct rcv_buff_list, list);
-	if (head->dsn + head->len == list_entry(head->list.next, struct rcv_buff_list, list)->dsn) {
-		list_for_each_entry_safe(iter, next, &head->list, list) {
-			session_send_data(packd.sess, iter->dan, iter->dsn, iter->payload, iter->len);
-			if ((iter->dsn + iter->len) != next->dsn)
-				break;
-		}
+	
+	if(list_empty(&head->list)){
+		log_error("ship_data_to_browser: list empty");
+		return -1;
 	}
+
+	list_for_each_entry_safe(iter, next, &head->list, list) 
+		session_send_data(packd.sess, iter->dan, iter->dsn, iter->payload, iter->len);
+
 	return 0;
 }
 
@@ -1537,6 +1541,7 @@ int session_send_data(struct session* sess, uint32_t dan, uint32_t dsn,unsigned 
 		add_err_msg("null payload");
 		return -1;
 	}
+
 
 	create_raw_packet_send(&sess->ft,
 		1,
