@@ -578,7 +578,7 @@ int clean_rec_buffer(void *args){
 	while(1) {
 		nRet = select(FD_SETSIZE,&fds,NULL,NULL,&tmOut);
 		if(nRet == 0) break;
-		recv(sockfd,tmp,2048,0)
+		recv(sockfd,tmp,2048,0);
 	}
 }
 
