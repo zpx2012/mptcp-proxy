@@ -580,6 +580,8 @@ int clean_rec_buffer(void *args){
 		if(nRet == 0) break;
 		recv(sockfd,tmp,2048,0);
 	}
+	snprintf(msg_buf, MAX_MSG_LENGTH, "clean the receive buffer");
+	add_msg(msg_buf);
 }
 
 int call_connect(struct subflow* sfl) {
