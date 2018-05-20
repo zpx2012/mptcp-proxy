@@ -569,7 +569,7 @@ int clean_rec_buffer(void *args){
 	tmOut.tv_sec = 0;
 	tmOut.tv_usec = 0;
 	fd_set fds;
-	FD_ZEROS(&fds);
+	FD_ZERO(&fds);
 	FD_SET(sockfd,&fds);
 	int nRet;
 	char tmp[2048];
