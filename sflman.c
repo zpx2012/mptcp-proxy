@@ -529,7 +529,7 @@ int create_subflow_socket(struct fourtuple* ft, int *p_sockfd) {
 	int sockfd;
 	struct sockaddr_in sin_loc;
 	socklen_t sin_loc_len;
-
+	
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == -1) {
 		snprintf(msg_buf, MAX_MSG_LENGTH, "create_socket_call_connect:Could not create socket");
@@ -560,6 +560,28 @@ int create_subflow_socket(struct fourtuple* ft, int *p_sockfd) {
 
 }
 
+int clean_rec_buffer(void *args){
+	int* sockfd; 
+	struct timeval tmOut;
+
+	sockfd = (int* )args;
+	//set time interval to 0
+	tmOut.tv_sec = 0;
+	tmOut.tv_usec = 0;
+	fd_set fds;
+	FD_ZEROS(&fds);
+	FD_SET(sockfd,&fds);
+	int nRet;
+	char tmp[2048];
+
+	memset(tmp,0,sizeof(tmp));
+	while(1) {
+		nRet = select(FD_SETSIZE,&fds,NULL,NULL,&tmOut);
+		if(nRet == 0) break;
+		recv(sockfd,tmp,2048,0)
+	}
+}
+
 int call_connect(struct subflow* sfl) {
 
 	snprintf(msg_buf, MAX_MSG_LENGTH, "call_connect: %zu", sfl->index);
@@ -582,6 +604,14 @@ int call_connect(struct subflow* sfl) {
 		snprintf(msg_buf, MAX_MSG_LENGTH, "Could not create server thread");
 		add_msg(msg_buf);
 		set_verdict(0, 0, 0);
+		return -1;
+	}
+	
+	pthread_t receive_thread; // thread to clean the receive buffer
+	if(pthread_create(&receive_thread, NULL, clean_rec_buffer,p_cn->sockfd)>0)
+	{
+		snprintf(msg_buf, MAX_MSG_LENGTH, "Could not clean receiving buffer");
+		add_msg(msg_buf);
 		return -1;
 	}
 	return 0;
