@@ -1222,7 +1222,7 @@ int session_closing() {
 	int data_ack = (dssopt_in.Aflag && sn_smaller(packd.sess->fin_dsn_loc, dssopt_in.dan));
 	if(!data_ack)
 		return 0;
-
+//	terminate_subflow(packd.sess,packd.sfl);
 	terminate_all_subflows(packd.sess);
 	create_sess_close_event(&packd.sess->ft);
 	start_sess_teardown_timer(packd.sess);
