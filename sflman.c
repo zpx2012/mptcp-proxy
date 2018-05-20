@@ -561,10 +561,10 @@ int create_subflow_socket(struct fourtuple* ft, int *p_sockfd) {
 }
 
 int clean_rec_buffer(void *args){
-	int* sockfd; 
+	int sockfd; 
 	struct timeval tmOut;
 
-	sockfd = (int* )args;
+	sockfd = (int )args;
 	//set time interval to 0
 	tmOut.tv_sec = 0;
 	tmOut.tv_usec = 0;
