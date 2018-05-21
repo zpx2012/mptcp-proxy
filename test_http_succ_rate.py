@@ -112,7 +112,7 @@ def test_websites(sid, rounds):
                         wget_rslt = pwget.communicate()[1];
                         f.write(wget_rq_str + "\n")
                         f.write(wget_rslt)
-                        if wget_rslt.find("reset") == -1
+                        if wget_rslt.find("reset") == -1:
                             succ_cout += 1
                         testing[website] = pwget
                         test_count[website] += 1
