@@ -843,11 +843,15 @@ int analyze_MPjoin_synack(struct mptcp_option * const mptopt, size_t const nb_to
 		uint32_t *mac, uint32_t *rand_nmb, unsigned char *address_id, unsigned char *backup) {
 
 	int it = find_MPsubkind(mptopt, nb_topt, MPTCP_JOIN);
-	if(it < 0)
+	if(it < 0){
+		log_error("analyze_MPjoin_synack: no mpsubkind found");	
 		return 0;
+	}
 
-	if(mptopt[it].len != 16)
+	if(mptopt[it].len != 16){
+		log_error("analyze_MPjoin_synack: mpoption len incorrect");
 		return 0;
+	}
 
 	//get token and find session
 	*backup = (mptopt[it].byte4 & 0x01);
