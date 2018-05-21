@@ -975,6 +975,7 @@ int update_subflow_control_plane() {
 	int init_tcp_state = packd.sfl->tcp_state;
 	int ret = 0;
 
+	log("update_subflow_control_plane: tcp_state %u", packd.sfl->tcp_state);
 	switch (packd.sfl->tcp_state) {
 	case ESTABLISHED:
 		break;
