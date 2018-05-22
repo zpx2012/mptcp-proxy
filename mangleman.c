@@ -975,6 +975,7 @@ int update_subflow_control_plane() {
 	int init_tcp_state = packd.sfl->tcp_state;
 	int ret = 0;
 
+	log("update_subflow_control_plane: tcp_state %u", packd.sfl->tcp_state);
 	switch (packd.sfl->tcp_state) {
 	case ESTABLISHED:
 		break;
@@ -1027,9 +1028,9 @@ int update_subflow_control_plane() {
 		set_verdict(0, 0, 0);
 	}//end switch
 
-	if (packd.sfl->tcp_state != init_tcp_state && !packd.verdict) {
-		set_verdict(1, 1, 0);
-	}
+//	if (packd.sfl->tcp_state != init_tcp_state && !packd.verdict) {
+//		set_verdict(1, 1, 0);
+//	}
 
 	return ret;
 }
@@ -1104,6 +1105,7 @@ int update_session_control_plane() {
 //++++++++++++++++++++++++++++++++++++++++++++++++
 int mangle_packet() {
 
+	log("mangle_packet: begin");
 	if(packd.nb_mptcp_options > 0){
 
 		//*****SELF-INDUCED PACKETS******
@@ -1135,6 +1137,7 @@ int mangle_packet() {
 	//*****SESSION ESTABLISHMENT******
 	//Sess = NULL && SYN only: contemplate session creation or subflow creation
 	//   Evaluates MP_CAP or MP_JOIN
+	log("mangle_packet: before sess==NULL");
 	if(packd.sess == NULL) {
 
 		if( packd.syn == 1 && packd.ack == 0) {
@@ -1149,23 +1152,24 @@ int mangle_packet() {
 	//generic features if session exists
 	if(packd.sess->timestamp_flag) update_timestamp();
 
+	log("mangle_packet: before data plane, sess_state: %d", packd.sess->sess_state);
 	//*****DATA-PLANE MANAGEMENT******
 	if(!packd.is_from_subflow && packd.sess->sess_state >= ESTABLISHED && packd.sess->sess_state <= TIME_WAIT){//mptcp level/browser
 		
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
-			mangle_datatransfer_session_output();
+			mangle_data_transfer_session_output();
 		}	
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
-			mangle_datatransfer_session_input();
+			mangle_data_transfer_session_input();
 		}	
 	}
 	else if(packd.is_from_subflow && packd.sfl->tcp_state >= ESTABLISHED && packd.sfl->tcp_state <= TIME_WAIT) {//subflow
 
 		if(packd.hook > 1 && packd.fwd_type == T_TO_M) {
-			mangle_datatransfer_subflow_output();
+			mangle_data_transfer_subflow_output();
 		} 
 		else if(packd.hook < 3 && packd.fwd_type == M_TO_T) {//packd.hook == 1
-			mangle_datatransfer_subflow_input();
+			mangle_data_transfer_subflow_input();
 		}
 	}
 
@@ -1177,12 +1181,10 @@ int mangle_packet() {
 
 	//session control plane
 	if(!packd.is_from_subflow){
-		if(packd.sess->sess_state < ESTABLISHED)
-		if(packd.hook < 3 && packd.fwd_type == M_TO_T)
-			if(packd.syn && packd.ack){
-				add_msg("capture syn/ack from server");
-				set_verdict(0,0,0);
-			}
+		if(packd.sess->sess_state < ESTABLISHED && packd.hook > 1 && packd.fwd_type == T_TO_M){//retrx syn will not go through mangle_data_transfer above
+			log("mangle_packet: dropped in session control plane ");
+			set_verdict(0,0,0);
+		}
 	}
 	else //Subflow control plane
 		return update_subflow_control_plane();
@@ -1191,7 +1193,7 @@ int mangle_packet() {
 
 }
 
-int mangle_datatransfer_session_output() {
+int mangle_data_transfer_session_output() {
 
 	add_msg("mangle_packet: browser output");
 
@@ -1210,8 +1212,6 @@ int mangle_datatransfer_session_output() {
 		);
 
 		add_msg("mangle_packet: send ack to fin from browser");
-
-		return 0;
 	}
 
 	if (packd.paylen > 0) //data packet
@@ -1222,19 +1222,22 @@ int mangle_datatransfer_session_output() {
 		add_msg(msg_buf);
 
 		del_below_rcv_buff_list(packd.sess->rcv_buff_list_head, packd.dan_curr_loc);
+
+		//retrx
+		ship_data_to_browser();
 	}
 	set_verdict(0, 0, 0);
 	return 0;
 }
 
-int mangle_datatransfer_session_input() {
+int mangle_data_transfer_session_input() {
 
 	add_msg("mangle_packet: browser input");
 	set_verdict(1, 0, 0);
 	return 0;
 }
 
-int mangle_datatransfer_subflow_output() {
+int mangle_data_transfer_subflow_output() {
 
 	add_msg("mangle_packet: subflow output");
 	int ret = set_dss();
@@ -1242,7 +1245,7 @@ int mangle_datatransfer_subflow_output() {
 	return ret;
 }
 
-int mangle_datatransfer_subflow_input() {
+int mangle_data_transfer_subflow_input() {
 
 	add_msg("mangle_packet: subflow input");
 
@@ -1262,19 +1265,14 @@ int mangle_datatransfer_subflow_input() {
 				}
 
 				//enter payload into rcv_buff_list
-				struct rcv_buff_list *iter, *next, *head = packd.sess->rcv_buff_list_head;
-				insert_rcv_buff_list(head, dssopt_in.dan, dssopt_in.dsn, packd.buf + packd.pos_pay, packd.paylen);
+				insert_rcv_buff_list(packd.sess->rcv_buff_list_head, dssopt_in.dan, dssopt_in.dsn, packd.buf + packd.pos_pay, packd.paylen);
 
-				//search for all in order packets, ship it to browser
-				list_for_each_entry_safe(iter, next, &head->list, list) {
-					ship_data_to_browser(packd.sess, iter->dan, iter->dsn, iter->payload, iter->len);
-					if ((iter->dsn + iter->len) != next->dsn)
-						break;
-				}
+				//send this packet immediately
+				session_send_data(packd.sess, dssopt_in.dan, dssopt_in.dsn, packd.buf + packd.pos_pay, packd.paylen);
 
 				//update highest_dsn_rem
-				if (sn_smaller(packd.sess->highest_dsn_rem, dssopt_in.dsn))
-					packd.sess->highest_dsn_rem = dssopt_in.dsn;
+				if (sn_smaller(packd.sess->highest_dsn_rem, dssopt_in.dsn + packd.paylen))
+					packd.sess->highest_dsn_rem = dssopt_in.dsn + packd.paylen;
 			}
 			//ack packet from server subflow?
 			else if (dssopt_in.Aflag == 1) {
@@ -1282,7 +1280,7 @@ int mangle_datatransfer_subflow_input() {
 				add_msg("ack pack");
 
 				//delete snd_map_list entry
-				del_below_snd_map_list(packd.sfl->snd_map_list_head, ntohl(packd.tcph->th_ack));
+//				del_below_snd_map_list(packd.sfl->snd_map_list_head, ntohl(packd.tcph->th_ack));
 
 				//send ack packet to browser
 				create_raw_packet_send(&packd.sess->ft,
@@ -1434,7 +1432,10 @@ int Send(int sockfd, const void *buf, size_t len, int flags){
 		add_err_msg("Sent: send returns error");
 		return ret;
 	}
+	int flag = 1;
+	setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int));
 	add_msg("Sent: send success");	
+	hex_dump(buf, len);
 	return ret;
 }
 
@@ -1443,7 +1444,7 @@ int set_dss() {
 
 	//*****THRUWAY MANAGEMENT: ADD DSN + MP_PRIO******
 	if (!(packd.paylen > 0 || packd.fin == 1 || packd.sess->sess_state > ESTABLISHED || packd.ack == 1)) {
-		log_error("%s", "set_dss:sanity check fails");
+		log_error("set_dss:sanity check fails");
 		return -1;
 	}
 
@@ -1489,7 +1490,7 @@ int set_dss() {
 		add_err_msg("session_pre_syn_sent: output_data_mptcp fails");
 		return -1;
 	}
-	log("%s","set_dss: output data mptcp success");
+	log("set_dss: output data mptcp success");
 	return 0;
 }
 
@@ -1510,9 +1511,26 @@ int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uin
 }
 
 //int ship_rcv_to_browser
-//find consecutive parts, create packet, decrement the window size
+//
+//don't need to be consecutive, but should consider the window size
+int ship_data_to_browser() {
+
+	struct rcv_buff_list *iter, *next, *head = packd.sess->rcv_buff_list_head;
+	
+	if(list_empty(&head->list)){
+		log_error("ship_data_to_browser: list empty");
+		return -1;
+	}
+
+	list_for_each_entry_safe(iter, next, &head->list, list) 
+		session_send_data(packd.sess, iter->dan, iter->dsn, iter->payload, iter->len);
+
+	return 0;
+}
+
+
 //session send data
-int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsigned char* payload, int paylen) {
+int session_send_data(struct session* sess, uint32_t dan, uint32_t dsn,unsigned char* payload, int paylen) {
 //int ship_data_to_browser(uint32_t seq, uint32_t ack, char* payload, int paylen){
 	
 	if (!sess) {
@@ -1525,29 +1543,36 @@ int ship_data_to_browser(struct session* sess, uint32_t dan, uint32_t dsn,unsign
 		return -1;
 	}
 
-	create_raw_packet_send(&packd.sess->ft,
+
+	create_raw_packet_send(&sess->ft,
 		1,
-		htonl(packd.sess->offset_rem + dsn),
-		htonl(packd.sess->offset_loc + dan),
+		htonl(sess->offset_rem + dsn),
+		htonl(sess->offset_loc + dan),
 		16,//ACK
-		htons(packd.sess->init_window_rem),
+		htons(sess->init_window_rem),
 		NULL,
 		0,
 		payload,
 		paylen);
 
-	snprintf(msg_buf, MAX_MSG_LENGTH, "ship_data_to_browser:dan %x, dsn %x, len %d", dan, dsn, paylen);
-	add_msg(msg_buf);
+	log("ship_data_to_browser:dan %x, dsn %x, len %d", dan, dsn, paylen);
 	return 0;
 }
 
 int split_browser_data_send(){
 
-	if(packd.paylen <= 0)
+	if (packd.paylen <= 0 || !packd.sess) {
+		log_error("split_browser_data_send: sanity check fails");
 		return -1;
+	}
 
 	packd.dsn_curr_loc = ntohl(packd.tcph->th_seq) - packd.sess->offset_loc;//get dsn
 	packd.dan_curr_loc = ntohl(packd.tcph->th_ack) - packd.sess->offset_rem;
+
+	if (contains_dsn_snd_map_list(packd.sess->act_subflow->snd_map_list_head,packd.dsn_curr_loc) || (packd.sess->slav_subflow && contains_dsn_snd_map_list(packd.sess->slav_subflow->snd_map_list_head, packd.dsn_curr_loc))) {
+		log("split_browser_data_send: retransmition, ignore");
+		return -1;
+	}
 
 	int ret = 0;
 	if(packd.paylen <= PIVOTPOINT){
@@ -1555,7 +1580,7 @@ int split_browser_data_send(){
 		ret += subflow_send_data(packd.sess->act_subflow, packd.buf+packd.pos_pay, packd.paylen, packd.dan_curr_loc, packd.dsn_curr_loc);
 	} else {	
 		//first part
-		log("%s","split_browser_data_send:sent first part");
+		log("split_browser_data_send:sent first part %u", PIVOTPOINT);
 		ret += subflow_send_data(packd.sess->act_subflow, packd.buf+packd.pos_pay, PIVOTPOINT, packd.dan_curr_loc, packd.dsn_curr_loc);
 		
 		//second part
@@ -1578,7 +1603,7 @@ int split_browser_data_send(){
 		log("split_browser_data_send:sent second part:%u", packd.paylen - PIVOTPOINT);
 	}
 
-	log("%s","split_browser_data_send:finish");
+	log("split_browser_data_send:finish");
 	return 0;
 }
 
@@ -1638,7 +1663,24 @@ int insert_snd_map_list(struct snd_map_list* head, uint32_t tsn, uint32_t dan, u
 	return 0;
 }
 
+int contains_dsn_snd_map_list(struct snd_map_list *head, uint32_t dsn) {
+	if (!head || list_empty(&head->list) || !dsn) {
+		log_list_msg("[Error]:%s", "find_snd_map_list:null head or empty list");
+		return 0;
+	}
 
+	struct snd_map_list *iter;
+
+	log_list_msg("contains_dsn_snd_map_list：try to find dsn %x", dsn);
+	print_snd_map_list(head);
+	list_for_each_entry(iter, &head->list, list) {
+		if (dsn <= iter->dsn) {
+			log_list_msg("contains_dsn_snd_map_list： found dan %x, dsn %x, tsn %x", iter->dan, iter->dsn, iter->tsn);
+			return 1;
+		}
+	}
+	return 0;
+}
 
 int find_snd_map_list(struct snd_map_list *head, uint32_t tsn, struct snd_map_list **p_result) {
 
@@ -1668,18 +1710,18 @@ int print_snd_map_list(struct snd_map_list *head) {
 	}
 
 	struct snd_map_list *iter;
-	log_list_msg("%s","-----------------------------------------------------------------------");
+	log_list_msg("-----------------------------------------------------------------------");
 	log_list_msg("|			         snd map list %-12p                      |",(void *)head);
-	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
-	log_list_msg("%s","| dan	   | dsn	  | *tsn	  | list   | prev   | next   | port   |");
-	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+	log_list_msg("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+	log_list_msg("| dan	   | dsn	  | *tsn	  | list   | prev   | next   | port   |");
+	log_list_msg("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
 
 	list_for_each_entry(iter, &head->list, list) {
 		log_list_msg( "| %-8x | %-8x | %-8x  | %-6p | %-6p | %-6p | %-6d |", iter->dan, iter->dsn, iter->tsn, (void *)&iter->list, (void *)iter->list.prev, (void *)iter->list.next, packd.sess->ft.prt_loc);
 		
 	}
 	
-	log_list_msg("%s","-----------------------------------------------------------------------");
+	log_list_msg("-----------------------------------------------------------------------");
 
 	return 0;
 }
@@ -1716,12 +1758,14 @@ int del_below_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan) {
 	}
 
 	struct rcv_buff_list *iter, *next;
-//	log_list_msg("before delete: dan = %x, port = %d", dan, packd.ft.prt_loc);
+	log_list_msg("before delete: dan = %x, port = %d", dan, packd.ft.prt_loc);
 	
 	print_rcv_buff_list(head);
 	list_for_each_entry_safe(iter, next, &head->list, list) {
-		if ( (iter->dsn < dan) && (next != head)) {
-//			log_list_msg("delete node: dsn = %x", iter->dsn);
+		if (iter->dsn < dan) {
+			log_list_msg("delete node: dsn = %x", iter->dsn);
+			head->dsn = iter->dsn;
+			head->len = iter->len;
 			list_del(&iter->list);
 			free(iter->payload);
 			free(iter);
@@ -1740,24 +1784,35 @@ int insert_rcv_buff_list(struct rcv_buff_list *head, uint32_t dan,uint32_t dsn, 
 		return -1;
 	}
 
+	log_list_msg("insert_rcv_buff_list:input - dan %x, dsn %x, len %d, port %d", dan, dsn, paylen, packd.ft.prt_loc);
+
+	struct rcv_buff_list *iter;
+	list_for_each_entry(iter, &head->list, list) 
+		if (iter->dsn >= dsn)  
+			break;
+
+	//check for duplicate entry
+	if ((iter != head && iter->dsn == dsn) || head->dsn == dsn){
+		if((iter->len == paylen && iter->dan == dan) || head->len == paylen){
+			log_error("insert_rcv_buff_list: duplicate entry");
+			return -1;
+		}
+		else {
+			log_error("insert_rcv_buff_list: 2 entry with same dsn : dan %x, dsn %x, len %d", dan, dsn, paylen);
+			return -1;
+		}
+	}
+
+
 	struct rcv_buff_list* new_node = (struct rcv_buff_list*)malloc(sizeof(struct rcv_buff_list));
 	new_node->dan = dan;
 	new_node->dsn = dsn;
 	new_node->len = paylen;
 	new_node->payload = (unsigned char *)malloc(paylen);
 	memcpy((char*)new_node->payload, (char*)payload, paylen);//don't use strcpy
+	__list_add(&new_node->list, iter->list.prev, &iter->list);//insert before iter
 
-	struct rcv_buff_list *iter;
-	list_for_each_entry(iter, &head->list, list) {
-		if (iter->dsn > dsn) {
-			break;
-		}
-	}
-	//insert before iter
-	__list_add(&new_node->list, iter->list.prev, &iter->list);
-
-//	log_list_msg("insert_rcv_buff_list:dan %x, dsn %x, len %d, port %d", dan, dsn, paylen, packd.ft.prt_loc);
-	
+	log_list_msg("insert_rcv_buff_list: success");
 	print_rcv_buff_list(head);
 	return 0;
 }
@@ -1772,13 +1827,17 @@ uint32_t find_data_ack(struct rcv_buff_list *head) {
 	}
 
 	struct rcv_buff_list *iter, *next;
+
+	if (head->dsn + head->len != list_entry(head->list.next, struct rcv_buff_list, list)->dsn){
+		return head->dsn + head->len;
+	}
+
 	list_for_each_entry_safe(iter, next, &head->list, list) {
 		if ((iter->dsn + iter->len) != next->dsn)
 			break;
 	}
-//	log_list_msg("find_data_ack: dan:%x", iter->dsn + iter->len);
+	log_list_msg("find_data_ack: dan:%x", iter->dsn + iter->len);
 	
-
 	print_rcv_buff_list(head);
 	return iter->dsn + iter->len;
 }
@@ -1791,54 +1850,49 @@ int print_rcv_buff_list(struct rcv_buff_list* head) {
 	}
 
 	struct rcv_buff_list *iter;
-	log_list_msg("%s","---------------------------------------------------------------------------------");
-	log_list_msg("%s","|			                    rcv data list                                   |");
-	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
-	log_list_msg("%s","| dan      | *dsn     | len      | ack      | list   | prev   | next   | port   |");
-	log_list_msg("%s","- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
-	
+	log_list_msg("---------------------------------------------------------------------------------");
+	log_list_msg("|			                    rcv data list                                   |");
+	log_list_msg("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+	log_list_msg("| dan      | *dsn     | len      | ack      | list   | prev   | next   | port   |");
+	log_list_msg("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+
+	log_list_msg("| %-8x | %-8x | %-8d | %-8x | %-6p | %-6p | %-6p | %-6d |", head->dan, head->dsn, head->len, head->dsn + head->len, (void *)&head->list, (void *)head->list.prev, (void *)head->list.next, packd.sess->ft.prt_loc);
 	list_for_each_entry(iter, &head->list, list) {
-		log_list_msg( "| %-8x | %-8x | %-8d | %-8x | %-6p | %-6p | %-6p | %-6d |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len, (void *)&iter->list, (void *)iter->list.prev, (void *)iter->list.next, packd.sess->ft.prt_loc);
-		
+		log_list_msg( "| %-8x | %-8x | %-8d | %-8x | %-6p | %-6p | %-6p | %-6d |", iter->dan, iter->dsn, iter->len, iter->dsn+iter->len, (void *)&iter->list, (void *)iter->list.prev, (void *)iter->list.next, packd.sess->ft.prt_loc);		
 	}
-	log_list_msg("%s","---------------------------------------------------------------------------------");
+	log_list_msg("---------------------------------------------------------------------------------");
 	return 0;
 
 }
 
-int add_ip_white_list_array(uint32_t ip) {
+int add_ip_whitelist_array(uint32_t ip) {
 
-	if (ip_white_list_counter >= MAX_IP_WHITE_LIST_LEN) {
-		add_err_msg("add_ip_white_list_array:too many ip");
+	if (ip_whitelist_counter >= MAX_IP_WHITELIST_LEN) {
+		add_err_msg("add_ip_whitelist_array:too many ip");
 		return -1;
 	}
 
 	char ip_str[20];
 	sprintIPaddr(ip_str, ip);
 	
-	if(is_in_ip_white_list_array(ip)){
-		log("add_ip_white_list_array: %s already in array", ip_str);
+	if(is_in_ip_whitelist_array(ip)){
+		log("add_ip_whitelist_array: %s already in array", ip_str);
 		return -1;
 	}
 	
-	ip_white_list[ip_white_list_counter++] = ip;
-	log("add_ip_white_list_array:%s", ip_str);
+	ip_whitelist[ip_whitelist_counter++] = ip;
+	log("add_ip_whitelist_array:%s", ip_str);
 	return 0;
 }
 
-int is_in_ip_white_list_array(uint32_t ip) {
+int is_in_ip_whitelist_array(uint32_t ip) {
 
-	for (size_t i = 0; i < ip_white_list_counter; i++)
-		if (ip_white_list[i] == ip){
+	for (size_t i = 0; i < ip_whitelist_counter; i++)
+		if (ip_whitelist[i] == ip){
 			char ip_str[20];
 			sprintIPaddr(ip_str, ip);
-			log("is_in_ip_white_list_array:%s",ip_str);
+			log("is_in_ip_whitelist_array:%s",ip_str);
 			return 1;
 		}
 	return 0;
 }
-
-
-
-
-

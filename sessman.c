@@ -392,7 +392,7 @@ int contemplate_new_session_output_old() {
 
 int contemplate_new_session_output() {
 
-	if(is_in_ip_white_list_array(packd.ft.ip_rem)){
+	if(is_in_ip_whitelist_array(packd.ft.ip_rem)){
 		set_verdict(1,0,0);
 		return 0;
 	}
@@ -1367,10 +1367,10 @@ struct session* create_session(
 	}
 	
 	//+++new
-	sess->rcv_buff_list_head = malloc(sizeof(struct rcv_buff_list));
 	sess->snd_buff_list_head = malloc(sizeof(struct rcv_buff_list));
-	init_head_rcv_buff_list(sess->rcv_buff_list_head);
+	sess->rcv_buff_list_head = malloc(sizeof(struct rcv_buff_list));
 	init_head_rcv_buff_list(sess->snd_buff_list_head);	
+	init_head_rcv_buff_list(sess->rcv_buff_list_head);
 
 	if(key_loc != NULL) memcpy(sess->key_loc, key_loc, 8);
 	else memset(sess->key_loc, 0, 8);

@@ -22,8 +22,8 @@ struct print_data prt_data;
 struct print_msg_array prt_msg_array;
 
 //+++new
-uint32_t ip_white_list[MAX_IP_WHITE_LIST_LEN] = {0};
-uint16_t ip_white_list_counter = 0;
+uint32_t ip_whitelist[MAX_IP_WHITELIST_LEN] = {0};
+uint16_t ip_whitelist_counter = 0;
 
 
 
@@ -754,6 +754,31 @@ int system_safe(const char *command){
 	}
 	return systemRet;
 }
+
+void hex_dump(const unsigned char *packet, size_t size)
+{
+/*	unsigned char *byte = (unsigned char*)packet;
+	int count = 0;
+
+	int len = 0;
+	memset(msg_buf, 0, MAX_MSG_LENGTH);
+	snprintf(msg_buf, MAX_MSG_LENGTH, "\t\t");
+	len += 2;
+	for (; byte < ((unsigned char*)packet) + size; byte++) {
+		count++;
+		snprintf(msg_buf + len, MAX_MSG_LENGTH, "%02x ", *byte);
+		len += 3;
+		if (count % 16 == 0) {
+			add_msg(msg_buf);
+			len = 0;
+			snprintf(msg_buf + len, MAX_MSG_LENGTH, "\t\t");
+			len += 3;
+		}
+	}
+	add_msg(msg_buf);
+*/
+}
+
 /*
  * Options
 

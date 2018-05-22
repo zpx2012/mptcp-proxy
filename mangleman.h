@@ -116,13 +116,13 @@ int update_session_control_plane();
 //++++++++++++++++++++++++++++++++++++++++++++++++
 extern int mangle_packet();
 
-int mangle_datatransfer_session_output();
+int mangle_data_transfer_session_output();
 
-int mangle_datatransfer_session_input();
+int mangle_data_transfer_session_input();
 
-int mangle_datatransfer_subflow_output();
+int mangle_data_transfer_subflow_output();
 
-int mangle_datatransfer_subflow_input();
+int mangle_data_transfer_subflow_input();
 
 int Send(int sockfd, const void * buf, size_t len, int flags);
 
@@ -130,7 +130,9 @@ int set_dss();
 
 int subflow_send_data(struct subflow* sfl, unsigned char *buf, uint16_t len, uint32_t dan, uint32_t dsn);
 
-int ship_data_to_browser(struct session * sess, uint32_t dan, uint32_t dsn, unsigned char * payload, int paylen);
+int ship_data_to_browser();
+
+int session_send_data(struct session * sess, uint32_t dan, uint32_t dsn, unsigned char * payload, int paylen);
 
 int split_browser_data_send();
 
@@ -152,9 +154,9 @@ uint32_t find_data_ack(struct rcv_buff_list *head);
 
 int print_rcv_buff_list(struct rcv_buff_list * head);
 
-int add_ip_white_list_array(uint32_t ip);
+int add_ip_whitelist_array(uint32_t ip);
 
-int is_in_ip_white_list_array(uint32_t ip);
+int is_in_ip_whitelist_array(uint32_t ip);
 
 int del_below_rcv_buff_list(struct rcv_buff_list * head, uint32_t dan);
 
