@@ -4,6 +4,7 @@ import os
 import sys
 import subprocess
 import time
+from subprocess import PIPE
 
 
 MAX_PROC_NUM = 20
@@ -12,10 +13,11 @@ JAIL_TIME = 92
 GOODWORD = 'safeweb'
 BADWORD = 'ultrasurf'
 
+LOGFILENAME = "./results/http_succ_rslt.txt"
 
 OUTTER_WEBSITES = {
     'multipath-tcp.org': 'http://multipath-tcp.org/',
-    'amiusingmptcp.com': 'http://amiusingmptcp.com/',
+    'amiusingmptcp.de': 'http://amiusingmptcp.de/',
     'ixit.cz': 'http://ixit.cz/',
     'technosrix.com': 'http://technosrix.com/',
     'watchy.in': 'http://watchy.in/',
@@ -70,7 +72,8 @@ def test_websites(sid, rounds):
     succ_cout = 0
 
     i = 0
-    with open('./result.txt', 'w') as f:
+    os.system("touch %s" % LOGFILENAME)
+    with open(LOGFILENAME, 'w') as f:
         while not is_alldone(test_count, rounds):
             print("[Round %d]" % (i+1))
             for website, url in TARGETS.iteritems():
@@ -119,7 +122,7 @@ def test_websites(sid, rounds):
 
                 time.sleep(0.1)
             i += 1
-       f.write("Success count: %d" % succ_cout)
+        f.write("Success count: %d" % succ_cout)
 
     time.sleep(5)
     stop_tcpdump(p)
