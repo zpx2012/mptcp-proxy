@@ -946,14 +946,16 @@ int subflow_syn_sent_slave(){
 	unsigned char addr_id_rem;
 	uint32_t rand_nmb_rem;
 	uint32_t mac[2];
-	if(!analyze_MPjoin_synack(mptopt, packd.nb_mptcp_options, mac, &rand_nmb_rem,  &addr_id_rem, &backup))
+	if(!analyze_MPjoin_synack(mptopt, packd.nb_mptcp_options, mac, &rand_nmb_rem,  &addr_id_rem, &backup)){
+		log_error("subflow_syn_sent_slave:analyze_MPjoin_synack error, nb_mptcp_options %zu", packd.nb_mptcp_options);
 		return 0;
+	}
 	
 	//test if hmac is correct
 	uint32_t mac_test[5];
 	create_mac(packd.sess->key_rem, packd.sess->key_loc, rand_nmb_rem, packd.sfl->rand_nmb_loc, mac_test);
 	if(memcmp(mac_test, mac, 8) != 0) {
-		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent: MAC on SYN/ACK packet for sess id=%zu, sfl id=%zu is incorrect!",
+		snprintf(msg_buf,MAX_MSG_LENGTH, "subflow_syn_sent_slave: MAC on SYN/ACK packet for sess id=%zu, sfl id=%zu is incorrect!",
 				packd.sess->index, packd.sfl->index);
 		add_msg(msg_buf);
 		set_verdict(0,0,0);

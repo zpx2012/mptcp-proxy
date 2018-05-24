@@ -2,6 +2,8 @@
 .*
 mpproxy
 mptcp_proxy
+hclient
+hserver
 Backups/
 CachedData/
 Cookies
@@ -15,8 +17,10 @@ log
 test_linklist
 *.sln
 *.vcxproj
+*.pcap
 log.txt
 wireshark/regular tcp connection.pcapng
 list_log.txt
 wireshark/
 
+results/
