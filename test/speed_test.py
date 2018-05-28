@@ -16,18 +16,16 @@ def test_download_socks(test_url,output_file):
             print 'traceback.format_exc():\n%s' %traceback.format_exc()
             print ('#######################################\n')
         else:
-            dns = c.getinfo(pycurl.NAMELOOKUP_TIME)
             speed = c.getinfo(pycurl.SPEED_DOWNLOAD)
             total_time = c.getinfo(pycurl.TOTAL_TIME)
             now = datetime.datetime.now()
             localtime = now.strftime("%Y-%m-%d %H:%M:%S")
 
-            print ('DNS time  : %10.3f ms' %(dns*1000))
             print ('speed ave : %10.3f k/s' %(speed/1024))
             print ('total time: %10.3f s' %(total_time))
             print ('localtime : ' + localtime)
             with open(output_file,"a") as f:
-                f.writelines(localtime + "\t %10.3f  %10.3f  %10.3f\n" %(dns*1000,speed/1024,total_time)) #DNS(ms) \t speed(k/s) \t total_time(ms)
+                f.writelines(localtime + "\t  %10.3f  %10.3f\n" %(speed/1024,total_time)) # \t speed(k/s) \t total_time(ms)
             c.close()
 
 def test_download(test_url,output_file):
@@ -45,18 +43,16 @@ def test_download(test_url,output_file):
                 print 'traceback.format_exc():\n%s' %traceback.format_exc()
                 print ('#######################################\n')
             else:
-                dns = c.getinfo(pycurl.NAMELOOKUP_TIME)
                 speed = c.getinfo(pycurl.SPEED_DOWNLOAD)
                 total_time = c.getinfo(pycurl.TOTAL_TIME)
                 now = datetime.datetime.now()
                 localtime = now.strftime("%Y-%m-%d %H:%M:%S")
 
-                print ('DNS time  : %10.3f ms' %(dns*1000))
                 print ('speed ave : %10.3f k/s' %(speed/1024))
                 print ('total time: %10.3f s' %(total_time))
                 print ('localtime : ' + localtime)
                 with open(output_file,"a") as f:
-                    f.writelines(localtime + "\t %10.3f  %10.3f  %10.3f\n" %(dns*1000,speed/1024,total_time)) #DNS(ms) \t speed(k/s) \t total_time(ms)
+                    f.writelines(localtime + "\t %10.3f  %10.3f\n" %(speed/1024,total_time)) # speed(k/s) \t total_time(ms)
                 c.close()
 
 if __name__ == '__main__':
