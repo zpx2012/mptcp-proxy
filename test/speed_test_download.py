@@ -89,7 +89,7 @@ if __name__ == '__main__':
             download_last = 0
             test_download(test_url,file_name)
             num_tasks = num_tasks +1
-            time.sleep(20)
+            time.sleep(10)
     else:
         print "Using Socks now"
         file_name = "output_ssh_"+start.strftime("%m%d%H")+".txt"
@@ -101,4 +101,4 @@ if __name__ == '__main__':
             download_last = 0
             test_download_socks(test_url,file_name)
             num_tasks = num_tasks +1
-            time.sleep(20)
+            time.sleep(10)
