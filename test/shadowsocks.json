@@ -1,0 +1,11 @@
+{
+    "server": "34.215.137.39",
+    "server_port": 25979,
+    "local_address": "127.0.0.1",
+    "local_port": 1080,
+    "password": "wch92507!@#",
+    "timeout": 600,
+    "method": "aes-256-cfb",
+    "fast_open": false
+}
+
