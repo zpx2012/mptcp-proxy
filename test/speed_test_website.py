@@ -145,7 +145,7 @@ if __name__ == '__main__':
             f.writelines("\n")
         while True:
             print ('Task : %d' %(num_tasks))
-            for website,url in targets:
+            for website,url in targets.iteritems():
                 test_download_vpn(website,url,file_name)
             num_tasks = num_tasks +1
             time.sleep(20)
@@ -156,7 +156,7 @@ if __name__ == '__main__':
             f.writelines("\n")
         while True:
             print ('Task : %d' %(num_tasks))
-            for website,url in targets:
+            for website,url in targets.iteritems():
                 test_download_socks(website,url,file_name)
             num_tasks = num_tasks +1
             time.sleep(20)
