@@ -1,11 +1,24 @@
 import io,pycurl,sys,os,time,datetime,traceback
-    
+
+download_last = 0
+last_time = ""
+file_name = ""
+
+def progress(download_t, download_d, upload_t, upload_d):
+    new_time = datetime.datetime.now()
+    speed = ((download_d-download_last)/(new_time-last_time)/1024)
+    global last_time = new_time
+    global download_last = download_d
+    with open(file_name,"a")
+        f.writelines(localtime + "\t  %10.3f \n" %(speed/1024)) 
+
 def test_download_socks(test_url,output_file):
     with open('/dev/null','wb') as test_f:
         try:
             c = pycurl.Curl()
             c.setopt(pycurl.WRITEDATA,test_f)
-            c.setopt(pycurl.NOPROGRESS,0)
+            c.setopt(pycurl.NOPROGRESS,False)
+            c.setopt(pycurl.XFERINFORFUNCTION,progress)
             c.setopt(pycurl.URL,test_url)
             c.setopt(pycurl.PROXY,'socks5h://127.0.0.1')
             c.setopt(pycurl.PROXYPORT,1080)
@@ -34,7 +47,8 @@ def test_download(test_url,output_file):
                 c = pycurl.Curl()
                 c.setopt(pycurl.WRITEDATA,test_f)
                 c.setopt(pycurl.ENCODING,'gzip')
-                c.setopt(pycurl.NOPROGRESS,0)
+                c.setopt(pycurl.NOPROGRESS,False)
+                c.setopt(pycurl.XFERINFORFUNCTION,progress)
                 c.setopt(pycurl.URL,test_url)
                 c.setopt(pycurl.MAXREDIRS,5)
                 c.perform()
@@ -67,6 +81,8 @@ if __name__ == '__main__':
             f.writelines("\n")
         while True:
             print ('Task : %d' %(num_tasks))
+            last_time = datetime.datetime.now()
+            download_last = 0
             test_download(test_url,file_name)
             num_tasks = num_tasks +1
             time.sleep(20)
@@ -77,6 +93,8 @@ if __name__ == '__main__':
             f.writelines("\n")
         while True:
             print ('Task : %d' %(num_tasks))
+            last_time = datetime.datetime.now()
+            download_last = 0
             test_download_socks(test_url,file_name)
             num_tasks = num_tasks +1
             time.sleep(20)
