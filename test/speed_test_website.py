@@ -149,7 +149,7 @@ if __name__ == '__main__':
                 test_download_vpn(website,url,file_name)
             num_tasks = num_tasks +1
             time.sleep(20)
-    else if(option == '1'):
+    else :
         print "Using Socks now"
         file_name = "output_ssh_"+start.strftime("%m%d_%H:%M")+".txt"
         with open(file_name,"w") as f:
