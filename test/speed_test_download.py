@@ -92,7 +92,7 @@ if __name__ == '__main__':
             time.sleep(10)
     else:
         print "Using Socks now"
-        file_name = "output_ssh_"+start.strftime("%m%d%H")+".txt"
+        file_name = "output_socks_"+start.strftime("%m%d%H")+".txt"
         with open(file_name,"w") as f:
             f.writelines("\n")
         while True:
