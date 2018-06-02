@@ -4,18 +4,19 @@ import matplotlib.pyplot as plt
 
 download_last = 0
 last_time = int(round(time.time()))
-file_name = ""
+output_file_name = ""
 
 def call_back(download_t, download_d, upload_t, upload_d):
     global last_time
     global download_last
     new_time = int(round(time.time()))
-    if((new_time-last_time)>10):
-        speed = ((download_d-download_last)/(new_time - last_time))
-        last_time = new_time
+    interval = new_time - last_time
+    if(interval > 10):
+        speed = ((download_d-download_last)/interval)
+        last_time = new_time          #update
         download_last = download_d
         localtime = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-        with open(file_name,"a") as f:
+        with open(output_file_name,"a") as f:
             f.writelines(localtime + "\t  %10.3fk/s \n" %(speed/1024)) 
 
 def pycurl_socks(test_url):
@@ -33,10 +34,11 @@ def pycurl_regular(test_url):
 
 def pycurl_perform_and_log(c, type_str):
         with open('/dev/null','wb') as test_f:
+            global output_file_name
             start = datetime.datetime.now()
             sys_hostname = socket.gethostname()
             output_file_name = type_str+sys_hostname+start.strftime("%m%d%H")+".txt"
-            with open(file_name,"w") as f:
+            with open(output_file_name,"w") as f:
                 f.writelines("localtime\t  speed\n")
             try:
                 c.setopt(pycurl.WRITEDATA,test_f)
@@ -62,46 +64,23 @@ def pycurl_perform_and_log(c, type_str):
                     f.writelines(localtime + "\t  %10.3fk/s  %10.3fs Download Finished\n" %(speed/1024,total_time)) # speed(k/s) \t total_time(s)
                 c.close()
 
-def plot_figure(x, y, capture):
-    plt.figure(figsize=(42,24), dpi=190, tight_layout=True) 
-    plt.margins(x=0,y=0)
-    plt.plot(x,y,linewidth=1)   
-    plt.xticks(np.arange(min(x),max(x), 5000))
-    plt.yticks(np.arange(0,2700,100))
-    plt.tick_params(axis='x', labelsize=18)
-    plt.tick_params(axis='y', labelsize=28)
-    plt.xlabel("Time(s)", fontsize=34) 
-    plt.ylabel("Speed(k/s)",fontsize=34)  
-    plt.grid(axis='y')
-    plt.title(capture, fontsize=40)
-    plt.savefig(capture + ".jpg") 
-
-
 if __name__ == '__main__':
     num_tasks = 1
+    if len(sys.argv) != 2:
+        print("Usage: %s <op(0->vpn;1->socks)>" % sys.argv[0])
     option = sys.argv[1]   #0->vpn 1->socks
-
     test_url = "http://mirror.enzu.com/ubuntu-releases/ubuntu-core/16/ubuntu-core-16-pi2.img.xz"
-    if(option == '0'):
-        print "Using VPN now"
-        with open(file_name,"w") as f:
-            f.writelines("\n")
-        while True:
-            print ('Task : %d' %(num_tasks))
-            last_time = int(round(time.time()))
-            download_last = 0
-            test_download(test_url,file_name)
-            num_tasks = num_tasks +1
-            time.sleep(10)
-    else:
-        print "Using Socks now"
-        
-        with open(file_name,"w") as f:
-            f.writelines("\n")
-        while True:
-            print ('Task : %d' %(num_tasks))
-            last_time = int(round(time.time()))
-            download_last = 0
-            test_download_socks(test_url,file_name)
-            num_tasks = num_tasks +1
-            time.sleep(10)
+    while True:
+        print ('Task : %d' %(num_tasks))
+        last_time = int(round(time.time()))
+        download_last = 0
+        num_tasks = num_tasks +1
+        if(option == '0'):
+            print "Using regular now"
+            pycurl_regular(test_url)
+        else:
+            print "Using Socks now"
+            pycurl_socks(test_url)
+        time.sleep(10)
+    
+    
