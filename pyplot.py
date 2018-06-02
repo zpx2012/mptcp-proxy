@@ -27,7 +27,6 @@ def parse_file(filename):
 def plot_figure(x, y, capture):
     plt.figure(figsize=(42,24), dpi=190, tight_layout=True) 
     plt.margins(x=0,y=0)
-#    plt.rcParams.update({'font.size': 28})
     plt.plot(x,y,linewidth=1)   
     plt.xticks(np.arange(min(x),max(x), 5000))
     plt.yticks(np.arange(0,2700,100))
@@ -35,6 +34,7 @@ def plot_figure(x, y, capture):
     plt.tick_params(axis='y', labelsize=28)
     plt.xlabel("Time(s)", fontsize=34) 
     plt.ylabel("Speed(k/s)",fontsize=34)  
+    plt.grid(axis='y')
     plt.title(capture, fontsize=40)
     plt.savefig(capture + ".jpg") 
 #    plt.show() 

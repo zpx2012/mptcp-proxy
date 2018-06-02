@@ -18,6 +18,7 @@ test_linklist
 *.sln
 *.vcxproj
 *.pcap
+results/
 log.txt
 wireshark/regular tcp connection.pcapng
 list_log.txt
