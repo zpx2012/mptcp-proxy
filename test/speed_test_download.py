@@ -1,6 +1,4 @@
 import io,pycurl,sys,os,time,datetime,traceback,socket
-import numpy as np
-import matplotlib.pyplot as plt
 
 download_last = 0
 last_time = int(round(time.time()))
