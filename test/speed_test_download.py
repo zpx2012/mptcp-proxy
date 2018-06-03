@@ -83,10 +83,8 @@ if __name__ == '__main__':
         download_last = 0
         num_tasks = num_tasks +1
         if(option == '0'):
-            print "Using regular now"
             pycurl_regular(test_url)
         else:
-            print "Using Socks now"
             pycurl_socks(test_url)
         time.sleep(10)
     
