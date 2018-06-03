@@ -4,7 +4,7 @@ from os.path import expanduser
 download_last = 0
 last_time = int(round(time.time()))
 output_file_name = ""
-results_dir_abs_path = expanduser("~") + "results"
+results_dir_abs_path = expanduser("~") + "/results"
 
 def call_back(download_t, download_d, upload_t, upload_d):
     global last_time
