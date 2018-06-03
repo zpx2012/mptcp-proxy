@@ -34,12 +34,6 @@ def pycurl_regular(test_url):
 
 def pycurl_perform_and_log(c, type_str):
         with open('/dev/null','wb') as test_f:
-            global output_file_name
-            start = datetime.datetime.now()
-            sys_hostname = socket.gethostname()
-            output_file_name = results_dir_abs_path + "/" + type_str + "_" + sys_hostname + "_" + start.strftime("%m%d%H%M")+".txt"
-            with open(output_file_name,"w") as f:
-                f.writelines("localtime\t  speed\n")
             try:
                 c.setopt(pycurl.WRITEDATA,test_f)
                 c.setopt(pycurl.ENCODING,'gzip')
@@ -72,6 +66,17 @@ if __name__ == '__main__':
     option = sys.argv[1]   #0->vpn 1->socks
     os.system("mkdir %s" % results_dir_abs_path)
     test_url = "http://mirror.enzu.com/ubuntu-releases/ubuntu-core/16/ubuntu-core-16-pi2.img.xz"
+    start = datetime.datetime.now()
+    sys_hostname = socket.gethostname()
+    if(option == '0'):
+        print "Using regular now"
+        opt_str = "regular"
+    else:
+        print "Using Socks now"
+        opt_str = "socks"
+    output_file_name = results_dir_abs_path + "/" + opt_str + "_" + sys_hostname.replace("-","_") + "_" + start.strftime("%m%d%H%M")+".txt"
+    with open(output_file_name,"w") as f:
+        f.writelines("localtime\t  speed\n")
     while True:
         print ('Task : %d' %(num_tasks))
         last_time = int(round(time.time()))
