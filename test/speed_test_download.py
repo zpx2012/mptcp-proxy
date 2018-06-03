@@ -37,7 +37,7 @@ def pycurl_perform_and_log(c, type_str):
             global output_file_name
             start = datetime.datetime.now()
             sys_hostname = socket.gethostname()
-            output_file_name = results_dir_abs_path + "/" + type_str + "_" + sys_hostname + "_" + start.strftime("%m%d%H")+".txt"
+            output_file_name = results_dir_abs_path + "/" + type_str + "_" + sys_hostname + "_" + start.strftime("%m%d%H%M")+".txt"
             with open(output_file_name,"w") as f:
                 f.writelines("localtime\t  speed\n")
             try:
@@ -67,7 +67,7 @@ def pycurl_perform_and_log(c, type_str):
 if __name__ == '__main__':
     num_tasks = 1
     if len(sys.argv) != 2:
-        print("Usage: %s <op>\n\t op: 0 for regular, 1 for socks" % sys.argv[0])
+        print("Usage: %s [OPTION]\n\nOptions:\n\t0\tregular connection\n\t1\tsocks   connection\n" % sys.argv[0])
         sys.exit(-1)
     option = sys.argv[1]   #0->vpn 1->socks
     os.system("mkdir %s" % results_dir_abs_path)
