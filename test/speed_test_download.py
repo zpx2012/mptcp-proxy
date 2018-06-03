@@ -35,7 +35,7 @@ def pycurl_perform_and_log(c, type_str):
             global output_file_name
             start = datetime.datetime.now()
             sys_hostname = socket.gethostname()
-            output_file_name = type_str+sys_hostname+start.strftime("%m%d%H")+".txt"
+            output_file_name = "~/results/" + type_str + "_" + sys_hostname + "_" + start.strftime("%m%d%H")+".txt"
             with open(output_file_name,"w") as f:
                 f.writelines("localtime\t  speed\n")
             try:
@@ -66,7 +66,9 @@ if __name__ == '__main__':
     num_tasks = 1
     if len(sys.argv) != 2:
         print("Usage: %s <op(0->vpn;1->socks)>" % sys.argv[0])
+        sys.exit(-1)
     option = sys.argv[1]   #0->vpn 1->socks
+    os.system("mkdir ~/results")
     test_url = "http://mirror.enzu.com/ubuntu-releases/ubuntu-core/16/ubuntu-core-16-pi2.img.xz"
     while True:
         print ('Task : %d' %(num_tasks))
