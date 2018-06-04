@@ -91,17 +91,15 @@ def test_download_socks(website,test_url,output_file):
             print ('\n########## connection failed ##########\n')
             print 'traceback.format_exc():\n%s' %traceback.format_exc()
             print ('#######################################\n')
+            with open(output_file,"a") as f:
+                f.writelines(localtime + " " + website + " failed\n")
         else:
-            speed = c.getinfo(pycurl.SPEED_DOWNLOAD)
-            total_time = c.getinfo(pycurl.TOTAL_TIME)
             now = datetime.datetime.now()
             localtime = now.strftime("%Y-%m-%d %H:%M:%S")
 
-            print ('speed ave : %10.3f k/s' %(speed/1024))
-            print ('total time: %10.3f s' %(total_time))
-            print ('localtime : ' + localtime)
+            print (localtime + " " + website + " success\n")
             with open(output_file,"a") as f:
-                f.writelines(localtime + website + ":\t  %10.3f  %10.3f\n" %(speed/1024,total_time)) # \t speed(k/s) \t total_time(ms)
+                f.writelines(localtime + " " + website + " success\n")
             c.close()
 
 def test_download_vpn(website,test_url,output_file):
@@ -118,17 +116,15 @@ def test_download_vpn(website,test_url,output_file):
                 print ('\n########## connection failed ##########\n')
                 print 'traceback.format_exc():\n%s' %traceback.format_exc()
                 print ('#######################################\n')
+                with open(output_file,"a") as f:
+                    f.writelines(localtime + " " + website + " failed\n")
             else:
-                speed = c.getinfo(pycurl.SPEED_DOWNLOAD)
-                total_time = c.getinfo(pycurl.TOTAL_TIME)
                 now = datetime.datetime.now()
                 localtime = now.strftime("%Y-%m-%d %H:%M:%S")
 
-                print ('speed ave : %10.3f k/s' %(speed/1024))
-                print ('total time: %10.3f s' %(total_time))
-                print ('localtime : ' + localtime)
+                print (localtime + " " + website + " success\n")
                 with open(output_file,"a") as f:
-                    f.writelines(localtime + website + ":\t %10.3f  %10.3f\n" %(speed/1024,total_time)) # speed(k/s) \t total_time(ms)
+                    f.writelines(localtime + " " + website + " success\n") 
                 c.close()
 
 if __name__ == '__main__':
@@ -140,7 +136,7 @@ if __name__ == '__main__':
 
     if(option == '0'):
         print "Using VPN now"
-        file_name = "output_vpn_"+start.strftime("%m%d_%H:%M")+".txt"
+        file_name = "vpn_website_"+start.strftime("%m%d_%H:%M")+".txt"
         with open(file_name,"w") as f:
             f.writelines("\n")
         while True:
@@ -151,7 +147,7 @@ if __name__ == '__main__':
             time.sleep(20)
     else :
         print "Using Socks now"
-        file_name = "output_ssh_"+start.strftime("%m%d_%H:%M")+".txt"
+        file_name = "socks_website_"+start.strftime("%m%d_%H:%M")+".txt"
         with open(file_name,"w") as f:
             f.writelines("\n")
         while True:
