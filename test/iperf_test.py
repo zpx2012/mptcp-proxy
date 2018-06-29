@@ -11,15 +11,13 @@ while True:
     stdoutdata, stderrdata = p.communicate()
     print stdoutdata
     lines = stdoutdata.split('\n')
-    rlt_line = lines[len(lines)-2]
-    check_str = rlt_line[39:48]
-    if check_str == 'Kbits/sec':
-        speed = float(rlt_line[32:39])
-        localtime = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-        with open(output_file_name,"a") as f:
-            f.writelines(localtime + "\t  %10.1fk/s \n" %(speed))
-    else:
-        print('read rlt_line error')
-        print stdoutdata
+    for line in lines:
+        check_str = line[39:48]
+        if check_str == 'Kbits/sec':
+            speed = float(line[32:39])
+            localtime = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+            with open(output_file_name,"a") as f:
+                f.writelines(localtime + "\t  %10.1fk/s \n" %(speed))
+                print(localtime + "\t  %10.1fk/s \n" %(speed))
     time.sleep(10)
 
