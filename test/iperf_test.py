@@ -7,7 +7,7 @@ output_file_name = results_dir_abs_path + "/" + "iperf_" + socket.gethostname().
 with open(output_file_name,"w") as f:
     f.writelines("localtime\t  speed\n")
 while True:
-    p = subprocess.Popen('iperf -c 54.191.68.140 -f kbits -b 1M',stderr=subprocess.PIPE,stdout=subprocess.PIPE, shell=True)
+    p = subprocess.Popen('iperf -c 34.215.137.39 -f kbits -b 1M',stderr=subprocess.PIPE,stdout=subprocess.PIPE, shell=True)
     stdoutdata, stderrdata = p.communicate()
     print stdoutdata
     lines = stdoutdata.split('\n')
