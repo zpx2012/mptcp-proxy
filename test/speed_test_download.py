@@ -61,20 +61,18 @@ def pycurl_perform_and_log(c, type_str):
 if __name__ == '__main__':
     num_tasks = 1
     if len(sys.argv) != 2:
-        print("Usage: %s [OPTION]\n\nOptions:\n\t0\tregular connection\n\t1\tsocks   connection\n" % sys.argv[0])
+        print("Usage: %s [URL] [OPTION]\n\nOptions:\n\t0\tregular connection\n\t1\tsocks   connection\n" % sys.argv[0])
         sys.exit(-1)
-    option = sys.argv[1]   #0->vpn 1->socks
+    test_url = sys.argv[1]
+    option = sys.argv[2]   #0->vpn 1->socks
     os.system("mkdir %s" % results_dir_abs_path)
-    test_url = "http://54.191.68.140:8080/ubuntu-core-16-pi2.img.xz"
-    start = datetime.datetime.now()
-    sys_hostname = socket.gethostname()
     if(option == '0'):
         print "Using regular now"
         opt_str = "regular"
     else:
         print "Using Socks now"
         opt_str = "socks"
-    output_file_name = results_dir_abs_path + "/" + opt_str + "_" + sys_hostname.replace("-","_") + "_" + start.strftime("%m%d%H%M")+".txt"
+    output_file_name = results_dir_abs_path + "/" + opt_str + "_" + socket.gethostname().replace("-","_") + "_" + datetime.datetime.now().strftime("%m%d%H%M")+".txt"
     with open(output_file_name,"w") as f:
         f.writelines("localtime\t  speed\n")
     while True:
