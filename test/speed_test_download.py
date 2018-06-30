@@ -65,7 +65,7 @@ if __name__ == '__main__':
         sys.exit(-1)
     option = sys.argv[1]   #0->vpn 1->socks
     os.system("mkdir %s" % results_dir_abs_path)
-    test_url = "http://172.31.21.225:8080/ubuntu-core-16-pi2.img.xz"
+    test_url = "http://54.191.68.140:8080/ubuntu-core-16-pi2.img.xz"
     start = datetime.datetime.now()
     sys_hostname = socket.gethostname()
     if(option == '0'):
