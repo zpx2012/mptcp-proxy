@@ -60,7 +60,7 @@ def pycurl_perform_and_log(c, type_str):
 
 if __name__ == '__main__':
     num_tasks = 1
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 3:
         print("Usage: %s [URL] [OPTION]\n\nOptions:\n\t0\tregular connection\n\t1\tsocks   connection\n" % sys.argv[0])
         sys.exit(-1)
     test_url = sys.argv[1]
