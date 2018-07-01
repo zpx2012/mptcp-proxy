@@ -11,7 +11,7 @@ def call_back(download_t, download_d, upload_t, upload_d):
     global download_last
     new_time = int(round(time.time()))
     interval = new_time - last_time
-    if(interval > 10):
+    if(interval >= 10):
         speed = ((download_d-download_last)/interval)
         last_time = new_time          #update
         download_last = download_d
