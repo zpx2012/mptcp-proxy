@@ -61,6 +61,7 @@ def test_download_socks(website,test_url,output_file):
             print 'traceback.format_exc():\n%s' %traceback.format_exc()
             print ('#######################################\n')
             with open(output_file,"a") as f:
+		localtime = now.strftime("%Y-%m-%d %H:%M:%S")
                 f.writelines(localtime + " " + website + " failed\n")
         else:
             now = datetime.datetime.now()
@@ -86,6 +87,7 @@ def test_download_vpn(website,test_url,output_file):
                 print 'traceback.format_exc():\n%s' %traceback.format_exc()
                 print ('#######################################\n')
                 with open(output_file,"a") as f:
+		    localtime = now.strftime("%Y-%m-%d %H:%M:%S")
                     f.writelines(localtime + " " + website + " failed\n")
             else:
                 now = datetime.datetime.now()
