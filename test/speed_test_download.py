@@ -19,7 +19,7 @@ def call_back(download_t, download_d, upload_t, upload_d):
         localtime = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
         with open(output_file_name,"a") as f:
             f.writelines(localtime + "\t  %10.3fk/s \n" %(speed/1024)) 
-            print(localtime + "\t  %10.3fk/s \n" %(speed/1024))
+            print(localtime + "\t  %10.3fk/s" %(speed/1024))
 
 def pycurl_socks(test_url):
     c = pycurl.Curl()
