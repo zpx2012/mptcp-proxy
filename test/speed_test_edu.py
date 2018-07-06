@@ -1,26 +1,22 @@
-import io,pycurl,sys,os,time,datetime,traceback
+import io,pycurl,sys,os,time,datetime,traceback,random
 
-#GOODWORD = 'goodword'
-#BADWORD = 'ultrasurf'
 
-OUTTER_WEBSITES = {
-    'berkeley.edu': 'http://www.berkeley.edu',
-    'stanford.edu': 'http://www.stanford.edu',
-    'harvard.edu': 'http://www.harvard.edu',
-    'columbia.edu': 'http://www.columbia.edu',
-    'yale.edu': 'http://www.yale.edu',
-    'caltech.edu': 'http://www.caltech.edu',
-    'ucla.edu': 'http://www.ucla.edu',
-    'princeton.edu': 'http://www.princeton.edu',
-    'cornell.edu': 'http://www.cornell.edu',
-    'upenn.edu': 'http://www.upenn.edu',
-    'home.dartmouth.edu': 'http://home.dartmouth.edu',
-    'web.mit.edu': 'http://web.mit.edu',
-}
+targets = [
+    'http://www.berkeley.edu',
+    'http://www.stanford.edu',
+    'http://www.harvard.edu',
+    'http://www.columbia.edu',
+    'http://www.yale.edu',
+    'http://www.caltech.edu',
+    'http://www.ucla.edu',
+    'http://www.princeton.edu',
+    'http://www.cornell.edu',
+    'http://www.upenn.edu',
+    'http://home.dartmouth.edu',
+    'http://web.mit.edu'
+]
 
-targets = OUTTER_WEBSITES
-
-def test_download_socks(website,test_url,output_file):
+def test_download_socks(test_url,output_file):
     with open('/dev/null','wb') as test_f:
         try:
             c = pycurl.Curl()
@@ -37,17 +33,17 @@ def test_download_socks(website,test_url,output_file):
             print ('#######################################\n')
             with open(output_file,"a") as f:
 		localtime = now.strftime("%Y-%m-%d %H:%M:%S")
-                f.writelines(localtime + " " + website + " failed\n")
+                f.writelines(localtime + " " + test_url + " failed\n")
         else:
             now = datetime.datetime.now()
             localtime = now.strftime("%Y-%m-%d %H:%M:%S")
 
-            print (localtime + " " + website + " success\n")
+            print (localtime + " " + test_url + " success\n")
             with open(output_file,"a") as f:
-                f.writelines(localtime + " " + website + " success\n")
+                f.writelines(localtime + " " + test_url + " success\n")
             c.close()
 
-def test_download_vpn(website,test_url,output_file):
+def test_download_vpn(test_url,output_file):
         with open('/dev/null','wb') as test_f:
             try:
                 c = pycurl.Curl()
@@ -62,14 +58,14 @@ def test_download_vpn(website,test_url,output_file):
                 print 'traceback.format_exc():\n%s' %traceback.format_exc()
                 print ('#######################################\n')
                 with open(output_file,"a") as f:
-                    f.writelines(localtime + " " + website + " failed\n")
+                    f.writelines(localtime + " " + test_url + " failed\n")
             else:
                 now = datetime.datetime.now()
                 localtime = now.strftime("%Y-%m-%d %H:%M:%S")
 
-                print (localtime + " " + website + " success\n")
+                print (localtime + " " + test_url + " success\n")
                 with open(output_file,"a") as f:
-                    f.writelines(localtime + " " + website + " success\n") 
+                    f.writelines(localtime + " " + test_url + " success\n") 
                 c.close()
 
 if __name__ == '__main__':
@@ -81,23 +77,14 @@ if __name__ == '__main__':
 
     if(option == '0'):
         print "Using VPN now"
-        file_name = "vpn_website_"+start.strftime("%m%d_%H:%M")+".txt"
-        with open(file_name,"w") as f:
-            f.writelines("\n")
-        while True:
-            print ('Task : %d' %(num_tasks))
-            for website,url in targets.iteritems():
-                test_download_vpn(website,url,file_name)
-            num_tasks = num_tasks +1
-            time.sleep(20)
+        file_name = "vpn_test_url_"+start.strftime("%m%d_%H:%M")+".txt"
     else :
         print "Using Socks now"
-        file_name = "socks_website_"+start.strftime("%m%d_%H:%M")+".txt"
-        with open(file_name,"w") as f:
-            f.writelines("\n")
-        while True:
-            print ('Task : %d' %(num_tasks))
-            for website,url in targets.iteritems():
-                test_download_socks(website,url,file_name)
-            num_tasks = num_tasks +1
-            time.sleep(20)
+        file_name = "socks_test_url_"+start.strftime("%m%d_%H:%M")+".txt"
+    with open(file_name,"w") as f:
+        f.writelines("\n")
+    while True:
+        print ('Task : %d' %(num_tasks))
+        test_download_socks(targets[random.randint(0, len(targets))],file_name)
+        num_tasks = num_tasks +1
+        time.sleep(20)

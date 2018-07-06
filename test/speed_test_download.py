@@ -5,15 +5,22 @@ download_last = 0
 last_time = int(round(time.time()))
 output_file_name = ""
 results_dir_abs_path = expanduser("~") + "/results"
-# zero_speed_counter = 0
+zero_speed_counter = 0
 
 def call_back(download_t, download_d, upload_t, upload_d):
     global last_time
     global download_last
+    global zero_speed_counter
     new_time = int(round(time.time()))
     interval = new_time - last_time
     if(interval >= 10):
         speed = ((download_d-download_last)/interval)
+        if(speed == 0):
+            zero_speed_counter += 1
+            if(zero_speed_counter == 3):
+                print 'reach zero_speed_max'
+                zero_speed_counter = 0
+                return 1
         last_time = new_time          #update
         download_last = download_d
         localtime = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
@@ -86,6 +93,6 @@ if __name__ == '__main__':
             pycurl_regular(test_url)
         else:
             pycurl_socks(test_url)
-#        time.sleep(10)
+        time.sleep(10)
     
     
