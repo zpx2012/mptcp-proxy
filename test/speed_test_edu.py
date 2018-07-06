@@ -77,20 +77,6 @@ if __name__ == '__main__':
 
     if(option == '0'):
         print "Using VPN now"
-        file_name = "vpn_test_url_"+start.strftime("%m%d_%H:%M")+".txt"
-    else :
-        print "Using Socks now"
-        file_name = "socks_test_url_"+start.strftime("%m%d_%H:%M")+".txt"
-    with open(file_name,"w") as f:
-        f.writelines("\n")
-    while True:
-        print ('Task : %d' %(num_tasks))
-        test_download_socks(targets[random.randint(0, len(targets))],file_name)
-        num_tasks = num_tasks +1
-        time.sleep(20)
-
-    if(option == '0'):
-        print "Using VPN now"
         file_name = "vpn_website_"+start.strftime("%m%d_%H:%M")+".txt"
         with open(file_name,"w") as f:
             f.writelines("\n")
