@@ -25,10 +25,10 @@ def call_back(download_t, download_d, upload_t, upload_d):
         download_last = download_d
         localtime = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
         with open(output_file_name,"a") as f:
-            f.writelines(localtime + "\t  %10.3fk/s \n" %(speed/1024)) 
-            print(localtime + "\t  %10.3fk/s" %(speed/1024))
+            f.writelines(localtime + "\t  %10.3fk/s \n" %(speed/1024.0)) 
+            print(localtime + "\t  %10.3fk/s" %(speed/1024.0))
 
-def pycurl_socks(test_url):
+def pycurl_proxy(test_url):
     c = pycurl.Curl()
     c.setopt(pycurl.PROXY,'socks5h://127.0.0.1')
     c.setopt(pycurl.PROXYPORT,1080)
@@ -51,8 +51,8 @@ def pycurl_perform_and_log(c, type_str):
                 c.setopt(pycurl.MAXREDIRS,5)
                 c.perform()
             except :
-                print ('\n########## connection failed ##########\n')
-                print 'traceback.format_exc():\n%s' %traceback.format_exc()
+                print ('\n########## exception ##########\n')
+                print traceback.format_exc()
                 print ('#######################################\n')
             else:
                 speed = c.getinfo(pycurl.SPEED_DOWNLOAD)
@@ -60,7 +60,7 @@ def pycurl_perform_and_log(c, type_str):
                 now = datetime.datetime.now()
                 localtime = now.strftime("%Y-%m-%d %H:%M:%S")
 
-                print ('speed ave : %10.3f k/s' %(speed/1024))
+                print ('speed ave : %10.3f k/s' %(speed/1024.0))
                 print ('total time: %10.3f s' %(total_time))
                 print ('localtime : ' + localtime)
                 with open(output_file_name,"a") as f:
@@ -92,7 +92,7 @@ if __name__ == '__main__':
         if(option == '0'):
             pycurl_regular(test_url)
         else:
-            pycurl_socks(test_url)
+            pycurl_proxy(test_url)
         time.sleep(10)
     
     
