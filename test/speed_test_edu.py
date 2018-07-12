@@ -92,6 +92,6 @@ if __name__ == '__main__':
             f.writelines("\n")
         while True:
             print ('Task : %d' %(num_tasks))
-            test_download_socks(targets[random.randint(0, len(targets))],file_name)
+            test_download_socks(targets[random.randint(0, len(targets)-1)],file_name)
             num_tasks = num_tasks +1
             time.sleep(20)

@@ -69,7 +69,7 @@ def pycurl_perform_and_log(c, type_str):
 
 if __name__ == '__main__':
     num_tasks = 1
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3:
         print("Usage: %s [URL] [OPTION]\n\nOptions:\n\t0\tregular connection\n\t1\tsocks   connection\n" % sys.argv[0])
         sys.exit(-1)
     test_url = sys.argv[1]
@@ -83,7 +83,7 @@ if __name__ == '__main__':
         opt_str = "socks"
     output_file_name = results_dir_abs_path + "/" + opt_str + "_" + socket.gethostname().replace("-","_") + "_" + datetime.datetime.now().strftime("%m%d%H%M")+".txt"
     with open(output_file_name,"w") as f:
-        f.writelines("localtime\t  speed\n")
+        f.writelines("test: %s\nlocaltime\t  speed\n" % test_url)
     while True:
         print ('Task : %d' %(num_tasks))
         last_time = int(round(time.time()))
