@@ -16,8 +16,8 @@ def call_back(download_t, download_d, upload_t, upload_d):
         speed = ((download_d-download_last)/interval)
         if(speed == 0):
             zero_speed_counter += 1
-            if(zero_speed_counter == 3):
-                print 'reach zero_speed_max'
+            if(zero_speed_counter == 10):
+                print '########## reach zero_speed_max ##########'
                 zero_speed_counter = 0
                 return 1
         last_time = new_time          #update
@@ -33,14 +33,14 @@ def pycurl_proxy(test_url):
     c.setopt(pycurl.PROXYPORT,1080)
     c.setopt(pycurl.PROXYTYPE,pycurl.PROXYTYPE_SOCKS5)
     c.setopt(pycurl.URL,test_url)
-    pycurl_perform_and_log(c,"socks")
+    pycurl_perform_and_log(c)
 
 def pycurl_regular(test_url):
     c = pycurl.Curl()
     c.setopt(pycurl.URL,test_url)
-    pycurl_perform_and_log(c,"regular")
+    pycurl_perform_and_log(c)
 
-def pycurl_perform_and_log(c, type_str):
+def pycurl_perform_and_log(c):
         with open('/dev/null','wb') as test_f:
             try:
                 c.setopt(pycurl.WRITEDATA,test_f)
@@ -50,9 +50,9 @@ def pycurl_perform_and_log(c, type_str):
                 c.setopt(pycurl.MAXREDIRS,5)
                 c.perform()
             except :
-                print ('\n########## exception ##########\n')
+                print ('########## exception ##########')
                 print traceback.format_exc()
-                print ('#######################################\n')
+                print ('#######################################')
             else:
                 speed = c.getinfo(pycurl.SPEED_DOWNLOAD)
                 total_time = c.getinfo(pycurl.TOTAL_TIME)
@@ -68,7 +68,7 @@ def pycurl_perform_and_log(c, type_str):
 
 if __name__ == '__main__':
     if len(sys.argv) < 5:
-        print("Usage: python speed_test_download.py [URL] [Mode] [Tool] [Mirror]\n\nOption:\n\tMode:0:regular, 1:proxy mode\n\tTool: ss, vpn, ssh, from which server\n\tMirror: mirror source, 163 or mit or so")
+        print("Usage:\n\tpython speed_test_download.py [URL] [Mode] [Tool] [Mirror]\n\nOptions:\n\tMode:0:regular, 1:proxy mode\n\tTool: ss, vpn, ssh, from which server\n\tMirror: mirror source, 163 or mit or so")
         sys.exit(-1)
     test_url = sys.argv[1]
 
